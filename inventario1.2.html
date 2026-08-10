@@ -6,8 +6,511 @@
     <title>Buscador de Productos</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* (todos tus estilos, igual que antes) */
-        /* ... */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            background: #f4f7fc;
+            padding: 0.8rem;
+            color: #1e293b;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .container { max-width: 1100px; margin: 0 auto; }
+        h1 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+        h1 small {
+            font-size: 0.7rem;
+            font-weight: 400;
+            color: #64748b;
+            background: #e9eef3;
+            padding: 0.15rem 0.6rem;
+            border-radius: 30px;
+        }
+        .card {
+            background: white;
+            border-radius: 14px;
+            padding: 1rem 1.2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            border: 1px solid #eef2f6;
+            margin-bottom: 1rem;
+        }
+        .search-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            align-items: center;
+        }
+        .search-row input {
+            flex: 1;
+            min-width: 140px;
+            padding: 0.8rem 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 40px;
+            font-size: 1rem;
+            outline: none;
+            background: #f1f5f9;
+            transition: 0.2s;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .search-row input:focus {
+            background: white;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+        }
+        .search-row button {
+            background: #3b82f6;
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 0.8rem 1.5rem;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: 0.15s;
+            touch-action: manipulation;
+            min-height: 48px;
+        }
+        .search-row button:active { transform: scale(0.96); }
+
+        .file-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+        }
+        .file-row label {
+            background: #e2e8f0;
+            padding: 0.4rem 1rem;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: 0.15s;
+            touch-action: manipulation;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+        }
+        .file-row label:active { transform: scale(0.96); }
+        .file-row input[type="file"] { display: none; }
+        .file-row .btn {
+            background: #e2e8f0;
+            border: none;
+            padding: 0.4rem 1rem;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: 0.15s;
+            touch-action: manipulation;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            font-size: 0.85rem;
+        }
+        .file-row .btn:active { transform: scale(0.96); }
+        .file-row .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        .file-row .btn-secondary:active { background: #cbd5e1; }
+        .file-row .status {
+            color: #475569;
+            margin-left: auto;
+            font-size: 0.8rem;
+            text-align: right;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.3rem;
+            border-bottom: 1px solid #e2e8f0;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+        }
+        .results-header .count {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        .results-header .count span {
+            background: #dbeafe;
+            padding: 0.1rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: #1e4f8a;
+        }
+        .results-header .stats {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.85rem;
+            color: #475569;
+        }
+        .results-header .stats .label { font-weight: 500; }
+
+        .result-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 0.2rem;
+        }
+
+        .result-item {
+            display: grid;
+            grid-template-columns: 70px 100px 1fr 70px 60px 60px;
+            align-items: center;
+            padding: 0.3rem 0.6rem;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #eef2f6;
+            font-size: 0.9rem;
+            gap: 0.3rem 0.5rem;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .result-item:hover { background: #eef2f6; }
+        .result-item.selected {
+            background: #dbeafe;
+            border-color: #3b82f6;
+        }
+        .result-item .codigo {
+            font-weight: 600;
+            color: #0f172a;
+            font-family: monospace;
+        }
+        .result-item .fabrica {
+            color: #475569;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+        .result-item .descripcion {
+            color: #334155;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .result-item .unidad {
+            background: #e6f0fa;
+            color: #1a4b7a;
+            padding: 0 0.4rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-align: center;
+        }
+        .result-item .stock-cajas, .result-item .stock-unidades {
+            font-weight: 600;
+            color: #0f172a;
+            text-align: right;
+            font-family: monospace;
+        }
+        .result-item .stock-unidades { color: #475569; }
+
+        @media (max-width: 600px) {
+            .result-item {
+                display: flex;
+                flex-direction: column;
+                padding: 0.8rem 1rem;
+                border-radius: 16px;
+                gap: 0.2rem;
+                background: #ffffff;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+                margin-bottom: 0.5rem;
+            }
+            .result-item .row1 {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: baseline;
+                gap: 0.3rem 0.8rem;
+            }
+            .result-item .row1 .codigo {
+                font-size: 1.1rem;
+                font-weight: 700;
+            }
+            .result-item .row1 .fabrica {
+                font-size: 0.95rem;
+            }
+            .result-item .row1 .unidad {
+                font-size: 0.75rem;
+                padding: 0.1rem 0.6rem;
+            }
+            .result-item .row2 {
+                display: flex;
+                flex-wrap: wrap;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.3rem;
+                width: 100%;
+            }
+            .result-item .row2 .descripcion {
+                font-size: 1rem;
+                white-space: normal;
+                word-break: break-word;
+                flex: 1;
+                min-width: 120px;
+                overflow: visible;
+                text-overflow: clip;
+                line-height: 1.4;
+            }
+            .result-item .row2 .stock {
+                display: flex;
+                gap: 0.8rem;
+                font-size: 1rem;
+                font-weight: 700;
+                white-space: nowrap;
+                background: #f1f5f9;
+                padding: 0.2rem 0.8rem;
+                border-radius: 30px;
+                align-self: flex-start;
+            }
+            .result-item .row2 .stock .cajas {
+                color: #0f172a;
+            }
+            .result-item .row2 .stock .unidades {
+                color: #2563eb;
+            }
+            .result-item .codigo, .result-item .fabrica, .result-item .unidad,
+            .result-item .stock-cajas, .result-item .stock-unidades,
+            .result-item .descripcion {
+                display: none;
+            }
+            .result-item .row1, .result-item .row2 {
+                display: flex !important;
+            }
+            .result-item .row1 .codigo,
+            .result-item .row1 .fabrica,
+            .result-item .row1 .unidad,
+            .result-item .row2 .descripcion,
+            .result-item .row2 .stock {
+                display: inline !important;
+            }
+            .result-list {
+                max-height: 70vh !important;
+                min-height: 300px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .result-item .row2 {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.2rem;
+            }
+            .result-item .row2 .stock {
+                align-self: flex-start;
+            }
+        }
+
+        .empty-message {
+            text-align: center;
+            color: #94a3b8;
+            padding: 1.5rem;
+            font-size: 1rem;
+        }
+
+        .cantidad-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.8rem;
+            margin-top: 0.8rem;
+            padding-top: 0.8rem;
+            border-top: 1px solid #eef2f6;
+        }
+        .cantidad-row label {
+            font-weight: 500;
+            color: #334155;
+            font-size: 0.9rem;
+        }
+        .cantidad-row input {
+            width: 70px;
+            padding: 0.5rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1rem;
+            outline: none;
+            background: white;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .cantidad-row input:disabled {
+            background: #e9edf2;
+            color: #94a3b8;
+        }
+        .cantidad-row input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59,130,246,0.2);
+        }
+        .cantidad-row .acciones {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .cantidad-row .acciones button {
+            padding: 0.5rem 1.2rem;
+            border: none;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.15s;
+            touch-action: manipulation;
+            min-height: 44px;
+            font-size: 0.95rem;
+        }
+        .cantidad-row .acciones button:active { transform: scale(0.96); }
+        .btn-agregar { background: #22c55e; color: white; }
+        .btn-agregar:active { background: #16a34a; }
+        .btn-eliminar { background: #ef4444; color: white; }
+        .btn-eliminar:active { background: #dc2626; }
+
+        .pedido-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+        .pedido-table th {
+            background: #f1f5f9;
+            padding: 0.4rem 0.6rem;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #e2e8f0;
+            font-size: 0.8rem;
+        }
+        .pedido-table td {
+            padding: 0.3rem 0.6rem;
+            border-bottom: 1px solid #eef2f6;
+            font-size: 0.8rem;
+        }
+        .pedido-table tr:hover td { background: #f8fafc; }
+        .pedido-table .codigo-cell {
+            font-family: monospace;
+            font-weight: 600;
+        }
+        .pedido-table .cantidad-cell { text-align: center; }
+        .pedido-table .acciones-cell { text-align: center; }
+        .pedido-table .acciones-cell button {
+            background: none;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 0.2rem 0.4rem;
+            touch-action: manipulation;
+        }
+        .pedido-table .acciones-cell button:active { transform: scale(0.9); }
+        .total-row {
+            font-weight: 600;
+            background: #f8fafc;
+        }
+        .total-row td { border-top: 2px solid #e2e8f0; }
+        .pedido-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+            margin-bottom: 0.3rem;
+        }
+        .pedido-header h3 { font-size: 1.1rem; }
+        .pedido-header .totales {
+            display: flex;
+            gap: 1rem;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .persist-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            align-items: center;
+            border-top: 1px solid #eef2f6;
+            padding-top: 0.5rem;
+        }
+        .persist-row .btn {
+            background: #e2e8f0;
+            border: none;
+            padding: 0.3rem 0.8rem;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: 0.15s;
+            touch-action: manipulation;
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+            font-size: 0.8rem;
+        }
+        .persist-row .btn:active { transform: scale(0.96); }
+        .persist-row .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        .persist-row .btn-primary:active { background: #2563eb; }
+        .persist-row .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        .persist-row .btn-danger:active { background: #dc2626; }
+        .persist-row .btn-secondary:active { background: #cbd5e1; }
+        .persist-row .status-label {
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .persist-row .status-value {
+            color: #475569;
+            font-size: 0.8rem;
+        }
+
+        .textarea-wrapper { margin-top: 0.5rem; }
+        .textarea-wrapper textarea {
+            width: 100%;
+            padding: 0.4rem;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            font-family: monospace;
+            font-size: 0.8rem;
+            resize: vertical;
+            display: none;
+        }
+
+        .admin-upload {
+            margin-top: 0.5rem;
+            border-top: 2px dashed #3b82f6;
+            padding-top: 0.5rem;
+        }
+        .admin-upload input { display: inline-block; }
+
+        @media (max-width: 600px) {
+            body { padding: 0.5rem; }
+            .card { padding: 0.8rem 1rem; }
+            .cantidad-row { flex-direction: column; align-items: stretch; gap: 0.5rem; }
+            .cantidad-row > div { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+            .cantidad-row input { width: 100px; flex: 1; }
+            .cantidad-row .acciones { justify-content: center; }
+            .pedido-table { font-size: 0.75rem; }
+            .pedido-table th, .pedido-table td { padding: 0.2rem 0.4rem; }
+            .persist-row { flex-direction: column; align-items: stretch; }
+            .persist-row .btn { justify-content: center; }
+            .file-row { flex-direction: column; align-items: stretch; }
+            .file-row .status { text-align: center; margin-left: 0; }
+            .search-row input { min-width: 120px; }
+        }
     </style>
 </head>
 <body>
@@ -42,30 +545,106 @@
         </div>
     </div>
 
-    <!-- Resto del HTML igual -->
-    <div class="card"> ... </div>
-    <div class="card"> ... </div>
+    <div class="card">
+        <div class="results-header">
+            <div class="count">Resultados <span id="resultCount">0</span></div>
+            <div class="stats">
+                <span><span class="label">Cajas:</span> <span id="cajasCount">0</span></span>
+                <span><span class="label">Unidades:</span> <span id="unidadesCount">0</span></span>
+            </div>
+        </div>
+        <div id="resultList" class="result-list">
+            <div class="empty-message">Escribe algo para buscar.</div>
+        </div>
+
+        <div class="cantidad-row">
+            <div>
+                <label for="txtCajas">Cajas:</label>
+                <input type="number" id="txtCajas" value="0" min="0" disabled>
+            </div>
+            <div>
+                <label for="txtUnidades">Unidades:</label>
+                <input type="number" id="txtUnidades" value="0" min="0">
+            </div>
+            <div class="acciones">
+                <button class="btn-agregar" id="btnAgregar">➕ Agregar</button>
+                <button class="btn-eliminar" id="btnEliminar">🗑️ Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="pedido-header">
+            <h3>📦 Pedido</h3>
+            <div class="totales">
+                <span>Cajas: <span id="totalCajasPedido">0</span></span>
+                <span>Unidades: <span id="totalUnidadesPedido">0</span></span>
+            </div>
+        </div>
+        <div id="pedidoContainer">
+            <table class="pedido-table" id="pedidoTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Código</th>
+                        <th>Cód. Fábrica</th>
+                        <th>Descripción</th>
+                        <th>Unidad</th>
+                        <th>Cajas</th>
+                        <th>Unidades</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="pedidoBody">
+                    <tr><td colspan="8" class="empty-message">No hay productos en el pedido.</td></tr>
+                </tbody>
+                <tfoot id="pedidoFoot" style="display:none;">
+                    <tr class="total-row">
+                        <td colspan="5" style="text-align:right;">Totales</td>
+                        <td id="totalCajasFoot">0</td>
+                        <td id="totalUnidadesFoot">0</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
 </div>
 
 <script>
     (function() {
-        // ========== CONFIGURACIÓN ==========
+        // ============================================================
+        //  CONFIGURACIÓN: URL de Google Sheets (CSV)
+        // ============================================================
         const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRKg3h0F7KMnRz2Fm2co7zlUFW1uZXeka4ljxSEbWLjDvDch3tglSqCDMn9uMVKiQ/pub?gid=683330974&single=true&output=csv';
 
-        // ========== DATOS DE EJEMPLO ==========
+        // ============================================================
+        //  DATOS DE EJEMPLO (fallback)
+        // ============================================================
         const sampleData = [
             { "Producto":"MANJAR ESPECIAL BAZO VELARDE BALDE X 20 KG","Codigo":"9010","CodigoFabrica":"50000111","Unidad Ref":"BAL/BAL","Cantidad":"15","FactorEmpaque":"1","Linea":"MANJARES: ESPECIAL","Marca":"BAZO VELARDE" },
+            { "Producto":"MANJAR AREQUIPEÑO BAZO VELARDE BALDE X 19 KG","Codigo":"9011","CodigoFabrica":"50000097","Unidad Ref":"BAL/BAL","Cantidad":"8","FactorEmpaque":"1","Linea":"MANJARES: AREQUIPEÑO","Marca":"BAZO VELARDE" },
+            { "Producto":"MANJAR BLANQUITO BAZO VELARDE BALDE X 19 KG","Codigo":"9014","CodigoFabrica":"50000104","Unidad Ref":"BAL/BAL","Cantidad":"0","FactorEmpaque":"1","Linea":"MANJARES: BLANQUITO","Marca":"BAZO VELARDE" },
+            { "Producto":"MANJAR BLANCO SABOR CASERO BAZO VELARDE BALDE X 20 KG","Codigo":"9015","CodigoFabrica":"50000106","Unidad Ref":"BAL/BAL","Cantidad":"22","FactorEmpaque":"1","Linea":"MANJARES: CASERO","Marca":"BAZO VELARDE" },
+            { "Producto":"FUDGE SABOR CASERO BAZO VELARDE BALDE X 20 KG","Codigo":"9016","CodigoFabrica":"50000121","Unidad Ref":"BAL/BAL","Cantidad":"5","FactorEmpaque":"1","Linea":"MANJARES: CASERO - SABOR CHOCOLATE","Marca":"BAZO VELARDE" },
+            { "Producto":"FUDGE AREQUIPEÑO BV BALDE 19KG","Codigo":"9022","CodigoFabrica":"50000116","Unidad Ref":"BAL/BAL","Cantidad":"12","FactorEmpaque":"1","Linea":"MANJARES: AREQUIPEÑO - SABOR CHOCOLATE","Marca":"BAZO VELARDE" },
+            { "Producto":"DULC. LECHE BAZO VELARDE X 13.6 KG","Codigo":"9070","CodigoFabrica":"50000599","Unidad Ref":"BAL/BAL","Cantidad":"7","FactorEmpaque":"1","Linea":"MANJARES: DULCE DE LECHE","Marca":"BAZO VELARDE" },
+            { "Producto":"MANJAR AREQUIPEÑO BAZO VELARDE BALDE 5 KG","Codigo":"9082","CodigoFabrica":"50000101","Unidad Ref":"BAL/BAL","Cantidad":"3","FactorEmpaque":"1","Linea":"MANJARES: MANJAR","Marca":"BAZO VELARDE" },
+            { "Producto":"MANJAR BLANQUITO BAZO VELARDE BALDE X 5 KG","Codigo":"9083","CodigoFabrica":"50000105","Unidad Ref":"BAL/BAL","Cantidad":"0","FactorEmpaque":"1","Linea":"MANJARES: BLANQUITO","Marca":"BAZO VELARDE" },
+            { "Producto":"QUESO EDAM LAIVE TAJADAS FINAS PQT 90G","Codigo":"0229","CodigoFabrica":"50001206","Unidad Ref":"CJ*24","Cantidad":"966","FactorEmpaque":"24","Linea":"QUESOS: EDAM","Marca":"LAIVE" },
+            { "Producto":"LECHE LAIVE BOLSITARRO BOLSA 390G","Codigo":"2103","CodigoFabrica":"50000975","Unidad Ref":"CJ*24","Cantidad":"4632","FactorEmpaque":"24","Linea":"EVAPORADAS: ENTERO (A)","Marca":"LAIVE" },
             { "Producto":"LECHE UHT LAIVE ENTERA CAJA 946ML","Codigo":"2136","CodigoFabrica":"50001059","Unidad Ref":"CJ*12","Cantidad":"16459","FactorEmpaque":"12","Linea":"LECHES FRESCAS: ENTERO (A)","Marca":"LAIVE" }
         ];
 
-        // ========== ESTADO ==========
+        // ============================================================
+        //  ESTADO
+        // ============================================================
         let currentData = [];
         let filteredData = [];
         let selectedIndex = -1;
         let pedido = [];
 
-        // ========== DOM ==========
-        // (todos los elementos igual que antes)
+        // DOM
         const searchInput = document.getElementById('searchInput');
         const searchButton = document.getElementById('searchButton');
         const resultList = document.getElementById('resultList');
@@ -93,8 +672,26 @@
         const persistStatus = document.getElementById('persistStatus');
         const refreshBtn = document.getElementById('refreshDriveBtn');
 
-        // ========== FUNCIONES DE MAPEO (iguales) ==========
-        function getField(item, ...aliases) { /* ... */ }
+        // ============================================================
+        //  FUNCIONES DE MAPEO
+        // ============================================================
+        function getField(item, ...aliases) {
+            for (let alias of aliases) {
+                if (item.hasOwnProperty(alias) && item[alias] !== undefined && item[alias] !== '') {
+                    return item[alias];
+                }
+            }
+            const keys = Object.keys(item);
+            for (let alias of aliases) {
+                const lowerAlias = alias.toLowerCase();
+                for (let key of keys) {
+                    if (key.toLowerCase() === lowerAlias) {
+                        return item[key];
+                    }
+                }
+            }
+            return '';
+        }
         function getCodigo(item) { return getField(item, 'Codigo', 'Código', 'Cod. Producto', 'InventarioProductoCodigo', 'Cod'); }
         function getCodigoFabrica(item) { return getField(item, 'CodigoFabrica', 'CódigoFábrica', 'Cod. Fabrica', 'CodigoFabrica', 'CodFabrica'); }
         function getDescripcion(item) { return getField(item, 'Producto', 'Descripción', 'InventarioProductoDescripcion', 'Descripcion', 'Nombre'); }
@@ -132,14 +729,16 @@
             return upper.includes('MOL') || upper.includes('BAL') || upper.includes('UNI') || upper.includes('UND') || upper.includes('SHT') || upper.includes('BOL') || upper.includes('POR');
         }
 
-        // ========== PERSISTENCIA LOCAL ==========
+        // ============================================================
+        //  PERSISTENCIA LOCAL
+        // ============================================================
         const STORAGE_KEY = 'buscador_productos_data';
         function saveToStorage(data) {
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
                 persistStatus.textContent = `guardado local (${data.length} registros)`;
                 persistStatus.style.color = '#16a34a';
-            } catch (e) {}
+            } catch (e) { /* ignorar */ }
         }
         function loadFromStorage() {
             try {
@@ -164,7 +763,9 @@
             }
         }
 
-        // ========== PARSEADOR CSV ==========
+        // ============================================================
+        //  PARSEADOR CSV
+        // ============================================================
         function parseCSV(csvText) {
             const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
             if (lines.length < 2) return null;
@@ -185,7 +786,9 @@
             return result;
         }
 
-        // ========== CARGA DESDE GOOGLE SHEETS ==========
+        // ============================================================
+        //  CARGA DESDE GOOGLE SHEETS
+        // ============================================================
         function loadFromGoogleSheets() {
             fileStatus.textContent = '(cargando desde Google Sheets...)';
             fetch(GOOGLE_SHEETS_CSV_URL)
@@ -205,9 +808,6 @@
                         limpiarCantidades();
                         saveToStorage(data);
                         checkStorage();
-                        // Mantener el pedido (opcional: si quieres limpiarlo al actualizar, descomenta la línea)
-                        // pedido = [];
-                        // renderPedido();
                     } else {
                         fileStatus.textContent = '(Google Sheets vacío, usando ejemplo)';
                         useLocalData();
@@ -237,7 +837,9 @@
             checkStorage();
         }
 
-        // ========== RENDER Y BÚSQUEDA (iguales) ==========
+        // ============================================================
+        //  BÚSQUEDA Y RENDER
+        // ============================================================
         function performSearch() {
             const term = searchInput.value.trim();
             if (!term) {
@@ -373,7 +975,9 @@
             unidadesCount.textContent = '0';
         }
 
-        // ========== PEDIDO (igual) ==========
+        // ============================================================
+        //  PEDIDO
+        // ============================================================
         function agregarProducto() {
             if (selectedIndex === -1 || selectedIndex >= filteredData.length) {
                 alert('Seleccione un producto de la lista.');
@@ -521,7 +1125,9 @@
             });
         }
 
-        // ========== CARGA LOCAL (archivo, CSV, ejemplo) ==========
+        // ============================================================
+        //  CARGA LOCAL
+        // ============================================================
         function loadData(data, persist = true) {
             if (!data || data.length === 0) {
                 alert('No se encontraron datos válidos.');
@@ -569,7 +1175,9 @@
             }
         }
 
-        // ========== INICIALIZACIÓN ==========
+        // ============================================================
+        //  INICIALIZACIÓN
+        // ============================================================
         function init() {
             // Cargar desde Google Sheets al iniciar
             loadFromGoogleSheets();
@@ -578,7 +1186,9 @@
             refreshBtn.addEventListener('click', function() {
                 this.textContent = '⏳ Cargando...';
                 loadFromGoogleSheets();
-                this.textContent = '🔄 Actualizar Drive';
+                setTimeout(() => {
+                    this.textContent = '🔄 Actualizar Drive';
+                }, 1000);
             });
 
             // Auto-refresco cada 5 minutos
