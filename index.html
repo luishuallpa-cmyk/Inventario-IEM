@@ -6,6 +6,7 @@
     <title>Buscador de Productos - Control de Inventario</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
+        /* ===== RESET Y ESTILOS BASE ===== */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
@@ -249,7 +250,22 @@
         }
         .cantidad-row input:disabled { background: #f0f4f9; color: #7a8fa5; }
         .cantidad-row input:focus { border-color: #2b6c9e; box-shadow: 0 0 0 3px rgba(43,108,158,0.15); }
-        .cantidad-row .acciones { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-left: auto; }
+        .cantidad-row .acciones {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-left: auto;
+        }
+        .cantidad-row .info-text {
+            font-size: 0.8rem;
+            color: #5a7a9a;
+            background: #eef4fa;
+            padding: 0.2rem 0.8rem;
+            border-radius: 30px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
 
         .diff-table-wrap { margin-top: 1rem; overflow-x: auto; }
         .diff-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
@@ -305,7 +321,7 @@
         </div>
     </div>
 
-    <!-- ===== CARD: RESULTADOS ===== -->
+    <!-- ===== CARD: RESULTADOS Y CANTIDADES ===== -->
     <div class="card">
         <div class="results-header">
             <div class="count">📋 Resultados <span id="resultCount">0</span></div>
@@ -318,6 +334,7 @@
             <div class="empty-message">🔎 Escribe algo para buscar.</div>
         </div>
 
+        <!-- ===== CANTIDADES (un solo bloque) ===== -->
         <div class="cantidad-row">
             <div class="group">
                 <label for="txtCajas">📦 Cajas:</label>
@@ -327,10 +344,7 @@
                 <label for="txtUnidades">🧩 Unidades:</label>
                 <input type="number" id="txtUnidades" value="0" min="0">
             </div>
-            <div class="group" style="border-left:2px solid #dce3ed; padding-left:1rem;">
-                <label for="txtFisico">🔎 Físico encontrado:</label>
-                <input type="number" id="txtFisico" value="0" min="0" style="width:80px;">
-            </div>
+            <div class="info-text" id="infoFactor">Factor: 1</div>
             <div class="acciones">
                 <button class="btn btn-success" id="btnAgregar">➕ Agregar pedido</button>
                 <button class="btn btn-warning" id="btnRegistrarDiff">📝 Registrar diferencia</button>
@@ -338,14 +352,17 @@
         </div>
     </div>
 
-    <!-- ===== CARD: PEDIDO ===== -->
+    <!-- ===== CARD: PEDIDO ACTUAL ===== -->
     <div class="card">
         <div class="section-title">
             <h2>📦 Pedido actual</h2>
             <span class="badge" id="pedidoCount">0 productos</span>
-            <div style="margin-left:auto; display:flex; gap:1rem; font-size:0.9rem;">
+            <div style="margin-left:auto; display:flex; gap:1rem; font-size:0.9rem; flex-wrap:wrap;">
                 <span>📦 Cajas: <strong id="totalCajasPedido">0</strong></span>
                 <span>🧩 Unidades: <strong id="totalUnidadesPedido">0</strong></span>
+                <button class="btn btn-success btn-sm" id="exportPedidoBtn">📥 Exportar Excel</button>
+                <button class="btn btn-drive btn-sm" id="guardarPedidoDriveBtn">☁️ Guardar en Drive</button>
+                <button class="btn btn-danger btn-sm" id="limpiarPedidoBtn">🗑️ Limpiar pedido</button>
             </div>
         </div>
         <div id="pedidoContainer">
@@ -414,7 +431,7 @@
         const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRKg3h0F7KMnRz2Fm2co7zlUFW1uZXeka4ljxSEbWLjDvDch3tglSqCDMn9uMVKiQ/pub?gid=683330974&single=true&output=csv';
 
         // ⚠️ IMPORTANTE: Reemplaza con la URL de tu Apps Script
-       const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyhnv5rsC8MNNhzKJMakeSyC3yNm01qDe6fE6wmDdtlZCNEkww8f5V0-L51Akjrw8Y00w/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyhnv5rsC8MNNhzKJMakeSyC3yNm01qDe6fE6wmDdtlZCNEkww8f5V0-L51Akjrw8Y00w/exec';
 
         // ============================================================
         //  DATOS DE EJEMPLO (fallback)
@@ -432,6 +449,7 @@
         let selectedIndex = -1;
         let pedido = [];
         let diferencias = [];
+        let currentFactor = 1;
 
         // DOM
         const searchInput = document.getElementById('searchInput');
@@ -442,7 +460,7 @@
         const unidadesCount = document.getElementById('unidadesCount');
         const txtCajas = document.getElementById('txtCajas');
         const txtUnidades = document.getElementById('txtUnidades');
-        const txtFisico = document.getElementById('txtFisico');
+        const infoFactor = document.getElementById('infoFactor');
         const btnAgregar = document.getElementById('btnAgregar');
         const btnRegistrarDiff = document.getElementById('btnRegistrarDiff');
         const pedidoBody = document.getElementById('pedidoBody');
@@ -476,6 +494,10 @@
         const exportDiffBtn = document.getElementById('exportDiffBtn');
         const clearDiffBtn = document.getElementById('clearDiffBtn');
         const guardarDriveBtn = document.getElementById('guardarDriveBtn');
+
+        const exportPedidoBtn = document.getElementById('exportPedidoBtn');
+        const guardarPedidoDriveBtn = document.getElementById('guardarPedidoDriveBtn');
+        const limpiarPedidoBtn = document.getElementById('limpiarPedidoBtn');
 
         // ============================================================
         //  FUNCIONES DE MAPEO
@@ -752,11 +774,14 @@
         function actualizarCantidades(item) {
             const unidad = getUnidadRef(item);
             const factor = obtenerFactorEmpaque(unidad) || getFactorEmpaque(item) || 1;
+            currentFactor = factor;
             const esSuelta = esPiezaSueltaDirecta(unidad) || factor === 1;
+
+            // Mostrar factor en la interfaz
+            infoFactor.textContent = `Factor: ${factor}`;
 
             txtCajas.value = '0';
             txtUnidades.value = '0';
-            txtFisico.value = '0';
 
             if (esSuelta || factor === 1) {
                 txtCajas.disabled = true;
@@ -779,7 +804,8 @@
         function limpiarCantidades() {
             txtCajas.value = '0';
             txtUnidades.value = '0';
-            txtFisico.value = '0';
+            currentFactor = 1;
+            infoFactor.textContent = 'Factor: 1';
             txtCajas.disabled = true;
             txtCajas.style.background = '#f0f4f9';
             txtUnidades.disabled = false;
@@ -801,7 +827,7 @@
             const codigoFabrica = getCodigoFabrica(item);
             const descripcion = getDescripcion(item);
             const unidad = getUnidadRef(item);
-            const factor = obtenerFactorEmpaque(unidad) || getFactorEmpaque(item) || 1;
+            const factor = currentFactor;
             const esSuelta = esPiezaSueltaDirecta(unidad) || factor === 1;
 
             const stockTotal = getCantidad(item);
@@ -886,6 +912,14 @@
             renderPedido();
         }
 
+        function limpiarPedido() {
+            if (pedido.length === 0) return;
+            if (confirm('¿Eliminar todos los productos del pedido?')) {
+                pedido = [];
+                renderPedido();
+            }
+        }
+
         function renderPedido() {
             if (pedido.length === 0) {
                 pedidoBody.innerHTML = `<tr><td colspan="8" class="empty-message">No hay productos en el pedido.</td></tr>`;
@@ -930,7 +964,84 @@
         }
 
         // ============================================================
-        //  REGISTRAR DIFERENCIA
+        //  EXPORTAR PEDIDO A EXCEL (local)
+        // ============================================================
+        function exportarPedido() {
+            if (pedido.length === 0) {
+                alert('No hay productos en el pedido para exportar.');
+                return;
+            }
+
+            const dataToExport = pedido.map((p, idx) => ({
+                '#': idx + 1,
+                'Código': p.codigo,
+                'Código Fábrica': p.codigoFabrica,
+                'Descripción': p.descripcion,
+                'Unidad': p.unidad,
+                'Cajas': p.cajas,
+                'Unidades': p.unidades,
+                'Factor': p.factor,
+                'Total (und)': (p.cajas * p.factor) + p.unidades
+            }));
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(dataToExport);
+            XLSX.utils.book_append_sheet(wb, ws, 'Pedido');
+            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            const blob = new Blob([wbout], { type: 'application/octet-stream' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `pedido_${new Date().toISOString().slice(0,10)}.xlsx`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        }
+
+        // ============================================================
+        //  GUARDAR PEDIDO EN DRIVE
+        // ============================================================
+        function guardarPedidoEnDrive() {
+            if (pedido.length === 0) {
+                alert('No hay productos en el pedido para guardar.');
+                return;
+            }
+
+            const dataToExport = pedido.map((p, idx) => ({
+                '#': idx + 1,
+                'Código': p.codigo,
+                'Código Fábrica': p.codigoFabrica,
+                'Descripción': p.descripcion,
+                'Unidad': p.unidad,
+                'Cajas': p.cajas,
+                'Unidades': p.unidades,
+                'Factor': p.factor,
+                'Total (und)': (p.cajas * p.factor) + p.unidades
+            }));
+
+            guardarPedidoDriveBtn.textContent = '⏳ Subiendo...';
+            guardarPedidoDriveBtn.disabled = true;
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(dataToExport)
+            })
+            .then(() => {
+                alert('✅ Pedido guardado en Google Drive.\nRevisa tu carpeta "Inventario - Diferencias".');
+                guardarPedidoDriveBtn.textContent = '☁️ Guardar en Drive';
+                guardarPedidoDriveBtn.disabled = false;
+            })
+            .catch(err => {
+                alert('❌ Error al guardar en Drive: ' + err.message);
+                guardarPedidoDriveBtn.textContent = '☁️ Guardar en Drive';
+                guardarPedidoDriveBtn.disabled = false;
+            });
+        }
+
+        // ============================================================
+        //  REGISTRAR DIFERENCIA (USANDO CAJAS Y UNIDADES)
         // ============================================================
         function registrarDiferencia() {
             if (selectedIndex === -1 || selectedIndex >= filteredData.length) {
@@ -941,17 +1052,31 @@
             const codigo = getCodigo(item);
             const descripcion = getDescripcion(item);
             const stockTeorico = getCantidad(item);
-            const fisico = parseInt(txtFisico.value) || 0;
+            const factor = currentFactor;
+            const esSuelta = esPiezaSueltaDirecta(getUnidadRef(item)) || factor === 1;
 
-            if (fisico < 0) {
-                alert('El stock físico no puede ser negativo.');
+            let cajas = parseInt(txtCajas.value) || 0;
+            let unidades = parseInt(txtUnidades.value) || 0;
+
+            // Si el producto es suelto o factor=1, solo se usan unidades
+            if (esSuelta || factor === 1) {
+                // Si hay cajas, sumarlas a unidades
+                unidades += cajas;
+                cajas = 0;
+            }
+
+            // Calcular stock físico total en unidades
+            const stockFisico = (cajas * factor) + unidades;
+
+            if (stockFisico === 0) {
+                alert('Ingrese una cantidad (cajas o unidades) mayor que cero.');
                 return;
             }
 
-            const diferencia = fisico - stockTeorico;
+            const diferencia = stockFisico - stockTeorico;
 
             if (diferencia === 0) {
-                if (!confirm('La diferencia es cero. ¿Deseas registrar de todas formas?')) {
+                if (!confirm(`Stock teórico: ${stockTeorico}\nStock físico: ${stockFisico}\nLa diferencia es cero. ¿Deseas registrar de todas formas?`)) {
                     return;
                 }
             }
@@ -963,15 +1088,19 @@
                 codigo: codigo,
                 descripcion: descripcion,
                 stockTeorico: stockTeorico,
-                stockFisico: fisico,
+                stockFisico: stockFisico,
                 diferencia: diferencia,
                 fecha: fechaStr
             });
 
             saveDiferencias();
             renderDiferencias();
-            txtFisico.value = '0';
-            alert('✅ Diferencia registrada correctamente.');
+            txtCajas.value = '0';
+            txtUnidades.value = '0';
+            alert(`✅ Diferencia registrada.\nTeórico: ${stockTeorico}\nFísico: ${stockFisico}\nDiferencia: ${diferencia}`);
+            if (selectedIndex < filteredData.length) {
+                actualizarCantidades(filteredData[selectedIndex]);
+            }
         }
 
         // ============================================================
@@ -1060,7 +1189,7 @@
         }
 
         // ============================================================
-        //  GUARDAR EN DRIVE
+        //  GUARDAR DIFERENCIAS EN DRIVE
         // ============================================================
         function guardarEnDrive() {
             if (diferencias.length === 0) {
@@ -1090,7 +1219,7 @@
                 body: JSON.stringify(dataToExport)
             })
             .then(() => {
-                alert('✅ Archivo guardado en Google Drive.\nRevisa tu carpeta "Inventario - Diferencias".');
+                alert('✅ Diferencias guardadas en Google Drive.\nRevisa tu carpeta "Inventario - Diferencias".');
                 guardarDriveBtn.textContent = '☁️ Guardar en Drive';
                 guardarDriveBtn.disabled = false;
             })
@@ -1199,10 +1328,13 @@
             });
 
             btnRegistrarDiff.addEventListener('click', registrarDiferencia);
-            txtFisico.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') { e.preventDefault(); registrarDiferencia(); }
-            });
 
+            // Eventos para pedido
+            exportPedidoBtn.addEventListener('click', exportarPedido);
+            guardarPedidoDriveBtn.addEventListener('click', guardarPedidoEnDrive);
+            limpiarPedidoBtn.addEventListener('click', limpiarPedido);
+
+            // Eventos para diferencias
             exportDiffBtn.addEventListener('click', exportarDiferencias);
             clearDiffBtn.addEventListener('click', limpiarDiferencias);
             guardarDriveBtn.addEventListener('click', guardarEnDrive);
