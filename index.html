@@ -117,19 +117,21 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 0.3rem;
+            width: 40px;
+            height: 40px;
             background: var(--badge-bg);
             color: var(--badge-text);
             border: 1px solid var(--header-border);
-            padding: 0.35rem 0.9rem;
-            border-radius: 30px;
-            font-size: 0.8rem;
-            font-weight: 600;
+            border-radius: 50%;
+            font-size: 1.15rem;
+            line-height: 1;
             cursor: pointer;
             transition: 0.2s;
+            padding: 0;
+            flex-shrink: 0;
         }
-        .theme-toggle:hover { transform: translateY(-1px); background: rgba(70,130,200,0.25); }
-        .theme-toggle:active { transform: scale(0.96); }
+        .theme-toggle:hover { transform: translateY(-1px) rotate(10deg); background: rgba(70,130,200,0.25); }
+        .theme-toggle:active { transform: scale(0.9); }
 
         /* ===== TARJETAS ===== */
         .card {
@@ -468,7 +470,7 @@
             <span class="iemgroup">IEM GROUP</span>
             <span class="laive">LAIVE</span>
         </div>
-        <button class="theme-toggle" id="themeToggleBtn" type="button">🌙 Modo noche</button>
+        <button class="theme-toggle" id="themeToggleBtn" type="button" title="Cambiar tema" aria-label="Cambiar tema día/noche">🌙</button>
         <div class="badge-version">v2.0</div>
     </div>
 
@@ -938,6 +940,7 @@
             const codigoFabrica = getCodigoFabrica(item);
             const descripcion = getDescripcion(item);
             const unidad = getUnidadRef(item);
+            const linea = getLinea(item) || 'SIN LÍNEA';
             const factor = currentFactor;
             const esSuelta = factor === 1;
 
@@ -1003,6 +1006,7 @@
                     codigoFabrica: codigoFabrica,
                     descripcion: descripcion,
                     unidad: unidad,
+                    linea: linea,
                     cajas: newCajas,
                     unidades: newUnidades,
                     factor: factor,
@@ -1077,26 +1081,47 @@
         // ============================================================
         //  EXPORTAR PEDIDO
         // ============================================================
+        function agruparPorLinea(items, getLineaItem) {
+            const grupos = {};
+            items.forEach(item => {
+                const linea = getLineaItem(item) || 'SIN LÍNEA';
+                if (!grupos[linea]) grupos[linea] = [];
+                grupos[linea].push(item);
+            });
+            return Object.keys(grupos).sort((a, b) => a.localeCompare(b)).map(linea => ({
+                linea: linea,
+                items: grupos[linea]
+            }));
+        }
+
         function exportarPedido() {
             if (pedido.length === 0) {
                 alert('No hay productos en el pedido para exportar.');
                 return;
             }
 
-            const dataToExport = pedido.map((p, idx) => ({
-                '#': idx + 1,
-                'Código': p.codigo,
-                'Código Fábrica': p.codigoFabrica,
-                'Descripción': p.descripcion,
-                'Unidad': p.unidad,
-                'Cajas': p.cajas,
-                'Unidades': p.unidades,
-                'Factor': p.factor,
-                'Total (und)': (p.cajas * p.factor) + p.unidades
-            }));
+            const grupos = agruparPorLinea(pedido, p => p.linea);
+            const filas = [
+                ['#', 'Código', 'Cód. Fábrica', 'Descripción', 'Unidad', 'Línea', 'Cajas', 'Unidades', 'Factor', 'Total (und)']
+            ];
+
+            grupos.forEach(grupo => {
+                filas.push([`LÍNEA: ${grupo.linea}`]);
+                let contador = 1;
+                let subCajas = 0, subUnidades = 0;
+                grupo.items.forEach(p => {
+                    const total = (p.cajas * p.factor) + p.unidades;
+                    filas.push([contador++, p.codigo, p.codigoFabrica, p.descripcion, p.unidad, p.linea, p.cajas, p.unidades, p.factor, total]);
+                    subCajas += p.cajas;
+                    subUnidades += p.unidades;
+                });
+                filas.push(['', '', '', '', '', 'Subtotal línea', subCajas, subUnidades, '', '']);
+                filas.push([]);
+            });
 
             const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.json_to_sheet(dataToExport);
+            const ws = XLSX.utils.aoa_to_sheet(filas);
+            ws['!cols'] = [{wch:6},{wch:10},{wch:14},{wch:42},{wch:10},{wch:24},{wch:8},{wch:10},{wch:8},{wch:12}];
             XLSX.utils.book_append_sheet(wb, ws, 'Pedido');
             const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
             const blob = new Blob([wbout], { type: 'application/octet-stream' });
@@ -1122,6 +1147,7 @@
                 'Código Fábrica': p.codigoFabrica,
                 'Descripción': p.descripcion,
                 'Unidad': p.unidad,
+                'Línea': p.linea || 'SIN LÍNEA',
                 'Cajas': p.cajas,
                 'Unidades': p.unidades,
                 'Factor': p.factor,
@@ -1162,6 +1188,7 @@
             const item = filteredData[selectedIndex];
             const codigo = getCodigo(item);
             const descripcion = getDescripcion(item);
+            const linea = getLinea(item) || 'SIN LÍNEA';
             const stockTeorico = getCantidad(item);
             const factor = currentFactor;
             const esSuelta = factor === 1;
@@ -1195,6 +1222,7 @@
             inventarioFisico.push({
                 codigo: codigo,
                 descripcion: descripcion,
+                linea: linea,
                 stockTeorico: stockTeorico,
                 stockFisico: stockFisico,
                 diferencia: diferencia,
@@ -1295,18 +1323,28 @@
                 return;
             }
 
-            const dataToExport = inventarioFisico.map((d, idx) => ({
-                '#': idx + 1,
-                'Código': d.codigo,
-                'Descripción': d.descripcion,
-                'Stock Teórico': d.stockTeorico,
-                'Stock Físico': d.stockFisico,
-                'Diferencia': d.diferencia,
-                'Fecha/Hora': d.fecha
-            }));
+            const grupos = agruparPorLinea(inventarioFisico, d => d.linea);
+            const filas = [
+                ['#', 'Código', 'Descripción', 'Línea', 'Stock Teórico', 'Stock Físico', 'Diferencia', 'Fecha/Hora']
+            ];
+
+            grupos.forEach(grupo => {
+                filas.push([`LÍNEA: ${grupo.linea}`]);
+                let contador = 1;
+                let subTeorico = 0, subFisico = 0, subDiferencia = 0;
+                grupo.items.forEach(d => {
+                    filas.push([contador++, d.codigo, d.descripcion, d.linea || 'SIN LÍNEA', d.stockTeorico, d.stockFisico, d.diferencia, d.fecha]);
+                    subTeorico += d.stockTeorico;
+                    subFisico += d.stockFisico;
+                    subDiferencia += d.diferencia;
+                });
+                filas.push(['', '', '', 'Subtotal línea', subTeorico, subFisico, subDiferencia, '']);
+                filas.push([]);
+            });
 
             const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.json_to_sheet(dataToExport);
+            const ws = XLSX.utils.aoa_to_sheet(filas);
+            ws['!cols'] = [{wch:6},{wch:10},{wch:42},{wch:24},{wch:12},{wch:12},{wch:12},{wch:18}];
             XLSX.utils.book_append_sheet(wb, ws, 'InventarioFisico');
             const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
             const blob = new Blob([wbout], { type: 'application/octet-stream' });
@@ -1330,6 +1368,7 @@
                 '#': idx + 1,
                 'Código': d.codigo,
                 'Descripción': d.descripcion,
+                'Línea': d.linea || 'SIN LÍNEA',
                 'Stock Teórico': d.stockTeorico,
                 'Stock Físico': d.stockFisico,
                 'Diferencia': d.diferencia,
@@ -1380,10 +1419,10 @@
         function aplicarTema(tema) {
             if (tema === 'light') {
                 document.body.classList.add('light-theme');
-                themeToggleBtn.textContent = '☀️ Modo día';
+                themeToggleBtn.textContent = '☀️';
             } else {
                 document.body.classList.remove('light-theme');
-                themeToggleBtn.textContent = '🌙 Modo noche';
+                themeToggleBtn.textContent = '🌙';
             }
         }
 
