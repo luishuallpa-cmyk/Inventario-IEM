@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
-    <title>Buscador de Productos - LAIVE</title>
+    <title>Buscador de Productos - IEM GROUP</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         /* ===== RESET Y ESTILOS BASE ===== */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
-            background: linear-gradient(145deg, #dce8f5 0%, #b8cce0 100%);
+            background: linear-gradient(145deg, #0b1a2e 0%, #1a2d44 100%);
             min-height: 100vh;
             padding: 0.8rem;
-            color: #1a2332;
+            color: #dce4ec;
             line-height: 1.5;
         }
         .container {
@@ -21,66 +21,71 @@
             margin: 0 auto;
         }
 
-        /* ===== ENCABEZADO CON LOGO ===== */
+        /* ===== ENCABEZADO CORREGIDO ===== */
         .header {
             display: flex;
             align-items: center;
             gap: 1rem;
             margin-bottom: 1.2rem;
-            background: rgba(255,255,255,0.85);
+            background: rgba(15, 30, 50, 0.85);
             backdrop-filter: blur(8px);
             padding: 0.6rem 1.2rem;
             border-radius: 60px;
-            box-shadow: 0 8px 32px rgba(10, 42, 92, 0.15);
-            border: 1px solid rgba(255,255,255,0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.06);
             flex-wrap: wrap;
         }
         .header .logo {
             display: flex;
             align-items: baseline;
-            gap: 0.2rem;
+            gap: 0.5rem;
             flex-wrap: wrap;
         }
-        .header .logo .laive {
+        .header .logo .iemgroup {
             font-size: 1.8rem;
             font-weight: 800;
-            color: #0a2a5c;
+            color: #b8d4f0;
             letter-spacing: -0.5px;
+            text-shadow: 0 0 20px rgba(70, 130, 200, 0.15);
         }
-        .header .logo .emgroup {
-            font-size: 0.7rem;
-            font-weight: 600;
-            color: #3a6a9a;
-            letter-spacing: 1.5px;
-            margin-left: 0.2rem;
+        .header .logo .laive {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #8aaccc;
+            letter-spacing: 1px;
+            background: rgba(70, 130, 200, 0.1);
+            padding: 0.1rem 0.8rem;
+            border-radius: 30px;
+            border: 1px solid rgba(70, 130, 200, 0.1);
         }
         .header .badge-version {
             margin-left: auto;
-            background: #e8f0fe;
-            color: #1a4b7a;
+            background: rgba(70, 130, 200, 0.15);
+            color: #8aaccc;
             padding: 0.15rem 0.8rem;
             border-radius: 30px;
             font-size: 0.65rem;
             font-weight: 600;
             white-space: nowrap;
+            border: 1px solid rgba(70, 130, 200, 0.15);
         }
 
         /* ===== TARJETAS ===== */
         .card {
-            background: rgba(255, 255, 255, 0.92);
+            background: rgba(20, 40, 65, 0.85);
             backdrop-filter: blur(4px);
             border-radius: 20px;
             padding: 1rem 1.2rem;
             margin-bottom: 1rem;
-            box-shadow: 0 8px 32px rgba(10, 42, 92, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.04);
             transition: box-shadow 0.3s;
         }
         .card:hover {
-            box-shadow: 0 12px 48px rgba(10, 42, 92, 0.12);
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.35);
         }
 
-        /* ===== BOTONES ===== */
+        /* ===== BOTONES OSCUROS ===== */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -99,77 +104,84 @@
         }
         .btn:active { transform: scale(0.96); }
         .btn-primary {
-            background: linear-gradient(135deg, #0a2a5c, #1a4b7a);
+            background: linear-gradient(135deg, #1a4b7a, #2a6a9a);
             color: white;
-            box-shadow: 0 4px 16px rgba(10,42,92,0.3);
+            box-shadow: 0 4px 16px rgba(26, 75, 122, 0.4);
         }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(10,42,92,0.4); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26, 75, 122, 0.5); }
         .btn-success {
-            background: linear-gradient(135deg, #1a7a4a, #2a9a5a);
+            background: linear-gradient(135deg, #1a6a3a, #2a8a4a);
             color: white;
-            box-shadow: 0 4px 16px rgba(26,122,74,0.3);
+            box-shadow: 0 4px 16px rgba(26, 106, 58, 0.4);
         }
-        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26,122,74,0.4); }
+        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26, 106, 58, 0.5); }
         .btn-danger {
-            background: linear-gradient(135deg, #b33c3c, #d94a4a);
+            background: linear-gradient(135deg, #8a2a2a, #aa3a3a);
             color: white;
-            box-shadow: 0 4px 16px rgba(179,60,60,0.3);
+            box-shadow: 0 4px 16px rgba(138, 42, 42, 0.4);
         }
-        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(179,60,60,0.4); }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(138, 42, 42, 0.5); }
         .btn-warning {
-            background: linear-gradient(135deg, #d98c2c, #f0a840);
+            background: linear-gradient(135deg, #b87a2a, #d08a3a);
             color: white;
-            box-shadow: 0 4px 16px rgba(217,140,44,0.3);
+            box-shadow: 0 4px 16px rgba(184, 122, 42, 0.4);
         }
-        .btn-warning:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(217,140,44,0.4); }
+        .btn-warning:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(184, 122, 42, 0.5); }
         .btn-outline {
             background: transparent;
-            border: 2px solid #b0c8e0;
-            color: #1a4b7a;
+            border: 2px solid #3a5a7a;
+            color: #aac0d4;
         }
-        .btn-outline:hover { background: #e8f0fe; border-color: #1a4b7a; }
+        .btn-outline:hover { background: rgba(58, 90, 122, 0.3); border-color: #5a8aaa; color: #dce4ec; }
         .btn-drive {
-            background: linear-gradient(135deg, #4285f4, #5a9af5);
+            background: linear-gradient(135deg, #2a5a9a, #3a7aba);
             color: white;
-            box-shadow: 0 4px 16px rgba(66,133,244,0.3);
+            box-shadow: 0 4px 16px rgba(42, 90, 154, 0.4);
         }
-        .btn-drive:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(66,133,244,0.4); }
+        .btn-drive:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(42, 90, 154, 0.5); }
         .btn-sm {
             padding: 0.2rem 0.7rem;
             min-height: 28px;
             font-size: 0.7rem;
         }
 
-        /* ===== INPUTS ===== */
+        /* ===== INPUTS OSCUROS ===== */
         .search-row input {
             flex: 1;
             min-width: 140px;
             padding: 0.6rem 1rem;
-            border: 2px solid #dce3ed;
+            border: 2px solid #2a4a6a;
             border-radius: 50px;
             font-size: 0.9rem;
             outline: none;
-            background: white;
+            background: rgba(10, 25, 45, 0.7);
+            color: #dce4ec;
             transition: 0.2s;
         }
+        .search-row input::placeholder { color: #6a8aaa; }
         .search-row input:focus {
-            border-color: #1a4b7a;
-            box-shadow: 0 0 0 4px rgba(26,75,122,0.12);
+            border-color: #4a8aba;
+            box-shadow: 0 0 0 4px rgba(74, 138, 186, 0.15);
+            background: rgba(10, 25, 45, 0.9);
         }
         .cantidad-row input {
             width: 60px;
             padding: 0.4rem;
-            border: 2px solid #dce3ed;
+            border: 2px solid #2a4a6a;
             border-radius: 8px;
             text-align: center;
             font-size: 0.9rem;
-            background: white;
+            background: rgba(10, 25, 45, 0.7);
+            color: #dce4ec;
             transition: 0.2s;
             -webkit-appearance: none;
             appearance: none;
         }
-        .cantidad-row input:disabled { background: #f0f4f9; color: #7a8fa5; }
-        .cantidad-row input:focus { border-color: #1a4b7a; box-shadow: 0 0 0 3px rgba(26,75,122,0.15); }
+        .cantidad-row input:disabled { background: rgba(30, 50, 70, 0.5); color: #5a7a8a; }
+        .cantidad-row input:focus {
+            border-color: #4a8aba;
+            box-shadow: 0 0 0 3px rgba(74, 138, 186, 0.15);
+        }
 
         /* ===== RESULTADOS ===== */
         .result-item {
@@ -177,41 +189,50 @@
             grid-template-columns: 70px 100px 1fr 70px 60px 60px;
             align-items: center;
             padding: 0.4rem 0.6rem;
-            background: #f8fafc;
+            background: rgba(15, 35, 55, 0.6);
             border-radius: 10px;
-            border: 1px solid #e8edf5;
+            border: 1px solid rgba(255, 255, 255, 0.04);
             gap: 0.2rem 0.4rem;
             cursor: pointer;
             transition: 0.15s;
             font-size: 0.8rem;
+            color: #c8d8e8;
         }
-        .result-item:hover { background: #eef4fb; border-color: #c6d6e8; }
+        .result-item:hover { background: rgba(30, 60, 90, 0.5); border-color: rgba(74, 138, 186, 0.2); }
         .result-item.selected {
-            background: #dce8f5;
-            border-color: #1a4b7a;
-            box-shadow: 0 0 0 2px rgba(26,75,122,0.2);
+            background: rgba(30, 70, 110, 0.5);
+            border-color: #4a8aba;
+            box-shadow: 0 0 0 2px rgba(74, 138, 186, 0.15);
         }
-        .result-item .codigo { font-weight: 700; color: #0b1a33; font-family: 'Courier New', monospace; }
-        .result-item .fabrica { color: #4a6a8a; font-family: 'Courier New', monospace; font-size: 0.7rem; }
-        .result-item .descripcion { color: #1e334d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .result-item .unidad { background: #d9e4f0; color: #1f3a66; padding: 0 0.4rem; border-radius: 12px; font-size: 0.6rem; font-weight: 600; text-align: center; }
-        .result-item .stock-cajas, .result-item .stock-unidades { font-weight: 700; color: #0b1a33; text-align: right; font-family: 'Courier New', monospace; font-size: 0.8rem; }
-        .result-item .stock-unidades { color: #3a5a7a; }
+        .result-item .codigo { font-weight: 700; color: #b8d4f0; font-family: 'Courier New', monospace; }
+        .result-item .fabrica { color: #7a9aba; font-family: 'Courier New', monospace; font-size: 0.7rem; }
+        .result-item .descripcion { color: #aac0d4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .result-item .unidad { background: rgba(58, 90, 122, 0.3); color: #8aaccc; padding: 0 0.4rem; border-radius: 12px; font-size: 0.6rem; font-weight: 600; text-align: center; }
+        .result-item .stock-cajas, .result-item .stock-unidades { font-weight: 700; color: #b8d4f0; text-align: right; font-family: 'Courier New', monospace; font-size: 0.8rem; }
+        .result-item .stock-unidades { color: #8aaccc; }
 
-        /* ===== TABLAS ===== */
-        .diff-table th {
-            background: #e6edf8;
-            color: #0a2a5c;
-            border-bottom: 2px solid #c6d6e8;
+        /* ===== TABLAS OSCURAS ===== */
+        .diff-table {
+            width: 100%;
+            border-collapse: collapse;
             font-size: 0.75rem;
+            color: #c8d8e8;
+        }
+        .diff-table th {
+            background: rgba(20, 50, 80, 0.5);
+            color: #8aaccc;
+            border-bottom: 2px solid rgba(74, 138, 186, 0.2);
+            font-size: 0.7rem;
             padding: 0.3rem 0.4rem;
+            font-weight: 600;
         }
         .diff-table td {
             padding: 0.3rem 0.4rem;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
         }
-        .diff-table .diff-positivo { color: #1a7a4a; font-weight: 600; }
-        .diff-table .diff-negativo { color: #b33c3c; font-weight: 600; }
+        .diff-table .diff-positivo { color: #5aba7a; font-weight: 600; }
+        .diff-table .diff-negativo { color: #da6a6a; font-weight: 600; }
 
         /* ===== MÓVIL ===== */
         @media (max-width: 640px) {
@@ -221,8 +242,8 @@
                 border-radius: 30px;
                 gap: 0.3rem;
             }
-            .header .logo .laive { font-size: 1.3rem; }
-            .header .logo .emgroup { font-size: 0.55rem; }
+            .header .logo .iemgroup { font-size: 1.3rem; }
+            .header .logo .laive { font-size: 0.7rem; padding: 0.05rem 0.6rem; }
             .header .badge-version { font-size: 0.5rem; padding: 0.1rem 0.5rem; }
             .card { padding: 0.6rem 0.8rem; border-radius: 16px; margin-bottom: 0.6rem; }
 
@@ -247,20 +268,20 @@
                 padding: 0.5rem 0.6rem;
                 border-radius: 12px;
                 gap: 0.1rem;
-                background: #ffffff;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+                background: rgba(15, 35, 55, 0.6);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
                 margin-bottom: 0.3rem;
                 font-size: 0.75rem;
             }
             .result-item .row1 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.5rem; }
-            .result-item .row1 .codigo { font-size: 0.95rem; font-weight: 700; }
-            .result-item .row1 .fabrica { font-size: 0.75rem; }
-            .result-item .row1 .unidad { font-size: 0.6rem; padding: 0.05rem 0.4rem; }
+            .result-item .row1 .codigo { font-size: 0.95rem; font-weight: 700; color: #b8d4f0; }
+            .result-item .row1 .fabrica { font-size: 0.75rem; color: #7a9aba; }
+            .result-item .row1 .unidad { font-size: 0.6rem; padding: 0.05rem 0.4rem; background: rgba(58, 90, 122, 0.3); border-radius: 12px; color: #8aaccc; }
             .result-item .row2 { display: flex; flex-wrap: wrap; flex-direction: column; align-items: flex-start; gap: 0.2rem; width: 100%; }
-            .result-item .row2 .descripcion { font-size: 0.85rem; white-space: normal; word-break: break-word; line-height: 1.3; }
-            .result-item .row2 .stock { display: flex; gap: 0.5rem; font-size: 0.8rem; font-weight: 700; background: #eef4fa; padding: 0.1rem 0.6rem; border-radius: 30px; align-self: flex-start; }
-            .result-item .row2 .stock .cajas { color: #0b1a33; }
-            .result-item .row2 .stock .unidades { color: #1a4b7a; }
+            .result-item .row2 .descripcion { font-size: 0.85rem; white-space: normal; word-break: break-word; line-height: 1.3; color: #aac0d4; }
+            .result-item .row2 .stock { display: flex; gap: 0.5rem; font-size: 0.8rem; font-weight: 700; background: rgba(20, 50, 80, 0.4); padding: 0.1rem 0.6rem; border-radius: 30px; align-self: flex-start; }
+            .result-item .row2 .stock .cajas { color: #b8d4f0; }
+            .result-item .row2 .stock .unidades { color: #8aaccc; }
             .result-item .codigo, .result-item .fabrica, .result-item .unidad,
             .result-item .stock-cajas, .result-item .stock-unidades,
             .result-item .descripcion { display: none; }
@@ -275,6 +296,7 @@
                 gap: 0.4rem;
                 margin-top: 0.5rem;
                 padding-top: 0.5rem;
+                border-top: 1px solid rgba(255,255,255,0.05);
             }
             .cantidad-row .group { justify-content: space-between; }
             .cantidad-row input { width: 55px; font-size: 0.8rem; padding: 0.3rem; }
@@ -286,35 +308,48 @@
                 align-items: stretch;
                 gap: 0.3rem;
             }
-            .section-title h2 { font-size: 1rem; }
+            .section-title h2 { font-size: 1rem; color: #b8d4f0; }
             .section-title > div { margin-left: 0 !important; justify-content: center; flex-wrap: wrap; }
 
             .diff-table-wrap { font-size: 0.65rem; }
             .diff-table th, .diff-table td { padding: 0.15rem 0.2rem; font-size: 0.6rem; }
 
-            .diff-totales { font-size: 0.75rem; gap: 0.5rem; flex-direction: column; }
-            .empty-message { font-size: 0.8rem; padding: 1rem; }
+            .diff-totales { font-size: 0.75rem; gap: 0.5rem; flex-direction: column; color: #aac0d4; }
+            .empty-message { font-size: 0.8rem; padding: 1rem; color: #6a8aaa; }
         }
 
-        /* ===== AJUSTES PARA PANTALLAS MUY PEQUEÑAS ===== */
         @media (max-width: 400px) {
-            .header .logo .laive { font-size: 1.1rem; }
-            .header .logo .emgroup { font-size: 0.45rem; }
+            .header .logo .iemgroup { font-size: 1.1rem; }
+            .header .logo .laive { font-size: 0.6rem; }
             .btn { font-size: 0.6rem; padding: 0.3rem 0.5rem; min-height: 28px; }
             .search-row input { font-size: 0.7rem; padding: 0.4rem 0.6rem; min-width: 80px; }
             .result-item .row1 .codigo { font-size: 0.85rem; }
             .result-item .row2 .descripcion { font-size: 0.75rem; }
         }
+
+        /* ===== COLORES DE TEXTO GENERALES ===== */
+        .status-label { color: #8aaccc; }
+        .status-value { color: #aac0d4; background: rgba(20, 50, 80, 0.3); padding: 0.1rem 0.5rem; border-radius: 20px; font-size: 0.7rem; }
+        .badge { background: rgba(58, 90, 122, 0.3); color: #8aaccc; padding: 0.05rem 0.5rem; border-radius: 30px; font-size: 0.6rem; font-weight: 600; }
+        .info-text { font-size: 0.7rem; color: #7a9aba; background: rgba(20, 50, 80, 0.3); padding: 0.1rem 0.5rem; border-radius: 30px; display: inline-flex; align-items: center; gap: 0.2rem; }
+        .count { color: #b8d4f0; }
+        .count span { background: rgba(58, 90, 122, 0.3); color: #8aaccc; padding: 0.05rem 0.5rem; border-radius: 30px; font-size: 0.75rem; }
+        .stats { color: #8aaccc; }
+        .stats .label { color: #6a8aaa; }
+        h2 { color: #b8d4f0; }
+        .file-row label { background: rgba(20, 50, 80, 0.3); color: #aac0d4; padding: 0.3rem 0.8rem; border-radius: 40px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; }
+        .file-row label:hover { background: rgba(30, 60, 90, 0.4); }
+        .file-row .status { color: #6a8aaa; }
     </style>
 </head>
 <body>
 <div class="container">
 
-    <!-- ===== ENCABEZADO CORPORATIVO ===== -->
+    <!-- ===== ENCABEZADO CORREGIDO ===== -->
     <div class="header">
         <div class="logo">
+            <span class="iemgroup">IEM GROUP</span>
             <span class="laive">LAIVE</span>
-            <span class="emgroup">EMGROUP</span>
         </div>
         <div class="badge-version">v2.0</div>
     </div>
@@ -327,18 +362,18 @@
             <button class="btn btn-success" id="refreshDriveBtn">🔄 Actualizar</button>
         </div>
         <div class="file-row" style="display:flex; flex-wrap:wrap; align-items:center; gap:0.3rem; margin-top:0.5rem; font-size:0.8rem;">
-            <label for="fileInput" style="background:#e6edf8; padding:0.3rem 0.8rem; border-radius:40px; cursor:pointer; font-weight:500; display:flex; align-items:center; gap:0.3rem; font-size:0.75rem;">📂 Cargar</label>
+            <label for="fileInput">📂 Cargar</label>
             <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none;">
             <button class="btn btn-outline btn-sm" id="loadTextBtn">📄 Texto</button>
             <button class="btn btn-outline btn-sm" id="resetBtn">🔄 Ejemplo</button>
-            <span class="status" id="fileStatus" style="color:#3a5375; margin-left:auto; font-size:0.7rem; text-align:right;">(cargando...)</span>
+            <span class="status" id="fileStatus" style="color:#6a8aaa; margin-left:auto; font-size:0.7rem; text-align:right;">(cargando...)</span>
         </div>
         <div class="textarea-wrapper" style="margin-top:0.3rem;">
-            <textarea id="csvTextArea" rows="2" placeholder="Pega aquí CSV (con cabecera)" style="width:100%; padding:0.4rem; border-radius:10px; border:1px solid #dce3ed; display:none; font-family:monospace; font-size:0.7rem;"></textarea>
+            <textarea id="csvTextArea" rows="2" placeholder="Pega aquí CSV (con cabecera)" style="width:100%; padding:0.4rem; border-radius:10px; border:1px solid #2a4a6a; background:rgba(10,25,45,0.5); color:#dce4ec; display:none; font-family:monospace; font-size:0.7rem;"></textarea>
         </div>
-        <div class="persist-row" style="display:flex; flex-wrap:wrap; gap:0.4rem; margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid #e3eaf2; align-items:center; font-size:0.75rem;">
-            <span class="status-label" style="font-weight:600; color:#1f3a66;">📌 Datos:</span>
-            <span class="status-value" id="persistStatus" style="color:#3a5a7a; background:#eef4fa; padding:0.1rem 0.5rem; border-radius:20px; font-size:0.7rem;">ninguno</span>
+        <div class="persist-row" style="display:flex; flex-wrap:wrap; gap:0.4rem; margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid rgba(255,255,255,0.05); align-items:center; font-size:0.75rem;">
+            <span class="status-label">📌 Datos:</span>
+            <span class="status-value" id="persistStatus">ninguno</span>
             <button class="btn btn-outline btn-sm" id="saveDataBtn">💾 Guardar</button>
             <button class="btn btn-outline btn-sm" id="loadDataBtn">📂 Cargar</button>
             <button class="btn btn-danger btn-sm" id="clearDataBtn">🗑️ Borrar</button>
@@ -348,27 +383,27 @@
     <!-- ===== CARD: RESULTADOS Y CANTIDADES ===== -->
     <div class="card">
         <div class="results-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.2rem; margin-bottom:0.5rem;">
-            <div class="count" style="font-weight:700; font-size:0.95rem;">📋 Resultados <span id="resultCount" style="background:#dce5f2; padding:0.05rem 0.5rem; border-radius:30px; font-size:0.75rem; color:#1f3a66;">0</span></div>
-            <div class="stats" style="display:flex; gap:1rem; font-size:0.8rem; color:#2b4a6e;">
-                <span><span class="label" style="font-weight:500; color:#5f7a9a;">📦 Cajas:</span> <span id="cajasCount">0</span></span>
-                <span><span class="label" style="font-weight:500; color:#5f7a9a;">🧩 Unidades:</span> <span id="unidadesCount">0</span></span>
+            <div class="count">📋 Resultados <span id="resultCount">0</span></div>
+            <div class="stats">
+                <span><span class="label">📦 Cajas:</span> <span id="cajasCount">0</span></span>
+                <span><span class="label">🧩 Unidades:</span> <span id="unidadesCount">0</span></span>
             </div>
         </div>
         <div id="resultList" class="result-list" style="display:flex; flex-direction:column; gap:0.3rem; max-height:400px; overflow-y:auto; padding-right:0.2rem;">
-            <div class="empty-message" style="text-align:center; color:#8a9fb0; padding:1.5rem; font-size:0.9rem;">🔎 Escribe algo para buscar.</div>
+            <div class="empty-message">🔎 Escribe algo para buscar.</div>
         </div>
 
         <!-- ===== CANTIDADES ===== -->
-        <div class="cantidad-row" style="display:flex; flex-wrap:wrap; align-items:center; gap:0.4rem 1rem; margin-top:0.6rem; padding-top:0.6rem; border-top:1px solid #e3eaf2;">
+        <div class="cantidad-row" style="display:flex; flex-wrap:wrap; align-items:center; gap:0.4rem 1rem; margin-top:0.6rem; padding-top:0.6rem; border-top:1px solid rgba(255,255,255,0.05);">
             <div class="group" style="display:flex; align-items:center; gap:0.3rem; flex-wrap:wrap;">
-                <label for="txtCajas" style="font-weight:500; color:#1f3a66; font-size:0.8rem;">📦 Cajas:</label>
+                <label for="txtCajas" style="font-weight:500; color:#8aaccc; font-size:0.8rem;">📦 Cajas:</label>
                 <input type="number" id="txtCajas" value="0" min="0" disabled>
             </div>
             <div class="group" style="display:flex; align-items:center; gap:0.3rem; flex-wrap:wrap;">
-                <label for="txtUnidades" style="font-weight:500; color:#1f3a66; font-size:0.8rem;">🧩 Unidades:</label>
+                <label for="txtUnidades" style="font-weight:500; color:#8aaccc; font-size:0.8rem;">🧩 Unidades:</label>
                 <input type="number" id="txtUnidades" value="0" min="0">
             </div>
-            <div class="info-text" id="infoFactor" style="font-size:0.7rem; color:#5a7a9a; background:#eef4fa; padding:0.1rem 0.5rem; border-radius:30px; display:inline-flex; align-items:center; gap:0.2rem;">Factor: 1</div>
+            <div class="info-text" id="infoFactor">Factor: 1</div>
             <div class="acciones" style="display:flex; gap:0.3rem; flex-wrap:wrap; margin-left:auto;">
                 <button class="btn btn-success" id="btnAgregar">➕ Pedido</button>
                 <button class="btn btn-warning" id="btnRegistrarDiff">📝 Diferencia</button>
@@ -378,37 +413,37 @@
 
     <!-- ===== CARD: PEDIDO ACTUAL ===== -->
     <div class="card">
-        <div class="section-title" style="display:flex; align-items:center; gap:0.3rem; border-bottom:2px solid #eef2f7; padding-bottom:0.4rem; margin-bottom:0.6rem; flex-wrap:wrap;">
-            <h2 style="font-size:1rem; font-weight:600; color:#1a2a44; margin:0;">📦 Pedido actual</h2>
-            <span class="badge" id="pedidoCount" style="background:#dce5f2; padding:0.05rem 0.5rem; border-radius:30px; font-size:0.6rem; font-weight:600; color:#1f3a66;">0 productos</span>
+        <div class="section-title" style="display:flex; align-items:center; gap:0.3rem; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:0.4rem; margin-bottom:0.6rem; flex-wrap:wrap;">
+            <h2>📦 Pedido actual</h2>
+            <span class="badge" id="pedidoCount">0 productos</span>
             <div style="margin-left:auto; display:flex; gap:0.4rem; font-size:0.75rem; flex-wrap:wrap;">
-                <span>📦 Cajas: <strong id="totalCajasPedido">0</strong></span>
-                <span>🧩 Unidades: <strong id="totalUnidadesPedido">0</strong></span>
+                <span style="color:#8aaccc;">📦 Cajas: <strong id="totalCajasPedido" style="color:#b8d4f0;">0</strong></span>
+                <span style="color:#8aaccc;">🧩 Unidades: <strong id="totalUnidadesPedido" style="color:#b8d4f0;">0</strong></span>
                 <button class="btn btn-success btn-sm" id="exportPedidoBtn">📥 Excel</button>
                 <button class="btn btn-drive btn-sm" id="guardarPedidoDriveBtn">☁️ Drive</button>
                 <button class="btn btn-danger btn-sm" id="limpiarPedidoBtn">🗑️</button>
             </div>
         </div>
         <div id="pedidoContainer">
-            <table class="diff-table" id="pedidoTable" style="width:100%; border-collapse:collapse; font-size:0.75rem;">
+            <table class="diff-table" id="pedidoTable">
                 <thead><tr>
-                    <th style="background:#e6edf8; padding:0.2rem 0.3rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">#</th>
-                    <th style="background:#e6edf8; padding:0.2rem 0.3rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Código</th>
-                    <th style="background:#e6edf8; padding:0.2rem 0.3rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Cód. Fábrica</th>
-                    <th style="background:#e6edf8; padding:0.2rem 0.3rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Descripción</th>
-                    <th style="background:#e6edf8; padding:0.2rem 0.3rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Unidad</th>
-                    <th style="background:#e6edf8; padding:0.2rem 0.3rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Cajas</th>
-                    <th style="background:#e6edf8; padding:0.2rem 0.3rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Unidades</th>
-                    <th style="background:#e6edf8; padding:0.2rem 0.3rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Acción</th>
+                    <th>#</th>
+                    <th>Código</th>
+                    <th>Cód. Fábrica</th>
+                    <th>Descripción</th>
+                    <th>Unidad</th>
+                    <th>Cajas</th>
+                    <th>Unidades</th>
+                    <th>Acción</th>
                 </tr></thead>
                 <tbody id="pedidoBody">
-                    <tr><td colspan="8" class="empty-message" style="text-align:center; color:#8a9fb0; padding:1rem; font-size:0.8rem;">No hay productos en el pedido.</td></tr>
+                    <tr><td colspan="8" class="empty-message">No hay productos en el pedido.</td></tr>
                 </tbody>
                 <tfoot id="pedidoFoot" style="display:none;">
-                    <tr style="font-weight:600; background:#f4f8fc;">
+                    <tr style="font-weight:600; background:rgba(20,50,80,0.3);">
                         <td colspan="5" style="text-align:right;">Totales</td>
-                        <td id="totalCajasFoot">0</td>
-                        <td id="totalUnidadesFoot">0</td>
+                        <td id="totalCajasFoot" style="color:#b8d4f0;">0</td>
+                        <td id="totalUnidadesFoot" style="color:#b8d4f0;">0</td>
                         <td></td>
                     </tr>
                 </tfoot>
@@ -418,9 +453,9 @@
 
     <!-- ===== CARD: DIFERENCIAS ===== -->
     <div class="card" id="diffSection">
-        <div class="section-title" style="display:flex; align-items:center; gap:0.3rem; border-bottom:2px solid #eef2f7; padding-bottom:0.4rem; margin-bottom:0.6rem; flex-wrap:wrap;">
-            <h2 style="font-size:1rem; font-weight:600; color:#1a2a44; margin:0;">📊 Diferencias</h2>
-            <span class="badge" id="diffCount" style="background:#dce5f2; padding:0.05rem 0.5rem; border-radius:30px; font-size:0.6rem; font-weight:600; color:#1f3a66;">0 registros</span>
+        <div class="section-title" style="display:flex; align-items:center; gap:0.3rem; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:0.4rem; margin-bottom:0.6rem; flex-wrap:wrap;">
+            <h2>📊 Diferencias</h2>
+            <span class="badge" id="diffCount">0 registros</span>
             <div style="margin-left:auto; display:flex; gap:0.3rem; flex-wrap:wrap;">
                 <button class="btn btn-success btn-sm" id="exportDiffBtn">📥 Excel</button>
                 <button class="btn btn-drive btn-sm" id="guardarDriveBtn">☁️ Drive</button>
@@ -428,35 +463,35 @@
             </div>
         </div>
         <div class="diff-table-wrap" style="margin-top:0.5rem; overflow-x:auto;">
-            <table class="diff-table" id="diffTable" style="width:100%; border-collapse:collapse; font-size:0.7rem;">
+            <table class="diff-table" id="diffTable">
                 <thead><tr>
-                    <th style="background:#e6edf8; padding:0.2rem 0.3rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">#</th>
-                    <th style="background:#e6edf8; padding:0.2rem 0.3rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Código</th>
-                    <th style="background:#e6edf8; padding:0.2rem 0.3rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Descripción</th>
-                    <th style="background:#e6edf8; padding:0.2rem 0.3rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Teórico</th>
-                    <th style="background:#e6edf8; padding:0.2rem 0.3rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Físico</th>
-                    <th style="background:#e6edf8; padding:0.2rem 0.3rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Diferencia</th>
-                    <th style="background:#e6edf8; padding:0.2rem 0.3rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Fecha/Hora</th>
-                    <th style="background:#e6edf8; padding:0.2rem 0.3rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Acción</th>
+                    <th>#</th>
+                    <th>Código</th>
+                    <th>Descripción</th>
+                    <th>Teórico</th>
+                    <th>Físico</th>
+                    <th>Diferencia</th>
+                    <th>Fecha/Hora</th>
+                    <th>Acción</th>
                 </tr></thead>
                 <tbody id="diffBody">
-                    <tr><td colspan="8" class="empty-message" style="text-align:center; color:#8a9fb0; padding:1rem; font-size:0.8rem;">No hay diferencias registradas.</td></tr>
+                    <tr><td colspan="8" class="empty-message">No hay diferencias registradas.</td></tr>
                 </tbody>
                 <tfoot id="diffFoot" style="display:none;">
-                    <tr style="font-weight:600; background:#f4f8fc;">
+                    <tr style="font-weight:600; background:rgba(20,50,80,0.3);">
                         <td colspan="3" style="text-align:right;">Totales</td>
-                        <td id="diffTotalTeorico">0</td>
-                        <td id="diffTotalFisico">0</td>
-                        <td id="diffTotalDiferencia">0</td>
+                        <td id="diffTotalTeorico" style="color:#b8d4f0;">0</td>
+                        <td id="diffTotalFisico" style="color:#b8d4f0;">0</td>
+                        <td id="diffTotalDiferencia" style="color:#b8d4f0;">0</td>
                         <td></td><td></td>
                     </tr>
                 </tfoot>
             </table>
         </div>
-        <div class="diff-totales" id="diffResumen" style="display:none; gap:0.8rem; margin-top:0.3rem; font-weight:600; color:#1a2a44; flex-wrap:wrap; font-size:0.75rem;">
-            <span>📦 Teórico total: <strong id="resTeorico">0</strong></span>
-            <span>🔎 Físico total: <strong id="resFisico">0</strong></span>
-            <span>📊 Diferencia total: <strong id="resDiferencia">0</strong></span>
+        <div class="diff-totales" id="diffResumen" style="display:none; gap:0.8rem; margin-top:0.3rem; font-weight:600; flex-wrap:wrap; font-size:0.75rem;">
+            <span>📦 Teórico total: <strong id="resTeorico" style="color:#b8d4f0;">0</strong></span>
+            <span>🔎 Físico total: <strong id="resFisico" style="color:#b8d4f0;">0</strong></span>
+            <span>📊 Diferencia total: <strong id="resDiferencia" style="color:#b8d4f0;">0</strong></span>
         </div>
     </div>
 </div>
@@ -595,7 +630,7 @@
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
                 persistStatus.textContent = `guardado local (${data.length} registros)`;
-                persistStatus.style.color = '#1a7a4a';
+                persistStatus.style.color = '#5aba7a';
             } catch (e) {}
         }
         function loadFromStorage() {
@@ -608,16 +643,16 @@
         function clearStorage() {
             localStorage.removeItem(STORAGE_KEY);
             persistStatus.textContent = 'ninguno';
-            persistStatus.style.color = '#3a5375';
+            persistStatus.style.color = '#6a8aaa';
         }
         function checkStorage() {
             const data = loadFromStorage();
             if (data && data.length > 0) {
                 persistStatus.textContent = `guardado local (${data.length} registros)`;
-                persistStatus.style.color = '#1a7a4a';
+                persistStatus.style.color = '#5aba7a';
             } else {
                 persistStatus.textContent = 'ninguno';
-                persistStatus.style.color = '#3a5375';
+                persistStatus.style.color = '#6a8aaa';
             }
         }
 
@@ -739,7 +774,7 @@
 
         function renderResults(items) {
             if (!items || items.length === 0) {
-                resultList.innerHTML = `<div class="empty-message" style="text-align:center; color:#8a9fb0; padding:1.5rem; font-size:0.9rem;">🔎 No se encontraron productos</div>`;
+                resultList.innerHTML = `<div class="empty-message">🔎 No se encontraron productos</div>`;
                 resultCount.textContent = '0';
                 cajasCount.textContent = '0';
                 unidadesCount.textContent = '0';
@@ -819,14 +854,14 @@
 
             if (factor === 1) {
                 txtCajas.disabled = true;
-                txtCajas.style.background = '#f0f4f9';
+                txtCajas.style.background = 'rgba(30,50,70,0.4)';
                 txtUnidades.disabled = false;
-                txtUnidades.style.background = 'white';
+                txtUnidades.style.background = 'rgba(10,25,45,0.7)';
             } else {
                 txtCajas.disabled = false;
-                txtCajas.style.background = 'white';
+                txtCajas.style.background = 'rgba(10,25,45,0.7)';
                 txtUnidades.disabled = false;
-                txtUnidades.style.background = 'white';
+                txtUnidades.style.background = 'rgba(10,25,45,0.7)';
             }
 
             const cantidad = getCantidad(item);
@@ -842,9 +877,9 @@
             currentFactor = 1;
             infoFactor.textContent = 'Factor: 1';
             txtCajas.disabled = true;
-            txtCajas.style.background = '#f0f4f9';
+            txtCajas.style.background = 'rgba(30,50,70,0.4)';
             txtUnidades.disabled = false;
-            txtUnidades.style.background = 'white';
+            txtUnidades.style.background = 'rgba(10,25,45,0.7)';
             cajasCount.textContent = '0';
             unidadesCount.textContent = '0';
         }
@@ -957,7 +992,7 @@
 
         function renderPedido() {
             if (pedido.length === 0) {
-                pedidoBody.innerHTML = `<tr><td colspan="8" class="empty-message" style="text-align:center; color:#8a9fb0; padding:1rem; font-size:0.8rem;">No hay productos en el pedido.</td></tr>`;
+                pedidoBody.innerHTML = `<tr><td colspan="8" class="empty-message">No hay productos en el pedido.</td></tr>`;
                 pedidoFoot.style.display = 'none';
                 totalCajasPedido.textContent = '0';
                 totalUnidadesPedido.textContent = '0';
@@ -972,13 +1007,13 @@
                 totalUnidades += p.unidades;
                 html += `<tr>
                     <td>${idx + 1}</td>
-                    <td class="codigo-cell" style="font-family:monospace; font-weight:600;">${p.codigo}</td>
-                    <td>${p.codigoFabrica}</td>
-                    <td>${p.descripcion}</td>
-                    <td>${p.unidad}</td>
-                    <td class="cantidad-cell" style="text-align:center;">${p.cajas}</td>
-                    <td class="cantidad-cell" style="text-align:center;">${p.unidades}</td>
-                    <td class="acciones-cell" style="text-align:center;"><button class="eliminar-fila" data-codigo="${p.codigo}" style="background:none; border:none; color:#b33c3c; cursor:pointer; font-size:1rem; padding:0.1rem 0.3rem;">✕</button></td>
+                    <td class="codigo-cell" style="font-family:monospace; font-weight:600; color:#b8d4f0;">${p.codigo}</td>
+                    <td style="color:#8aaccc;">${p.codigoFabrica}</td>
+                    <td style="color:#aac0d4;">${p.descripcion}</td>
+                    <td style="color:#8aaccc;">${p.unidad}</td>
+                    <td class="cantidad-cell" style="text-align:center; color:#b8d4f0;">${p.cajas}</td>
+                    <td class="cantidad-cell" style="text-align:center; color:#b8d4f0;">${p.unidades}</td>
+                    <td class="acciones-cell" style="text-align:center;"><button class="eliminar-fila" data-codigo="${p.codigo}" style="background:none; border:none; color:#da6a6a; cursor:pointer; font-size:1rem; padding:0.1rem 0.3rem;">✕</button></td>
                 </tr>`;
             });
 
@@ -1140,7 +1175,7 @@
         // ============================================================
         function renderDiferencias() {
             if (diferencias.length === 0) {
-                diffBody.innerHTML = `<tr><td colspan="8" class="empty-message" style="text-align:center; color:#8a9fb0; padding:1rem; font-size:0.8rem;">No hay diferencias registradas.</td></tr>`;
+                diffBody.innerHTML = `<tr><td colspan="8" class="empty-message">No hay diferencias registradas.</td></tr>`;
                 diffFoot.style.display = 'none';
                 diffResumen.style.display = 'none';
                 diffCount.textContent = '0 registros';
@@ -1156,13 +1191,13 @@
                 const claseDiff = d.diferencia >= 0 ? 'diff-positivo' : 'diff-negativo';
                 html += `<tr>
                     <td>${idx + 1}</td>
-                    <td>${d.codigo}</td>
-                    <td>${d.descripcion}</td>
-                    <td>${d.stockTeorico}</td>
-                    <td>${d.stockFisico}</td>
-                    <td class="${claseDiff}" style="${d.diferencia >= 0 ? 'color:#1a7a4a;' : 'color:#b33c3c;'} font-weight:600;">${d.diferencia}</td>
-                    <td>${d.fecha}</td>
-                    <td class="acciones-cell" style="text-align:center;"><button class="eliminar-diff" data-index="${idx}" style="background:none; border:none; color:#b33c3c; cursor:pointer; font-size:1rem; padding:0.1rem 0.3rem;">✕</button></td>
+                    <td style="color:#b8d4f0; font-weight:600;">${d.codigo}</td>
+                    <td style="color:#aac0d4;">${d.descripcion}</td>
+                    <td style="color:#b8d4f0;">${d.stockTeorico}</td>
+                    <td style="color:#b8d4f0;">${d.stockFisico}</td>
+                    <td class="${claseDiff}" style="${d.diferencia >= 0 ? 'color:#5aba7a;' : 'color:#da6a6a;'} font-weight:600;">${d.diferencia}</td>
+                    <td style="color:#8aaccc;">${d.fecha}</td>
+                    <td class="acciones-cell" style="text-align:center;"><button class="eliminar-diff" data-index="${idx}" style="background:none; border:none; color:#da6a6a; cursor:pointer; font-size:1rem; padding:0.1rem 0.3rem;">✕</button></td>
                 </tr>`;
             });
 
