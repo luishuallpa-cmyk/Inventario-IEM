@@ -3,42 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
-    <title>Buscador de Productos</title>
+    <title>Buscador de Productos - Control de Inventario</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
-            background: #f4f7fc;
-            padding: 0.8rem;
-            color: #1e293b;
-            -webkit-tap-highlight-color: transparent;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            background: #f0f4f9;
+            padding: 1rem;
+            color: #1a2332;
+            line-height: 1.6;
         }
-        .container { max-width: 1100px; margin: 0 auto; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 1.5rem 1.8rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.02);
+            border: 1px solid #e9edf4;
+            transition: box-shadow 0.2s;
+        }
+        .card:hover { box-shadow: 0 12px 40px rgba(0,20,50,0.06); }
         h1 {
-            font-size: 1.4rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #0b1a33;
             display: flex;
             align-items: center;
-            gap: 0.4rem;
+            gap: 0.6rem;
             flex-wrap: wrap;
+            margin-bottom: 1rem;
         }
         h1 small {
-            font-size: 0.7rem;
+            font-size: 0.8rem;
             font-weight: 400;
-            color: #64748b;
-            background: #e9eef3;
-            padding: 0.15rem 0.6rem;
+            background: #e6edf8;
+            color: #2c4b7a;
+            padding: 0.2rem 1rem;
             border-radius: 30px;
         }
-        .card {
-            background: white;
-            border-radius: 14px;
-            padding: 1rem 1.2rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-            border: 1px solid #eef2f6;
+        h2 { font-size: 1.2rem; font-weight: 600; color: #1a2a44; margin-bottom: 0.5rem; }
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-bottom: 2px solid #eef2f7;
+            padding-bottom: 0.6rem;
             margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        .section-title span {
+            background: #dce5f2;
+            padding: 0.2rem 0.8rem;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #1f3a66;
         }
         .search-row {
             display: flex;
@@ -48,176 +69,128 @@
         }
         .search-row input {
             flex: 1;
-            min-width: 140px;
-            padding: 0.8rem 1rem;
-            border: 1px solid #e2e8f0;
-            border-radius: 40px;
+            min-width: 180px;
+            padding: 0.8rem 1.2rem;
+            border: 2px solid #dce3ed;
+            border-radius: 50px;
             font-size: 1rem;
             outline: none;
-            background: #f1f5f9;
+            background: #f7fafd;
             transition: 0.2s;
-            -webkit-appearance: none;
-            appearance: none;
         }
         .search-row input:focus {
-            background: white;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+            border-color: #2b6c9e;
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(43,108,158,0.12);
         }
-        .search-row button {
-            background: #3b82f6;
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            padding: 0.7rem 1.5rem;
             border: none;
-            color: white;
+            border-radius: 50px;
             font-weight: 600;
-            padding: 0.8rem 1.5rem;
-            border-radius: 40px;
+            font-size: 0.95rem;
             cursor: pointer;
-            font-size: 1rem;
             transition: 0.15s;
             touch-action: manipulation;
             min-height: 48px;
+            white-space: nowrap;
         }
-        .search-row button:active { transform: scale(0.96); }
+        .btn:active { transform: scale(0.96); }
+        .btn-primary { background: #1f4b7a; color: white; }
+        .btn-primary:hover { background: #163a5e; }
+        .btn-success { background: #1e7b4a; color: white; }
+        .btn-success:hover { background: #14633a; }
+        .btn-danger { background: #b33c3c; color: white; }
+        .btn-danger:hover { background: #942e2e; }
+        .btn-warning { background: #d98c2c; color: white; }
+        .btn-warning:hover { background: #b9751f; }
+        .btn-outline { background: transparent; border: 2px solid #cbd5e1; color: #1f3a66; }
+        .btn-outline:hover { background: #eef3f9; }
+        .btn-sm { padding: 0.3rem 0.9rem; min-height: 32px; font-size: 0.8rem; }
+        .btn-drive { background: #4285f4; color: white; }
+        .btn-drive:hover { background: #3367d6; }
 
         .file-row {
             display: flex;
             flex-wrap: wrap;
             align-items: center;
             gap: 0.5rem;
-            margin-top: 0.5rem;
-            font-size: 0.85rem;
+            margin-top: 0.8rem;
+            font-size: 0.9rem;
         }
         .file-row label {
-            background: #e2e8f0;
-            padding: 0.4rem 1rem;
+            background: #e6edf8;
+            padding: 0.4rem 1.2rem;
             border-radius: 40px;
             cursor: pointer;
             font-weight: 500;
-            transition: 0.15s;
-            touch-action: manipulation;
-            min-height: 40px;
             display: flex;
             align-items: center;
+            gap: 0.4rem;
         }
-        .file-row label:active { transform: scale(0.96); }
         .file-row input[type="file"] { display: none; }
-        .file-row .btn {
-            background: #e2e8f0;
-            border: none;
-            padding: 0.4rem 1rem;
-            border-radius: 40px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: 0.15s;
-            touch-action: manipulation;
-            min-height: 40px;
+        .file-row .status { color: #3a5375; margin-left: auto; font-size: 0.85rem; text-align: right; }
+        .persist-row {
             display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            margin-top: 0.8rem;
+            padding-top: 0.8rem;
+            border-top: 1px solid #e3eaf2;
             align-items: center;
             font-size: 0.85rem;
         }
-        .file-row .btn:active { transform: scale(0.96); }
-        .file-row .btn-primary {
-            background: #3b82f6;
-            color: white;
-        }
-        .file-row .btn-secondary:active { background: #cbd5e1; }
-        .file-row .status {
-            color: #475569;
-            margin-left: auto;
-            font-size: 0.8rem;
-            text-align: right;
-        }
+        .persist-row .status-label { font-weight: 600; color: #1f3a66; }
+        .persist-row .status-value { color: #3a5a7a; background: #eef4fa; padding: 0.2rem 0.8rem; border-radius: 20px; }
 
         .results-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 0.5rem;
-            padding-bottom: 0.3rem;
-            border-bottom: 1px solid #e2e8f0;
             flex-wrap: wrap;
-            gap: 0.3rem;
+            gap: 0.4rem;
+            margin-bottom: 0.8rem;
         }
-        .results-header .count {
-            font-weight: 600;
-            font-size: 0.95rem;
-        }
-        .results-header .count span {
-            background: #dbeafe;
-            padding: 0.1rem 0.6rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            color: #1e4f8a;
-        }
-        .results-header .stats {
-            display: flex;
-            gap: 1rem;
-            font-size: 0.85rem;
-            color: #475569;
-        }
-        .results-header .stats .label { font-weight: 500; }
+        .results-header .count { font-weight: 700; font-size: 1.1rem; }
+        .results-header .count span { background: #dce5f2; padding: 0.1rem 0.8rem; border-radius: 30px; font-size: 0.85rem; color: #1f3a66; }
+        .results-header .stats { display: flex; gap: 1.5rem; font-size: 0.95rem; color: #2b4a6e; }
+        .results-header .stats .label { font-weight: 500; color: #5f7a9a; }
 
         .result-list {
             display: flex;
             flex-direction: column;
-            gap: 0.4rem;
-            max-height: 400px;
+            gap: 0.5rem;
+            max-height: 460px;
             overflow-y: auto;
-            padding-right: 0.2rem;
+            padding-right: 0.3rem;
         }
-
         .result-item {
             display: grid;
             grid-template-columns: 70px 100px 1fr 70px 60px 60px;
             align-items: center;
-            padding: 0.3rem 0.6rem;
+            padding: 0.5rem 0.8rem;
             background: #f8fafc;
-            border-radius: 8px;
-            border: 1px solid #eef2f6;
-            font-size: 0.9rem;
-            gap: 0.3rem 0.5rem;
-            cursor: pointer;
-            transition: 0.1s;
-        }
-        .result-item:hover { background: #eef2f6; }
-        .result-item.selected {
-            background: #dbeafe;
-            border-color: #3b82f6;
-        }
-        .result-item .codigo {
-            font-weight: 600;
-            color: #0f172a;
-            font-family: monospace;
-        }
-        .result-item .fabrica {
-            color: #475569;
-            font-family: monospace;
-            font-size: 0.85rem;
-        }
-        .result-item .descripcion {
-            color: #334155;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .result-item .unidad {
-            background: #e6f0fa;
-            color: #1a4b7a;
-            padding: 0 0.4rem;
             border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            text-align: center;
+            border: 1px solid #e8edf5;
+            gap: 0.3rem 0.6rem;
+            cursor: pointer;
+            transition: 0.15s;
+            font-size: 0.9rem;
         }
-        .result-item .stock-cajas, .result-item .stock-unidades {
-            font-weight: 600;
-            color: #0f172a;
-            text-align: right;
-            font-family: monospace;
-        }
-        .result-item .stock-unidades { color: #475569; }
+        .result-item:hover { background: #eef4fb; border-color: #c6d6e8; }
+        .result-item.selected { background: #dce8f5; border-color: #2b6c9e; box-shadow: 0 0 0 2px rgba(43,108,158,0.2); }
+        .result-item .codigo { font-weight: 700; color: #0b1a33; font-family: 'Courier New', monospace; }
+        .result-item .fabrica { color: #4a6a8a; font-family: 'Courier New', monospace; font-size: 0.8rem; }
+        .result-item .descripcion { color: #1e334d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .result-item .unidad { background: #d9e4f0; color: #1f3a66; padding: 0 0.5rem; border-radius: 12px; font-size: 0.7rem; font-weight: 600; text-align: center; }
+        .result-item .stock-cajas, .result-item .stock-unidades { font-weight: 700; color: #0b1a33; text-align: right; font-family: 'Courier New', monospace; }
+        .result-item .stock-unidades { color: #3a5a7a; }
 
-        @media (max-width: 600px) {
+        @media (max-width: 640px) {
             .result-item {
                 display: flex;
                 flex-direction: column;
@@ -225,381 +198,166 @@
                 border-radius: 16px;
                 gap: 0.2rem;
                 background: #ffffff;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.03);
                 margin-bottom: 0.5rem;
             }
-            .result-item .row1 {
-                display: flex;
-                flex-wrap: wrap;
-                align-items: baseline;
-                gap: 0.3rem 0.8rem;
-            }
-            .result-item .row1 .codigo {
-                font-size: 1.1rem;
-                font-weight: 700;
-            }
-            .result-item .row1 .fabrica {
-                font-size: 0.95rem;
-            }
-            .result-item .row1 .unidad {
-                font-size: 0.75rem;
-                padding: 0.1rem 0.6rem;
-            }
-            .result-item .row2 {
-                display: flex;
-                flex-wrap: wrap;
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.3rem;
-                width: 100%;
-            }
-            .result-item .row2 .descripcion {
-                font-size: 1rem;
-                white-space: normal;
-                word-break: break-word;
-                flex: 1;
-                min-width: 120px;
-                overflow: visible;
-                text-overflow: clip;
-                line-height: 1.4;
-            }
-            .result-item .row2 .stock {
-                display: flex;
-                gap: 0.8rem;
-                font-size: 1rem;
-                font-weight: 700;
-                white-space: nowrap;
-                background: #f1f5f9;
-                padding: 0.2rem 0.8rem;
-                border-radius: 30px;
-                align-self: flex-start;
-            }
-            .result-item .row2 .stock .cajas {
-                color: #0f172a;
-            }
-            .result-item .row2 .stock .unidades {
-                color: #2563eb;
-            }
+            .result-item .row1 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.3rem 0.8rem; }
+            .result-item .row1 .codigo { font-size: 1.1rem; font-weight: 700; }
+            .result-item .row1 .fabrica { font-size: 0.9rem; }
+            .result-item .row1 .unidad { font-size: 0.7rem; padding: 0.1rem 0.6rem; }
+            .result-item .row2 { display: flex; flex-wrap: wrap; flex-direction: column; align-items: flex-start; gap: 0.3rem; width: 100%; }
+            .result-item .row2 .descripcion { font-size: 1rem; white-space: normal; word-break: break-word; line-height: 1.4; }
+            .result-item .row2 .stock { display: flex; gap: 0.8rem; font-size: 1rem; font-weight: 700; background: #eef4fa; padding: 0.2rem 0.8rem; border-radius: 30px; align-self: flex-start; }
+            .result-item .row2 .stock .cajas { color: #0b1a33; }
+            .result-item .row2 .stock .unidades { color: #2b6c9e; }
             .result-item .codigo, .result-item .fabrica, .result-item .unidad,
             .result-item .stock-cajas, .result-item .stock-unidades,
-            .result-item .descripcion {
-                display: none;
-            }
-            .result-item .row1, .result-item .row2 {
-                display: flex !important;
-            }
-            .result-item .row1 .codigo,
-            .result-item .row1 .fabrica,
-            .result-item .row1 .unidad,
-            .result-item .row2 .descripcion,
-            .result-item .row2 .stock {
-                display: inline !important;
-            }
-            .result-list {
-                max-height: 70vh !important;
-                min-height: 300px;
-            }
+            .result-item .descripcion { display: none; }
+            .result-item .row1, .result-item .row2 { display: flex !important; }
+            .result-item .row1 .codigo, .result-item .row1 .fabrica, .result-item .row1 .unidad,
+            .result-item .row2 .descripcion, .result-item .row2 .stock { display: inline !important; }
+            .result-list { max-height: 60vh !important; min-height: 250px; }
+            .card { padding: 1rem; }
+            .search-row input { min-width: 120px; }
+            .btn { font-size: 0.85rem; padding: 0.6rem 1.2rem; }
         }
 
-        @media (max-width: 400px) {
-            .result-item .row2 {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.2rem;
-            }
-            .result-item .row2 .stock {
-                align-self: flex-start;
-            }
-        }
-
-        .empty-message {
-            text-align: center;
-            color: #94a3b8;
-            padding: 1.5rem;
-            font-size: 1rem;
-        }
+        .empty-message { text-align: center; color: #8a9fb0; padding: 2rem; font-size: 1rem; }
 
         .cantidad-row {
             display: flex;
             flex-wrap: wrap;
             align-items: center;
-            gap: 0.8rem;
-            margin-top: 0.8rem;
-            padding-top: 0.8rem;
-            border-top: 1px solid #eef2f6;
+            gap: 0.8rem 1.5rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e3eaf2;
         }
-        .cantidad-row label {
-            font-weight: 500;
-            color: #334155;
-            font-size: 0.9rem;
-        }
+        .cantidad-row .group { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+        .cantidad-row label { font-weight: 500; color: #1f3a66; font-size: 0.9rem; }
         .cantidad-row input {
-            width: 70px;
+            width: 75px;
             padding: 0.5rem;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
+            border: 2px solid #dce3ed;
+            border-radius: 10px;
             text-align: center;
             font-size: 1rem;
-            outline: none;
             background: white;
+            transition: 0.2s;
             -webkit-appearance: none;
             appearance: none;
         }
-        .cantidad-row input:disabled {
-            background: #e9edf2;
-            color: #94a3b8;
-        }
-        .cantidad-row input:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 2px rgba(59,130,246,0.2);
-        }
-        .cantidad-row .acciones {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-        .cantidad-row .acciones button {
-            padding: 0.5rem 1.2rem;
-            border: none;
-            border-radius: 40px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.15s;
-            touch-action: manipulation;
-            min-height: 44px;
-            font-size: 0.95rem;
-        }
-        .cantidad-row .acciones button:active { transform: scale(0.96); }
-        .btn-agregar { background: #22c55e; color: white; }
-        .btn-agregar:active { background: #16a34a; }
-        .btn-eliminar { background: #ef4444; color: white; }
-        .btn-eliminar:active { background: #dc2626; }
+        .cantidad-row input:disabled { background: #f0f4f9; color: #7a8fa5; }
+        .cantidad-row input:focus { border-color: #2b6c9e; box-shadow: 0 0 0 3px rgba(43,108,158,0.15); }
+        .cantidad-row .acciones { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-left: auto; }
 
-        .pedido-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.85rem;
-            margin-top: 0.5rem;
-        }
-        .pedido-table th {
-            background: #f1f5f9;
-            padding: 0.4rem 0.6rem;
-            text-align: left;
-            font-weight: 600;
-            border-bottom: 2px solid #e2e8f0;
-            font-size: 0.8rem;
-        }
-        .pedido-table td {
-            padding: 0.3rem 0.6rem;
-            border-bottom: 1px solid #eef2f6;
-            font-size: 0.8rem;
-        }
-        .pedido-table tr:hover td { background: #f8fafc; }
-        .pedido-table .codigo-cell {
-            font-family: monospace;
-            font-weight: 600;
-        }
-        .pedido-table .cantidad-cell { text-align: center; }
-        .pedido-table .acciones-cell { text-align: center; }
-        .pedido-table .acciones-cell button {
-            background: none;
-            border: none;
-            color: #ef4444;
-            cursor: pointer;
-            font-size: 1.1rem;
-            padding: 0.2rem 0.4rem;
-            touch-action: manipulation;
-        }
-        .pedido-table .acciones-cell button:active { transform: scale(0.9); }
-        .total-row {
-            font-weight: 600;
-            background: #f8fafc;
-        }
-        .total-row td { border-top: 2px solid #e2e8f0; }
-        .pedido-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 0.3rem;
-            margin-bottom: 0.3rem;
-        }
-        .pedido-header h3 { font-size: 1.1rem; }
-        .pedido-header .totales {
-            display: flex;
-            gap: 1rem;
-            font-weight: 500;
-            font-size: 0.9rem;
-        }
-
-        .persist-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-top: 0.5rem;
-            font-size: 0.8rem;
-            align-items: center;
-            border-top: 1px solid #eef2f6;
-            padding-top: 0.5rem;
-        }
-        .persist-row .btn {
-            background: #e2e8f0;
-            border: none;
-            padding: 0.3rem 0.8rem;
-            border-radius: 40px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: 0.15s;
-            touch-action: manipulation;
-            min-height: 36px;
-            display: flex;
-            align-items: center;
-            font-size: 0.8rem;
-        }
-        .persist-row .btn:active { transform: scale(0.96); }
-        .persist-row .btn-primary {
-            background: #3b82f6;
-            color: white;
-        }
-        .persist-row .btn-primary:active { background: #2563eb; }
-        .persist-row .btn-danger {
-            background: #ef4444;
-            color: white;
-        }
-        .persist-row .btn-danger:active { background: #dc2626; }
-        .persist-row .btn-secondary:active { background: #cbd5e1; }
-        .persist-row .status-label {
-            font-weight: 500;
-            white-space: nowrap;
-        }
-        .persist-row .status-value {
-            color: #475569;
-            font-size: 0.8rem;
-        }
-
-        .textarea-wrapper { margin-top: 0.5rem; }
-        .textarea-wrapper textarea {
-            width: 100%;
-            padding: 0.4rem;
-            border-radius: 10px;
-            border: 1px solid #e2e8f0;
-            font-family: monospace;
-            font-size: 0.8rem;
-            resize: vertical;
-            display: none;
-        }
-
-        .admin-upload {
-            margin-top: 0.5rem;
-            border-top: 2px dashed #3b82f6;
-            padding-top: 0.5rem;
-        }
-        .admin-upload input { display: inline-block; }
+        .diff-table-wrap { margin-top: 1rem; overflow-x: auto; }
+        .diff-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .diff-table th { background: #e6edf8; padding: 0.5rem 0.7rem; text-align: left; font-weight: 600; color: #1a2a44; border-bottom: 2px solid #c6d6e8; }
+        .diff-table td { padding: 0.4rem 0.7rem; border-bottom: 1px solid #e8edf5; }
+        .diff-table .diff-positivo { color: #1e7b4a; font-weight: 600; }
+        .diff-table .diff-negativo { color: #b33c3c; font-weight: 600; }
+        .diff-table .acciones-cell button { background: none; border: none; color: #b33c3c; cursor: pointer; font-size: 1.1rem; padding: 0.2rem 0.5rem; }
+        .diff-table .acciones-cell button:active { transform: scale(0.9); }
+        .diff-totales { display: flex; gap: 1.5rem; margin-top: 0.5rem; font-weight: 600; color: #1a2a44; flex-wrap: wrap; }
+        .badge { background: #dce5f2; padding: 0.1rem 0.6rem; border-radius: 30px; font-size: 0.7rem; font-weight: 600; }
 
         @media (max-width: 600px) {
-            body { padding: 0.5rem; }
-            .card { padding: 0.8rem 1rem; }
-            .cantidad-row { flex-direction: column; align-items: stretch; gap: 0.5rem; }
-            .cantidad-row > div { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-            .cantidad-row input { width: 100px; flex: 1; }
-            .cantidad-row .acciones { justify-content: center; }
-            .pedido-table { font-size: 0.75rem; }
-            .pedido-table th, .pedido-table td { padding: 0.2rem 0.4rem; }
+            .cantidad-row { flex-direction: column; align-items: stretch; gap: 0.6rem; }
+            .cantidad-row .acciones { justify-content: center; margin-left: 0; }
+            .diff-table { font-size: 0.75rem; }
+            .diff-table th, .diff-table td { padding: 0.2rem 0.4rem; }
             .persist-row { flex-direction: column; align-items: stretch; }
             .persist-row .btn { justify-content: center; }
             .file-row { flex-direction: column; align-items: stretch; }
             .file-row .status { text-align: center; margin-left: 0; }
-            .search-row input { min-width: 120px; }
         }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>🔍 Buscador de Productos <small>stock en cajas y unidades</small></h1>
 
+    <h1>📦 Buscador de Productos <small>Control de Inventario</small></h1>
+
+    <!-- ===== CARD: BÚSQUEDA ===== -->
     <div class="card">
         <div class="search-row">
-            <input type="text" id="searchInput" placeholder="Buscar código o descripción..." autofocus />
-            <button id="searchButton">Buscar</button>
-            <button id="refreshDriveBtn" class="btn" style="background:#22c55e; color:white; min-height:48px; padding:0.8rem 1.5rem; border-radius:40px; border:none; font-weight:600;">🔄 Actualizar Drive</button>
+            <input type="text" id="searchInput" placeholder="Buscar por código, descripción o marca..." autofocus>
+            <button class="btn btn-primary" id="searchButton">🔍 Buscar</button>
+            <button class="btn btn-success" id="refreshDriveBtn">🔄 Actualizar Drive</button>
         </div>
         <div class="file-row">
             <label for="fileInput">📂 Cargar archivo</label>
-            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" />
-            <button class="btn btn-secondary" id="loadTextBtn">Cargar desde texto</button>
-            <button class="btn btn-secondary" id="resetBtn">Usar ejemplo</button>
+            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+            <button class="btn btn-outline btn-sm" id="loadTextBtn">📄 Desde texto</button>
+            <button class="btn btn-outline btn-sm" id="resetBtn">🔄 Ejemplo</button>
             <span class="status" id="fileStatus">(cargando desde Google Sheets...)</span>
         </div>
-        <div class="admin-upload">
-            <span style="font-size:0.85rem; color:#2563eb;">✅ Datos sincronizados desde Google Sheets (se actualiza cada 5 min)</span>
-        </div>
-        <div class="textarea-wrapper">
-            <textarea id="csvTextArea" rows="2" placeholder="Pega aquí el contenido CSV (con cabecera)"></textarea>
+        <div class="textarea-wrapper" style="margin-top:0.5rem;">
+            <textarea id="csvTextArea" rows="2" placeholder="Pega aquí CSV (con cabecera)" style="width:100%; padding:0.5rem; border-radius:12px; border:1px solid #dce3ed; display:none; font-family:monospace;"></textarea>
         </div>
         <div class="persist-row">
-            <span class="status-label">Datos guardados:</span>
+            <span class="status-label">📌 Datos guardados:</span>
             <span class="status-value" id="persistStatus">ninguno</span>
-            <button class="btn btn-primary" id="saveDataBtn">💾 Guardar</button>
-            <button class="btn btn-secondary" id="loadDataBtn">📂 Cargar</button>
-            <button class="btn btn-danger" id="clearDataBtn">🗑️ Borrar</button>
+            <button class="btn btn-outline btn-sm" id="saveDataBtn">💾 Guardar</button>
+            <button class="btn btn-outline btn-sm" id="loadDataBtn">📂 Cargar</button>
+            <button class="btn btn-danger btn-sm" id="clearDataBtn">🗑️ Borrar</button>
         </div>
     </div>
 
+    <!-- ===== CARD: RESULTADOS ===== -->
     <div class="card">
         <div class="results-header">
-            <div class="count">Resultados <span id="resultCount">0</span></div>
+            <div class="count">📋 Resultados <span id="resultCount">0</span></div>
             <div class="stats">
-                <span><span class="label">Cajas:</span> <span id="cajasCount">0</span></span>
-                <span><span class="label">Unidades:</span> <span id="unidadesCount">0</span></span>
+                <span><span class="label">📦 Cajas:</span> <span id="cajasCount">0</span></span>
+                <span><span class="label">🧩 Unidades:</span> <span id="unidadesCount">0</span></span>
             </div>
         </div>
         <div id="resultList" class="result-list">
-            <div class="empty-message">Escribe algo para buscar.</div>
+            <div class="empty-message">🔎 Escribe algo para buscar.</div>
         </div>
 
         <div class="cantidad-row">
-            <div>
-                <label for="txtCajas">Cajas:</label>
+            <div class="group">
+                <label for="txtCajas">📦 Cajas:</label>
                 <input type="number" id="txtCajas" value="0" min="0" disabled>
             </div>
-            <div>
-                <label for="txtUnidades">Unidades:</label>
+            <div class="group">
+                <label for="txtUnidades">🧩 Unidades:</label>
                 <input type="number" id="txtUnidades" value="0" min="0">
             </div>
+            <div class="group" style="border-left:2px solid #dce3ed; padding-left:1rem;">
+                <label for="txtFisico">🔎 Físico encontrado:</label>
+                <input type="number" id="txtFisico" value="0" min="0" style="width:80px;">
+            </div>
             <div class="acciones">
-                <button class="btn-agregar" id="btnAgregar">➕ Agregar</button>
-                <button class="btn-eliminar" id="btnEliminar">🗑️ Eliminar</button>
+                <button class="btn btn-success" id="btnAgregar">➕ Agregar pedido</button>
+                <button class="btn btn-warning" id="btnRegistrarDiff">📝 Registrar diferencia</button>
             </div>
         </div>
     </div>
 
+    <!-- ===== CARD: PEDIDO ===== -->
     <div class="card">
-        <div class="pedido-header">
-            <h3>📦 Pedido</h3>
-            <div class="totales">
-                <span>Cajas: <span id="totalCajasPedido">0</span></span>
-                <span>Unidades: <span id="totalUnidadesPedido">0</span></span>
+        <div class="section-title">
+            <h2>📦 Pedido actual</h2>
+            <span class="badge" id="pedidoCount">0 productos</span>
+            <div style="margin-left:auto; display:flex; gap:1rem; font-size:0.9rem;">
+                <span>📦 Cajas: <strong id="totalCajasPedido">0</strong></span>
+                <span>🧩 Unidades: <strong id="totalUnidadesPedido">0</strong></span>
             </div>
         </div>
         <div id="pedidoContainer">
-            <table class="pedido-table" id="pedidoTable">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Código</th>
-                        <th>Cód. Fábrica</th>
-                        <th>Descripción</th>
-                        <th>Unidad</th>
-                        <th>Cajas</th>
-                        <th>Unidades</th>
-                        <th>Acción</th>
-                    </tr>
-                </thead>
+            <table class="diff-table" id="pedidoTable">
+                <thead><tr>
+                    <th>#</th><th>Código</th><th>Cód. Fábrica</th><th>Descripción</th><th>Unidad</th><th>Cajas</th><th>Unidades</th><th>Acción</th>
+                </tr></thead>
                 <tbody id="pedidoBody">
                     <tr><td colspan="8" class="empty-message">No hay productos en el pedido.</td></tr>
                 </tbody>
                 <tfoot id="pedidoFoot" style="display:none;">
-                    <tr class="total-row">
+                    <tr style="font-weight:600; background:#f4f8fc;">
                         <td colspan="5" style="text-align:right;">Totales</td>
                         <td id="totalCajasFoot">0</td>
                         <td id="totalUnidadesFoot">0</td>
@@ -609,31 +367,61 @@
             </table>
         </div>
     </div>
+
+    <!-- ===== CARD: DIFERENCIAS ===== -->
+    <div class="card" id="diffSection">
+        <div class="section-title">
+            <h2>📊 Diferencias de inventario</h2>
+            <span class="badge" id="diffCount">0 registros</span>
+            <div style="margin-left:auto; display:flex; gap:0.5rem; flex-wrap:wrap;">
+                <button class="btn btn-success btn-sm" id="exportDiffBtn">📥 Exportar Excel</button>
+                <button class="btn btn-drive btn-sm" id="guardarDriveBtn">☁️ Guardar en Drive</button>
+                <button class="btn btn-danger btn-sm" id="clearDiffBtn">🗑️ Limpiar todo</button>
+            </div>
+        </div>
+        <div class="diff-table-wrap">
+            <table class="diff-table" id="diffTable">
+                <thead><tr>
+                    <th>#</th><th>Código</th><th>Descripción</th><th>Stock Teórico</th><th>Stock Físico</th><th>Diferencia</th><th>Fecha/Hora</th><th>Acción</th>
+                </tr></thead>
+                <tbody id="diffBody">
+                    <tr><td colspan="8" class="empty-message">No hay diferencias registradas.</td></tr>
+                </tbody>
+                <tfoot id="diffFoot" style="display:none;">
+                    <tr style="font-weight:600; background:#f4f8fc;">
+                        <td colspan="3" style="text-align:right;">Totales</td>
+                        <td id="diffTotalTeorico">0</td>
+                        <td id="diffTotalFisico">0</td>
+                        <td id="diffTotalDiferencia">0</td>
+                        <td></td><td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <div class="diff-totales" id="diffResumen" style="display:none;">
+            <span>📦 Teórico total: <strong id="resTeorico">0</strong></span>
+            <span>🔎 Físico total: <strong id="resFisico">0</strong></span>
+            <span>📊 Diferencia total: <strong id="resDiferencia">0</strong></span>
+        </div>
+    </div>
 </div>
 
 <script>
     (function() {
         // ============================================================
-        //  CONFIGURACIÓN: URL de Google Sheets (CSV)
+        //  CONFIGURACIÓN
         // ============================================================
         const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRKg3h0F7KMnRz2Fm2co7zlUFW1uZXeka4ljxSEbWLjDvDch3tglSqCDMn9uMVKiQ/pub?gid=683330974&single=true&output=csv';
+
+        // ⚠️ IMPORTANTE: Reemplaza con la URL de tu Apps Script
+        const SCRIPT_URL = 'https://script.google.com/macros/s/TU_SCRIPT_ID/exec';
 
         // ============================================================
         //  DATOS DE EJEMPLO (fallback)
         // ============================================================
         const sampleData = [
-            { "Producto":"MANJAR ESPECIAL BAZO VELARDE BALDE X 20 KG","Codigo":"9010","CodigoFabrica":"50000111","Unidad Ref":"BAL/BAL","Cantidad":"15","FactorEmpaque":"1","Linea":"MANJARES: ESPECIAL","Marca":"BAZO VELARDE" },
-            { "Producto":"MANJAR AREQUIPEÑO BAZO VELARDE BALDE X 19 KG","Codigo":"9011","CodigoFabrica":"50000097","Unidad Ref":"BAL/BAL","Cantidad":"8","FactorEmpaque":"1","Linea":"MANJARES: AREQUIPEÑO","Marca":"BAZO VELARDE" },
-            { "Producto":"MANJAR BLANQUITO BAZO VELARDE BALDE X 19 KG","Codigo":"9014","CodigoFabrica":"50000104","Unidad Ref":"BAL/BAL","Cantidad":"0","FactorEmpaque":"1","Linea":"MANJARES: BLANQUITO","Marca":"BAZO VELARDE" },
-            { "Producto":"MANJAR BLANCO SABOR CASERO BAZO VELARDE BALDE X 20 KG","Codigo":"9015","CodigoFabrica":"50000106","Unidad Ref":"BAL/BAL","Cantidad":"22","FactorEmpaque":"1","Linea":"MANJARES: CASERO","Marca":"BAZO VELARDE" },
-            { "Producto":"FUDGE SABOR CASERO BAZO VELARDE BALDE X 20 KG","Codigo":"9016","CodigoFabrica":"50000121","Unidad Ref":"BAL/BAL","Cantidad":"5","FactorEmpaque":"1","Linea":"MANJARES: CASERO - SABOR CHOCOLATE","Marca":"BAZO VELARDE" },
-            { "Producto":"FUDGE AREQUIPEÑO BV BALDE 19KG","Codigo":"9022","CodigoFabrica":"50000116","Unidad Ref":"BAL/BAL","Cantidad":"12","FactorEmpaque":"1","Linea":"MANJARES: AREQUIPEÑO - SABOR CHOCOLATE","Marca":"BAZO VELARDE" },
-            { "Producto":"DULC. LECHE BAZO VELARDE X 13.6 KG","Codigo":"9070","CodigoFabrica":"50000599","Unidad Ref":"BAL/BAL","Cantidad":"7","FactorEmpaque":"1","Linea":"MANJARES: DULCE DE LECHE","Marca":"BAZO VELARDE" },
-            { "Producto":"MANJAR AREQUIPEÑO BAZO VELARDE BALDE 5 KG","Codigo":"9082","CodigoFabrica":"50000101","Unidad Ref":"BAL/BAL","Cantidad":"3","FactorEmpaque":"1","Linea":"MANJARES: MANJAR","Marca":"BAZO VELARDE" },
-            { "Producto":"MANJAR BLANQUITO BAZO VELARDE BALDE X 5 KG","Codigo":"9083","CodigoFabrica":"50000105","Unidad Ref":"BAL/BAL","Cantidad":"0","FactorEmpaque":"1","Linea":"MANJARES: BLANQUITO","Marca":"BAZO VELARDE" },
-            { "Producto":"QUESO EDAM LAIVE TAJADAS FINAS PQT 90G","Codigo":"0229","CodigoFabrica":"50001206","Unidad Ref":"CJ*24","Cantidad":"966","FactorEmpaque":"24","Linea":"QUESOS: EDAM","Marca":"LAIVE" },
-            { "Producto":"LECHE LAIVE BOLSITARRO BOLSA 390G","Codigo":"2103","CodigoFabrica":"50000975","Unidad Ref":"CJ*24","Cantidad":"4632","FactorEmpaque":"24","Linea":"EVAPORADAS: ENTERO (A)","Marca":"LAIVE" },
-            { "Producto":"LECHE UHT LAIVE ENTERA CAJA 946ML","Codigo":"2136","CodigoFabrica":"50001059","Unidad Ref":"CJ*12","Cantidad":"16459","FactorEmpaque":"12","Linea":"LECHES FRESCAS: ENTERO (A)","Marca":"LAIVE" }
+            {"Producto":"MANJAR ESPECIAL BAZO VELARDE BALDE X 20 KG","Codigo":"9010","CodigoFabrica":"50000111","Unidad Ref":"BAL/BAL","Cantidad":"15","FactorEmpaque":"1","Linea":"MANJARES: ESPECIAL","Marca":"BAZO VELARDE"},
+            {"Producto":"LECHE UHT LAIVE ENTERA CAJA 946ML","Codigo":"2136","CodigoFabrica":"50001059","Unidad Ref":"CJ*12","Cantidad":"16459","FactorEmpaque":"12","Linea":"LECHES FRESCAS: ENTERO (A)","Marca":"LAIVE"}
         ];
 
         // ============================================================
@@ -643,6 +431,7 @@
         let filteredData = [];
         let selectedIndex = -1;
         let pedido = [];
+        let diferencias = [];
 
         // DOM
         const searchInput = document.getElementById('searchInput');
@@ -653,14 +442,16 @@
         const unidadesCount = document.getElementById('unidadesCount');
         const txtCajas = document.getElementById('txtCajas');
         const txtUnidades = document.getElementById('txtUnidades');
+        const txtFisico = document.getElementById('txtFisico');
         const btnAgregar = document.getElementById('btnAgregar');
-        const btnEliminar = document.getElementById('btnEliminar');
+        const btnRegistrarDiff = document.getElementById('btnRegistrarDiff');
         const pedidoBody = document.getElementById('pedidoBody');
         const pedidoFoot = document.getElementById('pedidoFoot');
         const totalCajasFoot = document.getElementById('totalCajasFoot');
         const totalUnidadesFoot = document.getElementById('totalUnidadesFoot');
         const totalCajasPedido = document.getElementById('totalCajasPedido');
         const totalUnidadesPedido = document.getElementById('totalUnidadesPedido');
+        const pedidoCount = document.getElementById('pedidoCount');
         const fileInput = document.getElementById('fileInput');
         const csvTextArea = document.getElementById('csvTextArea');
         const loadTextBtn = document.getElementById('loadTextBtn');
@@ -672,22 +463,32 @@
         const persistStatus = document.getElementById('persistStatus');
         const refreshBtn = document.getElementById('refreshDriveBtn');
 
+        const diffBody = document.getElementById('diffBody');
+        const diffFoot = document.getElementById('diffFoot');
+        const diffCount = document.getElementById('diffCount');
+        const diffTotalTeorico = document.getElementById('diffTotalTeorico');
+        const diffTotalFisico = document.getElementById('diffTotalFisico');
+        const diffTotalDiferencia = document.getElementById('diffTotalDiferencia');
+        const diffResumen = document.getElementById('diffResumen');
+        const resTeorico = document.getElementById('resTeorico');
+        const resFisico = document.getElementById('resFisico');
+        const resDiferencia = document.getElementById('resDiferencia');
+        const exportDiffBtn = document.getElementById('exportDiffBtn');
+        const clearDiffBtn = document.getElementById('clearDiffBtn');
+        const guardarDriveBtn = document.getElementById('guardarDriveBtn');
+
         // ============================================================
         //  FUNCIONES DE MAPEO
         // ============================================================
         function getField(item, ...aliases) {
             for (let alias of aliases) {
-                if (item.hasOwnProperty(alias) && item[alias] !== undefined && item[alias] !== '') {
-                    return item[alias];
-                }
+                if (item.hasOwnProperty(alias) && item[alias] !== undefined && item[alias] !== '') return item[alias];
             }
             const keys = Object.keys(item);
             for (let alias of aliases) {
                 const lowerAlias = alias.toLowerCase();
                 for (let key of keys) {
-                    if (key.toLowerCase() === lowerAlias) {
-                        return item[key];
-                    }
+                    if (key.toLowerCase() === lowerAlias) return item[key];
                 }
             }
             return '';
@@ -733,12 +534,14 @@
         //  PERSISTENCIA LOCAL
         // ============================================================
         const STORAGE_KEY = 'buscador_productos_data';
+        const DIFF_KEY = 'buscador_diferencias_data';
+
         function saveToStorage(data) {
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
                 persistStatus.textContent = `guardado local (${data.length} registros)`;
-                persistStatus.style.color = '#16a34a';
-            } catch (e) { /* ignorar */ }
+                persistStatus.style.color = '#1e7b4a';
+            } catch (e) {}
         }
         function loadFromStorage() {
             try {
@@ -750,17 +553,31 @@
         function clearStorage() {
             localStorage.removeItem(STORAGE_KEY);
             persistStatus.textContent = 'ninguno';
-            persistStatus.style.color = '#94a3b8';
+            persistStatus.style.color = '#3a5375';
         }
         function checkStorage() {
             const data = loadFromStorage();
             if (data && data.length > 0) {
                 persistStatus.textContent = `guardado local (${data.length} registros)`;
-                persistStatus.style.color = '#16a34a';
+                persistStatus.style.color = '#1e7b4a';
             } else {
                 persistStatus.textContent = 'ninguno';
-                persistStatus.style.color = '#94a3b8';
+                persistStatus.style.color = '#3a5375';
             }
+        }
+
+        function saveDiferencias() {
+            try {
+                localStorage.setItem(DIFF_KEY, JSON.stringify(diferencias));
+            } catch (e) {}
+        }
+        function loadDiferencias() {
+            try {
+                const raw = localStorage.getItem(DIFF_KEY);
+                if (raw) {
+                    diferencias = JSON.parse(raw);
+                }
+            } catch (e) { diferencias = []; }
         }
 
         // ============================================================
@@ -800,7 +617,7 @@
                     const data = parseCSV(csvText);
                     if (data && data.length > 0) {
                         currentData = data;
-                        fileStatus.textContent = `(cargados ${data.length} registros de Google Sheets)`;
+                        fileStatus.textContent = `✅ ${data.length} registros desde Google Sheets`;
                         searchInput.value = '';
                         selectedIndex = -1;
                         filteredData = [];
@@ -809,13 +626,13 @@
                         saveToStorage(data);
                         checkStorage();
                     } else {
-                        fileStatus.textContent = '(Google Sheets vacío, usando ejemplo)';
+                        fileStatus.textContent = '⚠️ Google Sheets vacío, usando ejemplo';
                         useLocalData();
                     }
                 })
                 .catch(err => {
                     console.warn('Error al cargar Google Sheets, usando datos locales.', err);
-                    fileStatus.textContent = '(sin conexión a Google Sheets, usando local)';
+                    fileStatus.textContent = '⚠️ Sin conexión, usando local';
                     useLocalData();
                 });
         }
@@ -824,10 +641,10 @@
             const saved = loadFromStorage();
             if (saved && saved.length > 0) {
                 currentData = saved;
-                fileStatus.textContent = `(cargados ${saved.length} registros locales)`;
+                fileStatus.textContent = `📂 ${saved.length} registros locales`;
             } else {
                 currentData = [...sampleData];
-                fileStatus.textContent = `(cargados ${currentData.length} registros de ejemplo)`;
+                fileStatus.textContent = `📋 ${currentData.length} registros de ejemplo`;
             }
             searchInput.value = '';
             selectedIndex = -1;
@@ -867,7 +684,7 @@
 
         function renderResults(items) {
             if (!items || items.length === 0) {
-                resultList.innerHTML = `<div class="empty-message">No se encontraron productos</div>`;
+                resultList.innerHTML = `<div class="empty-message">🔎 No se encontraron productos</div>`;
                 resultCount.textContent = '0';
                 cajasCount.textContent = '0';
                 unidadesCount.textContent = '0';
@@ -929,12 +746,6 @@
                         actualizarCantidades(filteredData[selectedIndex]);
                     }
                 });
-                el.addEventListener('touchstart', function() {
-                    this.style.transform = 'scale(0.98)';
-                }, { passive: true });
-                el.addEventListener('touchend', function() {
-                    this.style.transform = 'scale(1)';
-                }, { passive: true });
             });
         }
 
@@ -945,10 +756,11 @@
 
             txtCajas.value = '0';
             txtUnidades.value = '0';
+            txtFisico.value = '0';
 
             if (esSuelta || factor === 1) {
                 txtCajas.disabled = true;
-                txtCajas.style.background = '#e9edf2';
+                txtCajas.style.background = '#f0f4f9';
                 txtUnidades.disabled = false;
                 txtUnidades.style.background = 'white';
             } else {
@@ -967,8 +779,9 @@
         function limpiarCantidades() {
             txtCajas.value = '0';
             txtUnidades.value = '0';
+            txtFisico.value = '0';
             txtCajas.disabled = true;
-            txtCajas.style.background = '#e9edf2';
+            txtCajas.style.background = '#f0f4f9';
             txtUnidades.disabled = false;
             txtUnidades.style.background = 'white';
             cajasCount.textContent = '0';
@@ -1060,17 +873,6 @@
                 });
             }
 
-            let totalPedidoAcumulado = 0;
-            pedido.forEach(p => {
-                if (p.codigo === codigo) {
-                    totalPedidoAcumulado = (p.cajas * p.factor) + p.unidades;
-                }
-            });
-            const restante = stockTotal - totalPedidoAcumulado;
-            const restCajas = Math.floor(restante / factor);
-            const restUnidades = restante % factor;
-            alert(`Producto agregado. Stock restante: ${restCajas} cajas y ${restUnidades} unidades.`);
-
             txtCajas.value = '0';
             txtUnidades.value = '0';
             renderPedido();
@@ -1090,6 +892,7 @@
                 pedidoFoot.style.display = 'none';
                 totalCajasPedido.textContent = '0';
                 totalUnidadesPedido.textContent = '0';
+                pedidoCount.textContent = '0 productos';
                 return;
             }
 
@@ -1116,6 +919,7 @@
             totalUnidadesFoot.textContent = totalUnidades;
             totalCajasPedido.textContent = totalCajas;
             totalUnidadesPedido.textContent = totalUnidades;
+            pedidoCount.textContent = `${pedido.length} productos`;
 
             document.querySelectorAll('.eliminar-fila').forEach(btn => {
                 btn.addEventListener('click', function() {
@@ -1123,6 +927,190 @@
                     eliminarDelPedido(codigo);
                 });
             });
+        }
+
+        // ============================================================
+        //  REGISTRAR DIFERENCIA
+        // ============================================================
+        function registrarDiferencia() {
+            if (selectedIndex === -1 || selectedIndex >= filteredData.length) {
+                alert('Seleccione un producto de la lista.');
+                return;
+            }
+            const item = filteredData[selectedIndex];
+            const codigo = getCodigo(item);
+            const descripcion = getDescripcion(item);
+            const stockTeorico = getCantidad(item);
+            const fisico = parseInt(txtFisico.value) || 0;
+
+            if (fisico < 0) {
+                alert('El stock físico no puede ser negativo.');
+                return;
+            }
+
+            const diferencia = fisico - stockTeorico;
+
+            if (diferencia === 0) {
+                if (!confirm('La diferencia es cero. ¿Deseas registrar de todas formas?')) {
+                    return;
+                }
+            }
+
+            const ahora = new Date();
+            const fechaStr = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
+
+            diferencias.push({
+                codigo: codigo,
+                descripcion: descripcion,
+                stockTeorico: stockTeorico,
+                stockFisico: fisico,
+                diferencia: diferencia,
+                fecha: fechaStr
+            });
+
+            saveDiferencias();
+            renderDiferencias();
+            txtFisico.value = '0';
+            alert('✅ Diferencia registrada correctamente.');
+        }
+
+        // ============================================================
+        //  RENDER DIFERENCIAS
+        // ============================================================
+        function renderDiferencias() {
+            if (diferencias.length === 0) {
+                diffBody.innerHTML = `<tr><td colspan="8" class="empty-message">No hay diferencias registradas.</td></tr>`;
+                diffFoot.style.display = 'none';
+                diffResumen.style.display = 'none';
+                diffCount.textContent = '0 registros';
+                return;
+            }
+
+            let html = '';
+            let totalTeorico = 0, totalFisico = 0, totalDiff = 0;
+            diferencias.forEach((d, idx) => {
+                totalTeorico += d.stockTeorico;
+                totalFisico += d.stockFisico;
+                totalDiff += d.diferencia;
+                const claseDiff = d.diferencia >= 0 ? 'diff-positivo' : 'diff-negativo';
+                html += `<tr>
+                    <td>${idx + 1}</td>
+                    <td>${d.codigo}</td>
+                    <td>${d.descripcion}</td>
+                    <td>${d.stockTeorico}</td>
+                    <td>${d.stockFisico}</td>
+                    <td class="${claseDiff}">${d.diferencia}</td>
+                    <td>${d.fecha}</td>
+                    <td class="acciones-cell"><button class="eliminar-diff" data-index="${idx}">✕</button></td>
+                </tr>`;
+            });
+
+            diffBody.innerHTML = html;
+            diffFoot.style.display = 'table-row-group';
+            diffTotalTeorico.textContent = totalTeorico;
+            diffTotalFisico.textContent = totalFisico;
+            diffTotalDiferencia.textContent = totalDiff;
+
+            diffResumen.style.display = 'flex';
+            resTeorico.textContent = totalTeorico;
+            resFisico.textContent = totalFisico;
+            resDiferencia.textContent = totalDiff;
+
+            diffCount.textContent = `${diferencias.length} registros`;
+
+            document.querySelectorAll('.eliminar-diff').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const idx = parseInt(this.dataset.index);
+                    diferencias.splice(idx, 1);
+                    saveDiferencias();
+                    renderDiferencias();
+                });
+            });
+        }
+
+        // ============================================================
+        //  EXPORTAR DIFERENCIAS A EXCEL (local)
+        // ============================================================
+        function exportarDiferencias() {
+            if (diferencias.length === 0) {
+                alert('No hay diferencias para exportar.');
+                return;
+            }
+
+            const dataToExport = diferencias.map((d, idx) => ({
+                '#': idx + 1,
+                'Código': d.codigo,
+                'Descripción': d.descripcion,
+                'Stock Teórico': d.stockTeorico,
+                'Stock Físico': d.stockFisico,
+                'Diferencia': d.diferencia,
+                'Fecha/Hora': d.fecha
+            }));
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(dataToExport);
+            XLSX.utils.book_append_sheet(wb, ws, 'Diferencias');
+            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            const blob = new Blob([wbout], { type: 'application/octet-stream' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `diferencias_inventario_${new Date().toISOString().slice(0,10)}.xlsx`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        }
+
+        // ============================================================
+        //  GUARDAR EN DRIVE
+        // ============================================================
+        function guardarEnDrive() {
+            if (diferencias.length === 0) {
+                alert('No hay diferencias para guardar en Drive.');
+                return;
+            }
+
+            const dataToExport = diferencias.map((d, idx) => ({
+                '#': idx + 1,
+                'Código': d.codigo,
+                'Descripción': d.descripcion,
+                'Stock Teórico': d.stockTeorico,
+                'Stock Físico': d.stockFisico,
+                'Diferencia': d.diferencia,
+                'Fecha/Hora': d.fecha
+            }));
+
+            guardarDriveBtn.textContent = '⏳ Subiendo...';
+            guardarDriveBtn.disabled = true;
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(dataToExport)
+            })
+            .then(() => {
+                alert('✅ Archivo guardado en Google Drive.\nRevisa tu carpeta "Inventario - Diferencias".');
+                guardarDriveBtn.textContent = '☁️ Guardar en Drive';
+                guardarDriveBtn.disabled = false;
+            })
+            .catch(err => {
+                alert('❌ Error al guardar en Drive: ' + err.message);
+                guardarDriveBtn.textContent = '☁️ Guardar en Drive';
+                guardarDriveBtn.disabled = false;
+            });
+        }
+
+        // ============================================================
+        //  LIMPIAR DIFERENCIAS
+        // ============================================================
+        function limpiarDiferencias() {
+            if (diferencias.length === 0) return;
+            if (confirm('¿Eliminar todas las diferencias registradas?')) {
+                diferencias = [];
+                saveDiferencias();
+                renderDiferencias();
+            }
         }
 
         // ============================================================
@@ -1138,7 +1126,7 @@
             selectedIndex = -1;
             filteredData = [];
             renderResults([]);
-            fileStatus.textContent = `(cargados ${data.length} registros)`;
+            fileStatus.textContent = `📂 ${data.length} registros cargados`;
             limpiarCantidades();
             if (persist) {
                 saveToStorage(data);
@@ -1179,24 +1167,18 @@
         //  INICIALIZACIÓN
         // ============================================================
         function init() {
-            // Cargar desde Google Sheets al iniciar
+            loadDiferencias();
+            renderDiferencias();
             loadFromGoogleSheets();
 
-            // Botón de recarga manual
             refreshBtn.addEventListener('click', function() {
                 this.textContent = '⏳ Cargando...';
                 loadFromGoogleSheets();
-                setTimeout(() => {
-                    this.textContent = '🔄 Actualizar Drive';
-                }, 1000);
+                setTimeout(() => { this.textContent = '🔄 Actualizar Drive'; }, 1500);
             });
 
-            // Auto-refresco cada 5 minutos
-            setInterval(function() {
-                loadFromGoogleSheets();
-            }, 300000);
+            setInterval(function() { loadFromGoogleSheets(); }, 300000);
 
-            // Eventos de búsqueda
             searchButton.addEventListener('click', performSearch);
             searchInput.addEventListener('keyup', (e) => {
                 if (e.key === 'Enter') performSearch();
@@ -1204,26 +1186,26 @@
             let debounceTimer;
             searchInput.addEventListener('input', () => {
                 clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(performSearch, 250);
+                debounceTimer = setTimeout(performSearch, 300);
             });
-            searchInput.addEventListener('blur', () => {
-                setTimeout(performSearch, 100);
-            });
+            searchInput.addEventListener('blur', () => { setTimeout(performSearch, 100); });
 
             btnAgregar.addEventListener('click', agregarProducto);
-
             txtCajas.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    txtUnidades.focus();
-                }
+                if (e.key === 'Enter') { e.preventDefault(); txtUnidades.focus(); }
             });
             txtUnidades.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    agregarProducto();
-                }
+                if (e.key === 'Enter') { e.preventDefault(); agregarProducto(); }
             });
+
+            btnRegistrarDiff.addEventListener('click', registrarDiferencia);
+            txtFisico.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); registrarDiferencia(); }
+            });
+
+            exportDiffBtn.addEventListener('click', exportarDiferencias);
+            clearDiffBtn.addEventListener('click', limpiarDiferencias);
+            guardarDriveBtn.addEventListener('click', guardarEnDrive);
 
             fileInput.addEventListener('change', function(e) {
                 const file = e.target.files[0];
@@ -1256,7 +1238,7 @@
                 pedido = [];
                 renderResults([]);
                 renderPedido();
-                fileStatus.textContent = `(cargados ${currentData.length} registros de ejemplo)`;
+                fileStatus.textContent = `📋 ${currentData.length} registros de ejemplo`;
                 resultCount.textContent = '0';
                 cajasCount.textContent = '0';
                 unidadesCount.textContent = '0';
@@ -1278,7 +1260,7 @@
                 const saved = loadFromStorage();
                 if (saved && saved.length > 0) {
                     currentData = saved;
-                    fileStatus.textContent = `(cargados ${saved.length} registros locales)`;
+                    fileStatus.textContent = `📂 ${saved.length} registros locales`;
                     searchInput.value = '';
                     selectedIndex = -1;
                     filteredData = [];
