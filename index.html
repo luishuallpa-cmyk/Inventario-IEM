@@ -546,11 +546,6 @@
             }
             return factor;
         }
-        function esPiezaSueltaDirecta(textoEmpaque) {
-            if (!textoEmpaque) return false;
-            const upper = textoEmpaque.toUpperCase();
-            return upper.includes('MOL') || upper.includes('BAL') || upper.includes('UNI') || upper.includes('UND') || upper.includes('SHT') || upper.includes('BOL') || upper.includes('POR');
-        }
 
         // ============================================================
         //  PERSISTENCIA LOCAL
@@ -771,29 +766,38 @@
             });
         }
 
+        // ============================================================
+        //  ACTUALIZAR CANTIDADES (CORREGIDO)
+        // ============================================================
         function actualizarCantidades(item) {
             const unidad = getUnidadRef(item);
-            const factor = obtenerFactorEmpaque(unidad) || getFactorEmpaque(item) || 1;
+            // Obtener factor: primero intentar extraer de la unidad (ej: "CJ*12"), si no, del campo FactorEmpaque
+            let factor = obtenerFactorEmpaque(unidad) || getFactorEmpaque(item) || 1;
             currentFactor = factor;
-            const esSuelta = esPiezaSueltaDirecta(unidad) || factor === 1;
 
             // Mostrar factor en la interfaz
             infoFactor.textContent = `Factor: ${factor}`;
 
+            // Siempre resetear valores
             txtCajas.value = '0';
             txtUnidades.value = '0';
 
-            if (esSuelta || factor === 1) {
+            // Habilitar/deshabilitar cajas según el factor
+            if (factor === 1) {
+                // Producto suelto: solo unidades, deshabilitar cajas
                 txtCajas.disabled = true;
                 txtCajas.style.background = '#f0f4f9';
                 txtUnidades.disabled = false;
                 txtUnidades.style.background = 'white';
             } else {
+                // Producto con empaque: habilitar cajas
                 txtCajas.disabled = false;
                 txtCajas.style.background = 'white';
                 txtUnidades.disabled = false;
                 txtUnidades.style.background = 'white';
             }
+
+            // Mostrar stock teórico en cajas y unidades
             const cantidad = getCantidad(item);
             const cajasStock = Math.floor(cantidad / factor);
             const unidadesStock = cantidad % factor;
@@ -828,7 +832,7 @@
             const descripcion = getDescripcion(item);
             const unidad = getUnidadRef(item);
             const factor = currentFactor;
-            const esSuelta = esPiezaSueltaDirecta(unidad) || factor === 1;
+            const esSuelta = factor === 1;
 
             const stockTotal = getCantidad(item);
             const stockCajas = Math.floor(stockTotal / factor);
@@ -842,7 +846,8 @@
             }
 
             let totalPedido = 0;
-            if (esSuelta || factor === 1) {
+            if (esSuelta) {
+                // Si es suelto, solo se usan unidades (sumar cajas como unidades)
                 totalPedido = cajasPedido + unidadesPedido;
             } else {
                 totalPedido = (cajasPedido * factor) + unidadesPedido;
@@ -862,7 +867,7 @@
             if (existing) {
                 let nuevasCajas = existing.cajas;
                 let nuevasUnidades = existing.unidades;
-                if (esSuelta || factor === 1) {
+                if (esSuelta) {
                     let total = (nuevasCajas + nuevasUnidades) + (cajasPedido + unidadesPedido);
                     nuevasCajas = 0;
                     nuevasUnidades = total;
@@ -880,7 +885,7 @@
                 existing.unidades = nuevasUnidades;
             } else {
                 let newCajas = 0, newUnidades = 0;
-                if (esSuelta || factor === 1) {
+                if (esSuelta) {
                     newCajas = 0;
                     newUnidades = totalPedido;
                 } else {
@@ -1041,7 +1046,7 @@
         }
 
         // ============================================================
-        //  REGISTRAR DIFERENCIA (USANDO CAJAS Y UNIDADES)
+        //  REGISTRAR DIFERENCIA (CORREGIDO: solo usa factor)
         // ============================================================
         function registrarDiferencia() {
             if (selectedIndex === -1 || selectedIndex >= filteredData.length) {
@@ -1053,14 +1058,13 @@
             const descripcion = getDescripcion(item);
             const stockTeorico = getCantidad(item);
             const factor = currentFactor;
-            const esSuelta = esPiezaSueltaDirecta(getUnidadRef(item)) || factor === 1;
+            const esSuelta = factor === 1;
 
             let cajas = parseInt(txtCajas.value) || 0;
             let unidades = parseInt(txtUnidades.value) || 0;
 
-            // Si el producto es suelto o factor=1, solo se usan unidades
-            if (esSuelta || factor === 1) {
-                // Si hay cajas, sumarlas a unidades
+            // Si es suelto, las cajas se suman a unidades
+            if (esSuelta) {
                 unidades += cajas;
                 cajas = 0;
             }
