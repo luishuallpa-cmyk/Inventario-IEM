@@ -154,7 +154,7 @@
             border-radius: 50px;
             font-size: 0.95rem;
             outline: none;
-            background: #f0f4f9;  /* Fondo claro */
+            background: #f0f4f9;
             color: #1a2a44;
             transition: 0.2s;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -171,7 +171,7 @@
             border-radius: 8px;
             text-align: center;
             font-size: 0.9rem;
-            background: #f0f4f9;  /* Fondo claro */
+            background: #f0f4f9;
             color: #1a2a44;
             transition: 0.2s;
             -webkit-appearance: none;
@@ -202,7 +202,7 @@
             grid-template-columns: 70px 100px 1fr 70px 60px 60px;
             align-items: center;
             padding: 0.4rem 0.6rem;
-            background: #f0f4f9;  /* Fondo claro */
+            background: #f0f4f9;
             border-radius: 10px;
             border: 1px solid #d0d8e0;
             gap: 0.2rem 0.4rem;
@@ -333,7 +333,6 @@
             .diff-totales { font-size: 0.75rem; gap: 0.5rem; flex-direction: column; color: #aac0d4; }
             .empty-message { font-size: 0.8rem; padding: 1rem; color: #6a8aaa; }
 
-            /* En móvil, ocultar también el campo de cajas cuando factor=1 */
             .cajas-group.hidden-mobile {
                 display: none !important;
             }
@@ -349,8 +348,6 @@
         }
 
         /* ===== COLORES DE TEXTO GENERALES ===== */
-        .status-label { color: #8aaccc; }
-        .status-value { color: #aac0d4; background: rgba(20, 50, 80, 0.3); padding: 0.1rem 0.5rem; border-radius: 20px; font-size: 0.7rem; }
         .badge { background: rgba(58, 90, 122, 0.3); color: #8aaccc; padding: 0.05rem 0.5rem; border-radius: 30px; font-size: 0.6rem; font-weight: 600; }
         .info-text { font-size: 0.7rem; color: #7a9aba; background: rgba(20, 50, 80, 0.3); padding: 0.1rem 0.5rem; border-radius: 30px; display: inline-flex; align-items: center; gap: 0.2rem; }
         .count { color: #b8d4f0; }
@@ -358,7 +355,6 @@
         .stats { color: #8aaccc; }
         .stats .label { color: #6a8aaa; }
         h2 { color: #b8d4f0; }
-        .file-row .status { color: #6a8aaa; }
     </style>
 </head>
 <body>
@@ -409,7 +405,7 @@
             <div class="info-text" id="infoFactor">Factor: 1</div>
             <div class="acciones" style="display:flex; gap:0.3rem; flex-wrap:wrap; margin-left:auto;">
                 <button class="btn btn-success" id="btnAgregar">➕ Pedido</button>
-                <button class="btn btn-warning" id="btnRegistrarDiff">📝 Diferencia</button>
+                <button class="btn btn-warning" id="btnRegistrarFisico">📝 Registrar Físico</button>
             </div>
         </div>
     </div>
@@ -454,15 +450,15 @@
         </div>
     </div>
 
-    <!-- ===== CARD: DIFERENCIAS ===== -->
+    <!-- ===== CARD: INVENTARIO FÍSICO (antes "Diferencias") ===== -->
     <div class="card" id="diffSection">
         <div class="section-title" style="display:flex; align-items:center; gap:0.3rem; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:0.4rem; margin-bottom:0.6rem; flex-wrap:wrap;">
-            <h2>📊 Diferencias</h2>
+            <h2>📊 Inventario Físico</h2>
             <span class="badge" id="diffCount">0 registros</span>
             <div style="margin-left:auto; display:flex; gap:0.3rem; flex-wrap:wrap;">
                 <button class="btn btn-success btn-sm" id="exportDiffBtn">📥 Excel</button>
                 <button class="btn btn-drive btn-sm" id="guardarDriveBtn">☁️ Drive</button>
-                <button class="btn btn-danger btn-sm" id="clearDiffBtn">🗑️</button>
+                <button class="btn btn-danger btn-sm" id="clearDiffBtn">🗑️ Limpiar</button>
             </div>
         </div>
         <div class="diff-table-wrap" style="margin-top:0.5rem; overflow-x:auto;">
@@ -478,7 +474,7 @@
                     <th>Acción</th>
                 </tr></thead>
                 <tbody id="diffBody">
-                    <tr><td colspan="8" class="empty-message" style="text-align:center; color:#6a8aaa; padding:1rem; font-size:0.8rem;">No hay diferencias registradas.</td></tr>
+                    <tr><td colspan="8" class="empty-message" style="text-align:center; color:#6a8aaa; padding:1rem; font-size:0.8rem;">No hay productos contados aún.</td></tr>
                 </tbody>
                 <tfoot id="diffFoot" style="display:none;">
                     <tr style="font-weight:600; background:rgba(20,50,80,0.3);">
@@ -495,6 +491,7 @@
             <span>📦 Teórico total: <strong id="resTeorico" style="color:#b8d4f0;">0</strong></span>
             <span>🔎 Físico total: <strong id="resFisico" style="color:#b8d4f0;">0</strong></span>
             <span>📊 Diferencia total: <strong id="resDiferencia" style="color:#b8d4f0;">0</strong></span>
+            <span style="color:#6a8aaa;">Productos contados: <strong id="resContados" style="color:#b8d4f0;">0</strong></span>
         </div>
     </div>
 </div>
@@ -505,8 +502,6 @@
         //  CONFIGURACIÓN
         // ============================================================
         const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRKg3h0F7KMnRz2Fm2co7zlUFW1uZXeka4ljxSEbWLjDvDch3tglSqCDMn9uMVKiQ/pub?gid=683330974&single=true&output=csv';
-
-        // ⚠️ IMPORTANTE: Reemplaza con la URL de tu Apps Script
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyhnv5rsC8MNNhzKJMakeSyC3yNm01qDe6fE6wmDdtlZCNEkww8f5V0-L51Akjrw8Y00w/exec';
 
         // ============================================================
@@ -524,7 +519,7 @@
         let filteredData = [];
         let selectedIndex = -1;
         let pedido = [];
-        let diferencias = [];
+        let inventarioFisico = []; // antes diferencias
         let currentFactor = 1;
 
         // DOM
@@ -539,7 +534,7 @@
         const cajasGroup = document.getElementById('cajasGroup');
         const infoFactor = document.getElementById('infoFactor');
         const btnAgregar = document.getElementById('btnAgregar');
-        const btnRegistrarDiff = document.getElementById('btnRegistrarDiff');
+        const btnRegistrarFisico = document.getElementById('btnRegistrarFisico');
         const pedidoBody = document.getElementById('pedidoBody');
         const pedidoFoot = document.getElementById('pedidoFoot');
         const totalCajasFoot = document.getElementById('totalCajasFoot');
@@ -560,6 +555,7 @@
         const resTeorico = document.getElementById('resTeorico');
         const resFisico = document.getElementById('resFisico');
         const resDiferencia = document.getElementById('resDiferencia');
+        const resContados = document.getElementById('resContados');
         const exportDiffBtn = document.getElementById('exportDiffBtn');
         const clearDiffBtn = document.getElementById('clearDiffBtn');
         const guardarDriveBtn = document.getElementById('guardarDriveBtn');
@@ -617,7 +613,7 @@
         }
 
         // ============================================================
-        //  CARGA DESDE GOOGLE SHEETS (sin persistencia)
+        //  CARGA DESDE GOOGLE SHEETS
         // ============================================================
         function loadFromGoogleSheets() {
             fileStatus.textContent = '(cargando desde Google Sheets...)';
@@ -777,7 +773,7 @@
         }
 
         // ============================================================
-        //  ACTUALIZAR CANTIDADES (con ocultación de Cajas si factor=1)
+        //  ACTUALIZAR CANTIDADES
         // ============================================================
         function actualizarCantidades(item) {
             const unidad = getUnidadRef(item);
@@ -786,7 +782,6 @@
 
             infoFactor.textContent = `Factor: ${factor}`;
 
-            // Ocultar/mostrar el campo de cajas según factor
             if (factor === 1) {
                 cajasGroup.classList.add('hidden');
                 cajasGroup.classList.add('hidden-mobile');
@@ -1054,9 +1049,9 @@
         }
 
         // ============================================================
-        //  REGISTRAR DIFERENCIA
+        //  REGISTRAR INVENTARIO FÍSICO (antes "registrarDiferencia")
         // ============================================================
-        function registrarDiferencia() {
+        function registrarFisico() {
             if (selectedIndex === -1 || selectedIndex >= filteredData.length) {
                 alert('Seleccione un producto de la lista.');
                 return;
@@ -1094,7 +1089,7 @@
             const ahora = new Date();
             const fechaStr = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
 
-            diferencias.push({
+            inventarioFisico.push({
                 codigo: codigo,
                 descripcion: descripcion,
                 stockTeorico: stockTeorico,
@@ -1103,50 +1098,51 @@
                 fecha: fechaStr
             });
 
-            saveDiferencias();
-            renderDiferencias();
+            saveInventario();
+            renderInventario();
             txtCajas.value = '0';
             txtUnidades.value = '0';
-            alert(`✅ Diferencia registrada.\nTeórico: ${stockTeorico}\nFísico: ${stockFisico}\nDiferencia: ${diferencia}`);
+            alert(`✅ Conteo registrado.\nTeórico: ${stockTeorico}\nFísico: ${stockFisico}\nDiferencia: ${diferencia}`);
             if (selectedIndex < filteredData.length) {
                 actualizarCantidades(filteredData[selectedIndex]);
             }
         }
 
         // ============================================================
-        //  PERSISTENCIA DE DIFERENCIAS (solo diferencias, no datos)
+        //  PERSISTENCIA DE INVENTARIO FÍSICO
         // ============================================================
-        const DIFF_KEY = 'buscador_diferencias_data';
+        const INV_KEY = 'buscador_inventario_fisico';
 
-        function saveDiferencias() {
+        function saveInventario() {
             try {
-                localStorage.setItem(DIFF_KEY, JSON.stringify(diferencias));
+                localStorage.setItem(INV_KEY, JSON.stringify(inventarioFisico));
             } catch (e) {}
         }
-        function loadDiferencias() {
+        function loadInventario() {
             try {
-                const raw = localStorage.getItem(DIFF_KEY);
+                const raw = localStorage.getItem(INV_KEY);
                 if (raw) {
-                    diferencias = JSON.parse(raw);
+                    inventarioFisico = JSON.parse(raw);
                 }
-            } catch (e) { diferencias = []; }
+            } catch (e) { inventarioFisico = []; }
         }
 
         // ============================================================
-        //  RENDER DIFERENCIAS
+        //  RENDER INVENTARIO FÍSICO
         // ============================================================
-        function renderDiferencias() {
-            if (diferencias.length === 0) {
-                diffBody.innerHTML = `<tr><td colspan="8" class="empty-message" style="text-align:center; color:#6a8aaa; padding:1rem; font-size:0.8rem;">No hay diferencias registradas.</td></tr>`;
+        function renderInventario() {
+            if (inventarioFisico.length === 0) {
+                diffBody.innerHTML = `<tr><td colspan="8" class="empty-message" style="text-align:center; color:#6a8aaa; padding:1rem; font-size:0.8rem;">No hay productos contados aún.</td></tr>`;
                 diffFoot.style.display = 'none';
                 diffResumen.style.display = 'none';
                 diffCount.textContent = '0 registros';
+                resContados.textContent = '0';
                 return;
             }
 
             let html = '';
             let totalTeorico = 0, totalFisico = 0, totalDiff = 0;
-            diferencias.forEach((d, idx) => {
+            inventarioFisico.forEach((d, idx) => {
                 totalTeorico += d.stockTeorico;
                 totalFisico += d.stockFisico;
                 totalDiff += d.diferencia;
@@ -1173,29 +1169,30 @@
             resTeorico.textContent = totalTeorico;
             resFisico.textContent = totalFisico;
             resDiferencia.textContent = totalDiff;
+            resContados.textContent = inventarioFisico.length;
 
-            diffCount.textContent = `${diferencias.length} registros`;
+            diffCount.textContent = `${inventarioFisico.length} registros`;
 
             document.querySelectorAll('.eliminar-diff').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const idx = parseInt(this.dataset.index);
-                    diferencias.splice(idx, 1);
-                    saveDiferencias();
-                    renderDiferencias();
+                    inventarioFisico.splice(idx, 1);
+                    saveInventario();
+                    renderInventario();
                 });
             });
         }
 
         // ============================================================
-        //  EXPORTAR DIFERENCIAS
+        //  EXPORTAR INVENTARIO FÍSICO
         // ============================================================
-        function exportarDiferencias() {
-            if (diferencias.length === 0) {
-                alert('No hay diferencias para exportar.');
+        function exportarInventario() {
+            if (inventarioFisico.length === 0) {
+                alert('No hay datos para exportar.');
                 return;
             }
 
-            const dataToExport = diferencias.map((d, idx) => ({
+            const dataToExport = inventarioFisico.map((d, idx) => ({
                 '#': idx + 1,
                 'Código': d.codigo,
                 'Descripción': d.descripcion,
@@ -1207,26 +1204,26 @@
 
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.json_to_sheet(dataToExport);
-            XLSX.utils.book_append_sheet(wb, ws, 'Diferencias');
+            XLSX.utils.book_append_sheet(wb, ws, 'InventarioFisico');
             const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
             const blob = new Blob([wbout], { type: 'application/octet-stream' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `diferencias_inventario_${new Date().toISOString().slice(0,10)}.xlsx`;
+            link.download = `inventario_fisico_${new Date().toISOString().slice(0,10)}.xlsx`;
             link.click();
             URL.revokeObjectURL(link.href);
         }
 
         // ============================================================
-        //  GUARDAR DIFERENCIAS EN DRIVE
+        //  GUARDAR INVENTARIO FÍSICO EN DRIVE
         // ============================================================
-        function guardarEnDrive() {
-            if (diferencias.length === 0) {
-                alert('No hay diferencias para guardar en Drive.');
+        function guardarInventarioDrive() {
+            if (inventarioFisico.length === 0) {
+                alert('No hay datos para guardar en Drive.');
                 return;
             }
 
-            const dataToExport = diferencias.map((d, idx) => ({
+            const dataToExport = inventarioFisico.map((d, idx) => ({
                 '#': idx + 1,
                 'Código': d.codigo,
                 'Descripción': d.descripcion,
@@ -1248,7 +1245,7 @@
                 body: JSON.stringify(dataToExport)
             })
             .then(() => {
-                alert('✅ Diferencias guardadas en Google Drive.\nRevisa tu carpeta "Inventario - Diferencias".');
+                alert('✅ Inventario guardado en Google Drive.\nRevisa tu carpeta "Inventario - Diferencias".');
                 guardarDriveBtn.textContent = '☁️ Drive';
                 guardarDriveBtn.disabled = false;
             })
@@ -1260,14 +1257,14 @@
         }
 
         // ============================================================
-        //  LIMPIAR DIFERENCIAS
+        //  LIMPIAR INVENTARIO
         // ============================================================
-        function limpiarDiferencias() {
-            if (diferencias.length === 0) return;
-            if (confirm('¿Eliminar todas las diferencias registradas?')) {
-                diferencias = [];
-                saveDiferencias();
-                renderDiferencias();
+        function limpiarInventario() {
+            if (inventarioFisico.length === 0) return;
+            if (confirm('¿Eliminar todos los registros del inventario físico?')) {
+                inventarioFisico = [];
+                saveInventario();
+                renderInventario();
             }
         }
 
@@ -1275,8 +1272,8 @@
         //  INICIALIZACIÓN
         // ============================================================
         function init() {
-            loadDiferencias();
-            renderDiferencias();
+            loadInventario();
+            renderInventario();
             loadFromGoogleSheets();
 
             refreshBtn.addEventListener('click', function() {
@@ -1285,7 +1282,6 @@
                 setTimeout(() => { this.textContent = '🔄 Actualizar'; }, 1500);
             });
 
-            // Auto-refresco cada 5 minutos
             setInterval(function() { loadFromGoogleSheets(); }, 300000);
 
             searchButton.addEventListener('click', performSearch);
@@ -1307,15 +1303,15 @@
                 if (e.key === 'Enter') { e.preventDefault(); agregarProducto(); }
             });
 
-            btnRegistrarDiff.addEventListener('click', registrarDiferencia);
+            btnRegistrarFisico.addEventListener('click', registrarFisico);
 
             exportPedidoBtn.addEventListener('click', exportarPedido);
             guardarPedidoDriveBtn.addEventListener('click', guardarPedidoEnDrive);
             limpiarPedidoBtn.addEventListener('click', limpiarPedido);
 
-            exportDiffBtn.addEventListener('click', exportarDiferencias);
-            clearDiffBtn.addEventListener('click', limpiarDiferencias);
-            guardarDriveBtn.addEventListener('click', guardarEnDrive);
+            exportDiffBtn.addEventListener('click', exportarInventario);
+            clearDiffBtn.addEventListener('click', limpiarInventario);
+            guardarDriveBtn.addEventListener('click', guardarInventarioDrive);
         }
 
         init();
