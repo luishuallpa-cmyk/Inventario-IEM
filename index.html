@@ -8,13 +8,56 @@
     <style>
         /* ===== RESET Y ESTILOS BASE ===== */
         * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg1: #0b1a2e;
+            --bg2: #1a2d44;
+            --text-main: #dce4ec;
+            --header-bg: rgba(15, 30, 50, 0.85);
+            --header-border: rgba(255, 255, 255, 0.06);
+            --card-bg: rgba(20, 40, 65, 0.85);
+            --card-border: rgba(255, 255, 255, 0.04);
+            --heading: #b8d4f0;
+            --accent-text: #8aaccc;
+            --muted: #6a8aaa;
+            --badge-bg: rgba(58, 90, 122, 0.3);
+            --badge-text: #8aaccc;
+            --info-bg: rgba(20, 50, 80, 0.3);
+            --table-header-bg: rgba(20, 50, 80, 0.5);
+            --table-row-border: rgba(255, 255, 255, 0.03);
+            --section-border: rgba(255, 255, 255, 0.05);
+            --table-text: #c8d8e8;
+            --row-dark-text: #c8d8e8;
+        }
+        body.light-theme {
+            --bg1: #eef2f7;
+            --bg2: #dbe4ee;
+            --text-main: #1a2a44;
+            --header-bg: rgba(255, 255, 255, 0.9);
+            --header-border: rgba(20, 60, 100, 0.1);
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --card-border: rgba(20, 60, 100, 0.08);
+            --heading: #1a4b7a;
+            --accent-text: #2a6a9a;
+            --muted: #5a7a9a;
+            --badge-bg: rgba(42, 106, 154, 0.12);
+            --badge-text: #1a4b7a;
+            --info-bg: rgba(42, 106, 154, 0.08);
+            --table-header-bg: rgba(42, 106, 154, 0.1);
+            --table-row-border: rgba(20, 60, 100, 0.08);
+            --section-border: rgba(20, 60, 100, 0.1);
+            --table-text: #1a334d;
+            --row-dark-text: #1a334d;
+        }
+
         body {
             font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
-            background: linear-gradient(145deg, #0b1a2e 0%, #1a2d44 100%);
+            background: linear-gradient(145deg, var(--bg1) 0%, var(--bg2) 100%);
             min-height: 100vh;
             padding: 0.8rem;
-            color: #dce4ec;
+            color: var(--text-main);
             line-height: 1.5;
+            transition: background 0.3s, color 0.3s;
         }
         .container {
             max-width: 1500px;
@@ -27,13 +70,14 @@
             align-items: center;
             gap: 1rem;
             margin-bottom: 1.2rem;
-            background: rgba(15, 30, 50, 0.85);
+            background: var(--header-bg);
             backdrop-filter: blur(8px);
             padding: 0.6rem 1.2rem;
             border-radius: 60px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--header-border);
             flex-wrap: wrap;
+            transition: background 0.3s, border 0.3s;
         }
         .header .logo {
             display: flex;
@@ -44,14 +88,14 @@
         .header .logo .iemgroup {
             font-size: 1.8rem;
             font-weight: 800;
-            color: #b8d4f0;
+            color: var(--heading);
             letter-spacing: -0.5px;
             text-shadow: 0 0 20px rgba(70, 130, 200, 0.15);
         }
         .header .logo .laive {
             font-size: 1rem;
             font-weight: 500;
-            color: #8aaccc;
+            color: var(--accent-text);
             letter-spacing: 1px;
             background: rgba(70, 130, 200, 0.1);
             padding: 0.1rem 0.8rem;
@@ -59,9 +103,8 @@
             border: 1px solid rgba(70, 130, 200, 0.1);
         }
         .header .badge-version {
-            margin-left: auto;
             background: rgba(70, 130, 200, 0.15);
-            color: #8aaccc;
+            color: var(--accent-text);
             padding: 0.15rem 0.8rem;
             border-radius: 30px;
             font-size: 0.65rem;
@@ -69,17 +112,35 @@
             white-space: nowrap;
             border: 1px solid rgba(70, 130, 200, 0.15);
         }
+        .theme-toggle {
+            margin-left: auto;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.3rem;
+            background: var(--badge-bg);
+            color: var(--badge-text);
+            border: 1px solid var(--header-border);
+            padding: 0.35rem 0.9rem;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .theme-toggle:hover { transform: translateY(-1px); background: rgba(70,130,200,0.25); }
+        .theme-toggle:active { transform: scale(0.96); }
 
         /* ===== TARJETAS ===== */
         .card {
-            background: rgba(20, 40, 65, 0.85);
+            background: var(--card-bg);
             backdrop-filter: blur(4px);
             border-radius: 20px;
             padding: 1rem 1.2rem;
             margin-bottom: 1rem;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            transition: box-shadow 0.3s;
+            border: 1px solid var(--card-border);
+            transition: box-shadow 0.3s, background 0.3s, border 0.3s;
         }
         .card:hover {
             box-shadow: 0 12px 48px rgba(0, 0, 0, 0.35);
@@ -242,11 +303,11 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 0.75rem;
-            color: #c8d8e8;
+            color: var(--table-text);
         }
         .diff-table th {
-            background: rgba(20, 50, 80, 0.5);
-            color: #8aaccc;
+            background: var(--table-header-bg);
+            color: var(--accent-text);
             border-bottom: 2px solid rgba(74, 138, 186, 0.2);
             font-size: 0.7rem;
             padding: 0.3rem 0.4rem;
@@ -255,7 +316,7 @@
         .diff-table td {
             padding: 0.3rem 0.4rem;
             font-size: 0.7rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid var(--table-row-border);
         }
         .diff-table .diff-positivo { color: #5aba7a; font-weight: 600; }
         .diff-table .diff-negativo { color: #da6a6a; font-weight: 600; }
@@ -345,7 +406,7 @@
                 align-items: stretch;
                 gap: 0.3rem;
             }
-            .section-title h2 { font-size: 1rem; color: #b8d4f0; }
+            .section-title h2 { font-size: 1rem; color: var(--heading); }
             .section-title > div { margin-left: 0 !important; justify-content: center; flex-wrap: wrap; }
             .section-title > div .btn-sm { font-size: 0.6rem; padding: 0.15rem 0.5rem; min-height: 24px; }
 
@@ -370,13 +431,32 @@
         }
 
         /* ===== COLORES DE TEXTO GENERALES ===== */
-        .badge { background: rgba(58, 90, 122, 0.3); color: #8aaccc; padding: 0.05rem 0.5rem; border-radius: 30px; font-size: 0.6rem; font-weight: 600; }
-        .info-text { font-size: 0.7rem; color: #7a9aba; background: rgba(20, 50, 80, 0.3); padding: 0.1rem 0.5rem; border-radius: 30px; display: inline-flex; align-items: center; gap: 0.2rem; }
-        .count { color: #b8d4f0; }
-        .count span { background: rgba(58, 90, 122, 0.3); color: #8aaccc; padding: 0.05rem 0.5rem; border-radius: 30px; font-size: 0.75rem; }
-        .stats { color: #8aaccc; }
-        .stats .label { color: #6a8aaa; }
-        h2 { color: #b8d4f0; }
+        .badge { background: var(--badge-bg); color: var(--badge-text); padding: 0.05rem 0.5rem; border-radius: 30px; font-size: 0.6rem; font-weight: 600; }
+        .info-text { font-size: 0.7rem; color: var(--accent-text); background: var(--info-bg); padding: 0.1rem 0.5rem; border-radius: 30px; display: inline-flex; align-items: center; gap: 0.2rem; }
+        .count { color: var(--heading); }
+        .count span { background: var(--badge-bg); color: var(--badge-text); padding: 0.05rem 0.5rem; border-radius: 30px; font-size: 0.75rem; }
+        .stats { color: var(--accent-text); }
+        .stats .label { color: var(--muted); }
+        h2 { color: var(--heading); }
+        #fileStatus { color: var(--muted) !important; }
+        .cantidad-row label { color: var(--accent-text) !important; }
+        .section-title { border-bottom: 1px solid var(--section-border) !important; }
+        .cantidad-row { border-top: 1px solid var(--section-border) !important; }
+        .cantidad-row .info-text#infoFactor { color: var(--accent-text); }
+        #pedidoFoot tr, #diffFoot tr { background: var(--table-header-bg) !important; }
+        .section-title > div span { color: var(--accent-text) !important; }
+        .section-title > div strong { color: var(--heading) !important; }
+        .diff-totales { color: var(--accent-text) !important; }
+        .diff-totales strong { color: var(--heading) !important; }
+        .diff-totales span[style*="6a8aaa"] { color: var(--muted) !important; }
+        #pedidoBody td:not(.acciones-cell),
+        #diffBody td:not(.acciones-cell):not(.diff-positivo):not(.diff-negativo) {
+            color: var(--row-dark-text) !important;
+        }
+        #pedidoBody td:not(.acciones-cell) {
+            color: var(--row-dark-text) !important;
+        }
+        .empty-message { color: var(--muted) !important; }
     </style>
 </head>
 <body>
@@ -388,6 +468,7 @@
             <span class="iemgroup">IEM GROUP</span>
             <span class="laive">LAIVE</span>
         </div>
+        <button class="theme-toggle" id="themeToggleBtn" type="button">🌙 Modo noche</button>
         <div class="badge-version">v2.0</div>
     </div>
 
@@ -1291,9 +1372,45 @@
         }
 
         // ============================================================
+        //  TEMA DÍA / NOCHE
+        // ============================================================
+        const THEME_KEY = 'buscador_tema';
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+
+        function aplicarTema(tema) {
+            if (tema === 'light') {
+                document.body.classList.add('light-theme');
+                themeToggleBtn.textContent = '☀️ Modo día';
+            } else {
+                document.body.classList.remove('light-theme');
+                themeToggleBtn.textContent = '🌙 Modo noche';
+            }
+        }
+
+        function cargarTema() {
+            let tema = 'dark';
+            try {
+                tema = localStorage.getItem(THEME_KEY) || 'dark';
+            } catch (e) {}
+            aplicarTema(tema);
+        }
+
+        function alternarTema() {
+            const esClaroAhora = document.body.classList.contains('light-theme');
+            const nuevoTema = esClaroAhora ? 'dark' : 'light';
+            aplicarTema(nuevoTema);
+            try {
+                localStorage.setItem(THEME_KEY, nuevoTema);
+            } catch (e) {}
+        }
+
+        // ============================================================
         //  INICIALIZACIÓN
         // ============================================================
         function init() {
+            cargarTema();
+            themeToggleBtn.addEventListener('click', alternarTema);
+
             loadInventario();
             renderInventario();
             loadFromGoogleSheets();
