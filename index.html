@@ -3,87 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
-    <title>Buscador de Productos - Control de Inventario</title>
+    <title>Buscador de Productos - LAIVE</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         /* ===== RESET Y ESTILOS BASE ===== */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
-            background: #f0f4f9;
+            background: linear-gradient(145deg, #dce8f5 0%, #b8cce0 100%);
+            min-height: 100vh;
             padding: 1rem;
             color: #1a2332;
             line-height: 1.6;
         }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .card {
-            background: #ffffff;
-            border-radius: 20px;
-            padding: 1.5rem 1.8rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.02);
-            border: 1px solid #e9edf4;
-            transition: box-shadow 0.2s;
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
         }
-        .card:hover { box-shadow: 0 12px 40px rgba(0,20,50,0.06); }
-        h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #0b1a33;
+
+        /* ===== ENCABEZADO CON LOGO ===== */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(8px);
+            padding: 0.8rem 1.5rem;
+            border-radius: 60px;
+            box-shadow: 0 8px 32px rgba(10, 42, 92, 0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            flex-wrap: wrap;
+        }
+        .header .logo {
             display: flex;
             align-items: center;
             gap: 0.6rem;
-            flex-wrap: wrap;
-            margin-bottom: 1rem;
         }
-        h1 small {
-            font-size: 0.8rem;
+        .header .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #0a2a5c, #1a4b7a);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 800;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 12px rgba(10,42,92,0.3);
+        }
+        .header h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #0a2a5c;
+            margin: 0;
+        }
+        .header h1 small {
+            font-size: 0.75rem;
             font-weight: 400;
-            background: #e6edf8;
-            color: #2c4b7a;
+            color: #3a6a9a;
+            background: #e8f0fe;
             padding: 0.2rem 1rem;
             border-radius: 30px;
+            margin-left: 0.5rem;
         }
-        h2 { font-size: 1.2rem; font-weight: 600; color: #1a2a44; margin-bottom: 0.5rem; }
-        .section-title {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            border-bottom: 2px solid #eef2f7;
-            padding-bottom: 0.6rem;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-        }
-        .section-title span {
-            background: #dce5f2;
-            padding: 0.2rem 0.8rem;
+        .header .badge-version {
+            margin-left: auto;
+            background: #e8f0fe;
+            color: #1a4b7a;
+            padding: 0.2rem 1rem;
             border-radius: 30px;
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             font-weight: 600;
-            color: #1f3a66;
         }
-        .search-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.6rem;
-            align-items: center;
+
+        /* ===== TARJETAS ===== */
+        .card {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(4px);
+            border-radius: 24px;
+            padding: 1.5rem 1.8rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 8px 32px rgba(10, 42, 92, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            transition: box-shadow 0.3s;
         }
-        .search-row input {
-            flex: 1;
-            min-width: 180px;
-            padding: 0.8rem 1.2rem;
-            border: 2px solid #dce3ed;
-            border-radius: 50px;
-            font-size: 1rem;
-            outline: none;
-            background: #f7fafd;
-            transition: 0.2s;
+        .card:hover {
+            box-shadow: 0 12px 48px rgba(10, 42, 92, 0.12);
         }
-        .search-row input:focus {
-            border-color: #2b6c9e;
-            background: #ffffff;
-            box-shadow: 0 0 0 4px rgba(43,108,158,0.12);
-        }
+
+        /* ===== BOTONES CORPORATIVOS ===== */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -95,80 +105,86 @@
             font-weight: 600;
             font-size: 0.95rem;
             cursor: pointer;
-            transition: 0.15s;
+            transition: all 0.2s ease;
             touch-action: manipulation;
             min-height: 48px;
             white-space: nowrap;
         }
         .btn:active { transform: scale(0.96); }
-        .btn-primary { background: #1f4b7a; color: white; }
-        .btn-primary:hover { background: #163a5e; }
-        .btn-success { background: #1e7b4a; color: white; }
-        .btn-success:hover { background: #14633a; }
-        .btn-danger { background: #b33c3c; color: white; }
-        .btn-danger:hover { background: #942e2e; }
-        .btn-warning { background: #d98c2c; color: white; }
-        .btn-warning:hover { background: #b9751f; }
-        .btn-outline { background: transparent; border: 2px solid #cbd5e1; color: #1f3a66; }
-        .btn-outline:hover { background: #eef3f9; }
-        .btn-sm { padding: 0.3rem 0.9rem; min-height: 32px; font-size: 0.8rem; }
-        .btn-drive { background: #4285f4; color: white; }
-        .btn-drive:hover { background: #3367d6; }
+        .btn-primary {
+            background: linear-gradient(135deg, #0a2a5c, #1a4b7a);
+            color: white;
+            box-shadow: 0 4px 16px rgba(10,42,92,0.3);
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(10,42,92,0.4); }
+        .btn-success {
+            background: linear-gradient(135deg, #1a7a4a, #2a9a5a);
+            color: white;
+            box-shadow: 0 4px 16px rgba(26,122,74,0.3);
+        }
+        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26,122,74,0.4); }
+        .btn-danger {
+            background: linear-gradient(135deg, #b33c3c, #d94a4a);
+            color: white;
+            box-shadow: 0 4px 16px rgba(179,60,60,0.3);
+        }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(179,60,60,0.4); }
+        .btn-warning {
+            background: linear-gradient(135deg, #d98c2c, #f0a840);
+            color: white;
+            box-shadow: 0 4px 16px rgba(217,140,44,0.3);
+        }
+        .btn-warning:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(217,140,44,0.4); }
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #b0c8e0;
+            color: #1a4b7a;
+        }
+        .btn-outline:hover { background: #e8f0fe; border-color: #1a4b7a; }
+        .btn-drive {
+            background: linear-gradient(135deg, #4285f4, #5a9af5);
+            color: white;
+            box-shadow: 0 4px 16px rgba(66,133,244,0.3);
+        }
+        .btn-drive:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(66,133,244,0.4); }
+        .btn-sm {
+            padding: 0.3rem 0.9rem;
+            min-height: 32px;
+            font-size: 0.8rem;
+        }
 
-        .file-row {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 0.5rem;
-            margin-top: 0.8rem;
-            font-size: 0.9rem;
+        /* ===== INPUTS ===== */
+        .search-row input {
+            flex: 1;
+            min-width: 180px;
+            padding: 0.8rem 1.2rem;
+            border: 2px solid #dce3ed;
+            border-radius: 50px;
+            font-size: 1rem;
+            outline: none;
+            background: white;
+            transition: 0.2s;
         }
-        .file-row label {
-            background: #e6edf8;
-            padding: 0.4rem 1.2rem;
-            border-radius: 40px;
-            cursor: pointer;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
+        .search-row input:focus {
+            border-color: #1a4b7a;
+            box-shadow: 0 0 0 4px rgba(26,75,122,0.12);
         }
-        .file-row input[type="file"] { display: none; }
-        .file-row .status { color: #3a5375; margin-left: auto; font-size: 0.85rem; text-align: right; }
-        .persist-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.6rem;
-            margin-top: 0.8rem;
-            padding-top: 0.8rem;
-            border-top: 1px solid #e3eaf2;
-            align-items: center;
-            font-size: 0.85rem;
+        .cantidad-row input {
+            width: 75px;
+            padding: 0.5rem;
+            border: 2px solid #dce3ed;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1rem;
+            background: white;
+            transition: 0.2s;
+            -webkit-appearance: none;
+            appearance: none;
         }
-        .persist-row .status-label { font-weight: 600; color: #1f3a66; }
-        .persist-row .status-value { color: #3a5a7a; background: #eef4fa; padding: 0.2rem 0.8rem; border-radius: 20px; }
+        .cantidad-row input:disabled { background: #f0f4f9; color: #7a8fa5; }
+        .cantidad-row input:focus { border-color: #1a4b7a; box-shadow: 0 0 0 3px rgba(26,75,122,0.15); }
 
-        .results-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 0.4rem;
-            margin-bottom: 0.8rem;
-        }
-        .results-header .count { font-weight: 700; font-size: 1.1rem; }
-        .results-header .count span { background: #dce5f2; padding: 0.1rem 0.8rem; border-radius: 30px; font-size: 0.85rem; color: #1f3a66; }
-        .results-header .stats { display: flex; gap: 1.5rem; font-size: 0.95rem; color: #2b4a6e; }
-        .results-header .stats .label { font-weight: 500; color: #5f7a9a; }
-
-        .result-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            max-height: 460px;
-            overflow-y: auto;
-            padding-right: 0.3rem;
-        }
+        /* ===== RESULTADOS ===== */
         .result-item {
             display: grid;
             grid-template-columns: 70px 100px 1fr 70px 60px 60px;
@@ -183,15 +199,25 @@
             font-size: 0.9rem;
         }
         .result-item:hover { background: #eef4fb; border-color: #c6d6e8; }
-        .result-item.selected { background: #dce8f5; border-color: #2b6c9e; box-shadow: 0 0 0 2px rgba(43,108,158,0.2); }
-        .result-item .codigo { font-weight: 700; color: #0b1a33; font-family: 'Courier New', monospace; }
-        .result-item .fabrica { color: #4a6a8a; font-family: 'Courier New', monospace; font-size: 0.8rem; }
-        .result-item .descripcion { color: #1e334d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .result-item .unidad { background: #d9e4f0; color: #1f3a66; padding: 0 0.5rem; border-radius: 12px; font-size: 0.7rem; font-weight: 600; text-align: center; }
-        .result-item .stock-cajas, .result-item .stock-unidades { font-weight: 700; color: #0b1a33; text-align: right; font-family: 'Courier New', monospace; }
-        .result-item .stock-unidades { color: #3a5a7a; }
+        .result-item.selected {
+            background: #dce8f5;
+            border-color: #1a4b7a;
+            box-shadow: 0 0 0 2px rgba(26,75,122,0.2);
+        }
 
+        /* ===== TABLAS ===== */
+        .diff-table th {
+            background: #e6edf8;
+            color: #0a2a5c;
+            border-bottom: 2px solid #c6d6e8;
+        }
+        .diff-table .diff-positivo { color: #1a7a4a; font-weight: 600; }
+        .diff-table .diff-negativo { color: #b33c3c; font-weight: 600; }
+
+        /* ===== RESPONSIVE ===== */
         @media (max-width: 640px) {
+            .header { flex-direction: column; align-items: stretch; text-align: center; }
+            .header .badge-version { margin-left: 0; }
             .result-item {
                 display: flex;
                 flex-direction: column;
@@ -210,7 +236,7 @@
             .result-item .row2 .descripcion { font-size: 1rem; white-space: normal; word-break: break-word; line-height: 1.4; }
             .result-item .row2 .stock { display: flex; gap: 0.8rem; font-size: 1rem; font-weight: 700; background: #eef4fa; padding: 0.2rem 0.8rem; border-radius: 30px; align-self: flex-start; }
             .result-item .row2 .stock .cajas { color: #0b1a33; }
-            .result-item .row2 .stock .unidades { color: #2b6c9e; }
+            .result-item .row2 .stock .unidades { color: #1a4b7a; }
             .result-item .codigo, .result-item .fabrica, .result-item .unidad,
             .result-item .stock-cajas, .result-item .stock-unidades,
             .result-item .descripcion { display: none; }
@@ -221,79 +247,22 @@
             .card { padding: 1rem; }
             .search-row input { min-width: 120px; }
             .btn { font-size: 0.85rem; padding: 0.6rem 1.2rem; }
-        }
-
-        .empty-message { text-align: center; color: #8a9fb0; padding: 2rem; font-size: 1rem; }
-
-        .cantidad-row {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 0.8rem 1.5rem;
-            margin-top: 1rem;
-            padding-top: 1rem;
-            border-top: 1px solid #e3eaf2;
-        }
-        .cantidad-row .group { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
-        .cantidad-row label { font-weight: 500; color: #1f3a66; font-size: 0.9rem; }
-        .cantidad-row input {
-            width: 75px;
-            padding: 0.5rem;
-            border: 2px solid #dce3ed;
-            border-radius: 10px;
-            text-align: center;
-            font-size: 1rem;
-            background: white;
-            transition: 0.2s;
-            -webkit-appearance: none;
-            appearance: none;
-        }
-        .cantidad-row input:disabled { background: #f0f4f9; color: #7a8fa5; }
-        .cantidad-row input:focus { border-color: #2b6c9e; box-shadow: 0 0 0 3px rgba(43,108,158,0.15); }
-        .cantidad-row .acciones {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-            margin-left: auto;
-        }
-        .cantidad-row .info-text {
-            font-size: 0.8rem;
-            color: #5a7a9a;
-            background: #eef4fa;
-            padding: 0.2rem 0.8rem;
-            border-radius: 30px;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
-
-        .diff-table-wrap { margin-top: 1rem; overflow-x: auto; }
-        .diff-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-        .diff-table th { background: #e6edf8; padding: 0.5rem 0.7rem; text-align: left; font-weight: 600; color: #1a2a44; border-bottom: 2px solid #c6d6e8; }
-        .diff-table td { padding: 0.4rem 0.7rem; border-bottom: 1px solid #e8edf5; }
-        .diff-table .diff-positivo { color: #1e7b4a; font-weight: 600; }
-        .diff-table .diff-negativo { color: #b33c3c; font-weight: 600; }
-        .diff-table .acciones-cell button { background: none; border: none; color: #b33c3c; cursor: pointer; font-size: 1.1rem; padding: 0.2rem 0.5rem; }
-        .diff-table .acciones-cell button:active { transform: scale(0.9); }
-        .diff-totales { display: flex; gap: 1.5rem; margin-top: 0.5rem; font-weight: 600; color: #1a2a44; flex-wrap: wrap; }
-        .badge { background: #dce5f2; padding: 0.1rem 0.6rem; border-radius: 30px; font-size: 0.7rem; font-weight: 600; }
-
-        @media (max-width: 600px) {
             .cantidad-row { flex-direction: column; align-items: stretch; gap: 0.6rem; }
             .cantidad-row .acciones { justify-content: center; margin-left: 0; }
-            .diff-table { font-size: 0.75rem; }
-            .diff-table th, .diff-table td { padding: 0.2rem 0.4rem; }
-            .persist-row { flex-direction: column; align-items: stretch; }
-            .persist-row .btn { justify-content: center; }
-            .file-row { flex-direction: column; align-items: stretch; }
-            .file-row .status { text-align: center; margin-left: 0; }
         }
     </style>
 </head>
 <body>
 <div class="container">
 
-    <h1>📦 Buscador de Productos <small>Control de Inventario</small></h1>
+    <!-- ===== ENCABEZADO CORPORATIVO ===== -->
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">L</div>
+            <h1>LAIVE <small>Control de Inventario</small></h1>
+        </div>
+        <div class="badge-version">v2.0</div>
+    </div>
 
     <!-- ===== CARD: BÚSQUEDA ===== -->
     <div class="card">
@@ -302,19 +271,19 @@
             <button class="btn btn-primary" id="searchButton">🔍 Buscar</button>
             <button class="btn btn-success" id="refreshDriveBtn">🔄 Actualizar Drive</button>
         </div>
-        <div class="file-row">
-            <label for="fileInput">📂 Cargar archivo</label>
-            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+        <div class="file-row" style="display:flex; flex-wrap:wrap; align-items:center; gap:0.5rem; margin-top:0.8rem; font-size:0.9rem;">
+            <label for="fileInput" style="background:#e6edf8; padding:0.4rem 1.2rem; border-radius:40px; cursor:pointer; font-weight:500; display:flex; align-items:center; gap:0.4rem;">📂 Cargar archivo</label>
+            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none;">
             <button class="btn btn-outline btn-sm" id="loadTextBtn">📄 Desde texto</button>
             <button class="btn btn-outline btn-sm" id="resetBtn">🔄 Ejemplo</button>
-            <span class="status" id="fileStatus">(cargando desde Google Sheets...)</span>
+            <span class="status" id="fileStatus" style="color:#3a5375; margin-left:auto; font-size:0.85rem; text-align:right;">(cargando desde Google Sheets...)</span>
         </div>
         <div class="textarea-wrapper" style="margin-top:0.5rem;">
             <textarea id="csvTextArea" rows="2" placeholder="Pega aquí CSV (con cabecera)" style="width:100%; padding:0.5rem; border-radius:12px; border:1px solid #dce3ed; display:none; font-family:monospace;"></textarea>
         </div>
-        <div class="persist-row">
-            <span class="status-label">📌 Datos guardados:</span>
-            <span class="status-value" id="persistStatus">ninguno</span>
+        <div class="persist-row" style="display:flex; flex-wrap:wrap; gap:0.6rem; margin-top:0.8rem; padding-top:0.8rem; border-top:1px solid #e3eaf2; align-items:center; font-size:0.85rem;">
+            <span class="status-label" style="font-weight:600; color:#1f3a66;">📌 Datos guardados:</span>
+            <span class="status-value" id="persistStatus" style="color:#3a5a7a; background:#eef4fa; padding:0.2rem 0.8rem; border-radius:20px;">ninguno</span>
             <button class="btn btn-outline btn-sm" id="saveDataBtn">💾 Guardar</button>
             <button class="btn btn-outline btn-sm" id="loadDataBtn">📂 Cargar</button>
             <button class="btn btn-danger btn-sm" id="clearDataBtn">🗑️ Borrar</button>
@@ -323,29 +292,29 @@
 
     <!-- ===== CARD: RESULTADOS Y CANTIDADES ===== -->
     <div class="card">
-        <div class="results-header">
-            <div class="count">📋 Resultados <span id="resultCount">0</span></div>
-            <div class="stats">
-                <span><span class="label">📦 Cajas:</span> <span id="cajasCount">0</span></span>
-                <span><span class="label">🧩 Unidades:</span> <span id="unidadesCount">0</span></span>
+        <div class="results-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.4rem; margin-bottom:0.8rem;">
+            <div class="count" style="font-weight:700; font-size:1.1rem;">📋 Resultados <span id="resultCount" style="background:#dce5f2; padding:0.1rem 0.8rem; border-radius:30px; font-size:0.85rem; color:#1f3a66;">0</span></div>
+            <div class="stats" style="display:flex; gap:1.5rem; font-size:0.95rem; color:#2b4a6e;">
+                <span><span class="label" style="font-weight:500; color:#5f7a9a;">📦 Cajas:</span> <span id="cajasCount">0</span></span>
+                <span><span class="label" style="font-weight:500; color:#5f7a9a;">🧩 Unidades:</span> <span id="unidadesCount">0</span></span>
             </div>
         </div>
-        <div id="resultList" class="result-list">
-            <div class="empty-message">🔎 Escribe algo para buscar.</div>
+        <div id="resultList" class="result-list" style="display:flex; flex-direction:column; gap:0.5rem; max-height:460px; overflow-y:auto; padding-right:0.3rem;">
+            <div class="empty-message" style="text-align:center; color:#8a9fb0; padding:2rem; font-size:1rem;">🔎 Escribe algo para buscar.</div>
         </div>
 
-        <!-- ===== CANTIDADES (un solo bloque) ===== -->
-        <div class="cantidad-row">
-            <div class="group">
-                <label for="txtCajas">📦 Cajas:</label>
+        <!-- ===== CANTIDADES ===== -->
+        <div class="cantidad-row" style="display:flex; flex-wrap:wrap; align-items:center; gap:0.8rem 1.5rem; margin-top:1rem; padding-top:1rem; border-top:1px solid #e3eaf2;">
+            <div class="group" style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
+                <label for="txtCajas" style="font-weight:500; color:#1f3a66; font-size:0.9rem;">📦 Cajas:</label>
                 <input type="number" id="txtCajas" value="0" min="0" disabled>
             </div>
-            <div class="group">
-                <label for="txtUnidades">🧩 Unidades:</label>
+            <div class="group" style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
+                <label for="txtUnidades" style="font-weight:500; color:#1f3a66; font-size:0.9rem;">🧩 Unidades:</label>
                 <input type="number" id="txtUnidades" value="0" min="0">
             </div>
-            <div class="info-text" id="infoFactor">Factor: 1</div>
-            <div class="acciones">
+            <div class="info-text" id="infoFactor" style="font-size:0.8rem; color:#5a7a9a; background:#eef4fa; padding:0.2rem 0.8rem; border-radius:30px; display:inline-flex; align-items:center; gap:0.3rem;">Factor: 1</div>
+            <div class="acciones" style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-left:auto;">
                 <button class="btn btn-success" id="btnAgregar">➕ Agregar pedido</button>
                 <button class="btn btn-warning" id="btnRegistrarDiff">📝 Registrar diferencia</button>
             </div>
@@ -354,9 +323,9 @@
 
     <!-- ===== CARD: PEDIDO ACTUAL ===== -->
     <div class="card">
-        <div class="section-title">
-            <h2>📦 Pedido actual</h2>
-            <span class="badge" id="pedidoCount">0 productos</span>
+        <div class="section-title" style="display:flex; align-items:center; gap:0.5rem; border-bottom:2px solid #eef2f7; padding-bottom:0.6rem; margin-bottom:1rem; flex-wrap:wrap;">
+            <h2 style="font-size:1.2rem; font-weight:600; color:#1a2a44; margin:0;">📦 Pedido actual</h2>
+            <span class="badge" id="pedidoCount" style="background:#dce5f2; padding:0.1rem 0.6rem; border-radius:30px; font-size:0.7rem; font-weight:600; color:#1f3a66;">0 productos</span>
             <div style="margin-left:auto; display:flex; gap:1rem; font-size:0.9rem; flex-wrap:wrap;">
                 <span>📦 Cajas: <strong id="totalCajasPedido">0</strong></span>
                 <span>🧩 Unidades: <strong id="totalUnidadesPedido">0</strong></span>
@@ -366,12 +335,19 @@
             </div>
         </div>
         <div id="pedidoContainer">
-            <table class="diff-table" id="pedidoTable">
+            <table class="diff-table" id="pedidoTable" style="width:100%; border-collapse:collapse; font-size:0.85rem;">
                 <thead><tr>
-                    <th>#</th><th>Código</th><th>Cód. Fábrica</th><th>Descripción</th><th>Unidad</th><th>Cajas</th><th>Unidades</th><th>Acción</th>
+                    <th style="background:#e6edf8; padding:0.5rem 0.7rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">#</th>
+                    <th style="background:#e6edf8; padding:0.5rem 0.7rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Código</th>
+                    <th style="background:#e6edf8; padding:0.5rem 0.7rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Cód. Fábrica</th>
+                    <th style="background:#e6edf8; padding:0.5rem 0.7rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Descripción</th>
+                    <th style="background:#e6edf8; padding:0.5rem 0.7rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Unidad</th>
+                    <th style="background:#e6edf8; padding:0.5rem 0.7rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Cajas</th>
+                    <th style="background:#e6edf8; padding:0.5rem 0.7rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Unidades</th>
+                    <th style="background:#e6edf8; padding:0.5rem 0.7rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Acción</th>
                 </tr></thead>
                 <tbody id="pedidoBody">
-                    <tr><td colspan="8" class="empty-message">No hay productos en el pedido.</td></tr>
+                    <tr><td colspan="8" class="empty-message" style="text-align:center; color:#8a9fb0; padding:2rem; font-size:1rem;">No hay productos en el pedido.</td></tr>
                 </tbody>
                 <tfoot id="pedidoFoot" style="display:none;">
                     <tr style="font-weight:600; background:#f4f8fc;">
@@ -387,22 +363,29 @@
 
     <!-- ===== CARD: DIFERENCIAS ===== -->
     <div class="card" id="diffSection">
-        <div class="section-title">
-            <h2>📊 Diferencias de inventario</h2>
-            <span class="badge" id="diffCount">0 registros</span>
+        <div class="section-title" style="display:flex; align-items:center; gap:0.5rem; border-bottom:2px solid #eef2f7; padding-bottom:0.6rem; margin-bottom:1rem; flex-wrap:wrap;">
+            <h2 style="font-size:1.2rem; font-weight:600; color:#1a2a44; margin:0;">📊 Diferencias de inventario</h2>
+            <span class="badge" id="diffCount" style="background:#dce5f2; padding:0.1rem 0.6rem; border-radius:30px; font-size:0.7rem; font-weight:600; color:#1f3a66;">0 registros</span>
             <div style="margin-left:auto; display:flex; gap:0.5rem; flex-wrap:wrap;">
                 <button class="btn btn-success btn-sm" id="exportDiffBtn">📥 Exportar Excel</button>
                 <button class="btn btn-drive btn-sm" id="guardarDriveBtn">☁️ Guardar en Drive</button>
                 <button class="btn btn-danger btn-sm" id="clearDiffBtn">🗑️ Limpiar todo</button>
             </div>
         </div>
-        <div class="diff-table-wrap">
-            <table class="diff-table" id="diffTable">
+        <div class="diff-table-wrap" style="margin-top:1rem; overflow-x:auto;">
+            <table class="diff-table" id="diffTable" style="width:100%; border-collapse:collapse; font-size:0.85rem;">
                 <thead><tr>
-                    <th>#</th><th>Código</th><th>Descripción</th><th>Stock Teórico</th><th>Stock Físico</th><th>Diferencia</th><th>Fecha/Hora</th><th>Acción</th>
+                    <th style="background:#e6edf8; padding:0.5rem 0.7rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">#</th>
+                    <th style="background:#e6edf8; padding:0.5rem 0.7rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Código</th>
+                    <th style="background:#e6edf8; padding:0.5rem 0.7rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Descripción</th>
+                    <th style="background:#e6edf8; padding:0.5rem 0.7rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Stock Teórico</th>
+                    <th style="background:#e6edf8; padding:0.5rem 0.7rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Stock Físico</th>
+                    <th style="background:#e6edf8; padding:0.5rem 0.7rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Diferencia</th>
+                    <th style="background:#e6edf8; padding:0.5rem 0.7rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Fecha/Hora</th>
+                    <th style="background:#e6edf8; padding:0.5rem 0.7rem; text-align:left; font-weight:600; color:#0a2a5c; border-bottom:2px solid #c6d6e8;">Acción</th>
                 </tr></thead>
                 <tbody id="diffBody">
-                    <tr><td colspan="8" class="empty-message">No hay diferencias registradas.</td></tr>
+                    <tr><td colspan="8" class="empty-message" style="text-align:center; color:#8a9fb0; padding:2rem; font-size:1rem;">No hay diferencias registradas.</td></tr>
                 </tbody>
                 <tfoot id="diffFoot" style="display:none;">
                     <tr style="font-weight:600; background:#f4f8fc;">
@@ -415,7 +398,7 @@
                 </tfoot>
             </table>
         </div>
-        <div class="diff-totales" id="diffResumen" style="display:none;">
+        <div class="diff-totales" id="diffResumen" style="display:none; gap:1.5rem; margin-top:0.5rem; font-weight:600; color:#1a2a44; flex-wrap:wrap;">
             <span>📦 Teórico total: <strong id="resTeorico">0</strong></span>
             <span>🔎 Físico total: <strong id="resFisico">0</strong></span>
             <span>📊 Diferencia total: <strong id="resDiferencia">0</strong></span>
@@ -557,7 +540,7 @@
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
                 persistStatus.textContent = `guardado local (${data.length} registros)`;
-                persistStatus.style.color = '#1e7b4a';
+                persistStatus.style.color = '#1a7a4a';
             } catch (e) {}
         }
         function loadFromStorage() {
@@ -576,7 +559,7 @@
             const data = loadFromStorage();
             if (data && data.length > 0) {
                 persistStatus.textContent = `guardado local (${data.length} registros)`;
-                persistStatus.style.color = '#1e7b4a';
+                persistStatus.style.color = '#1a7a4a';
             } else {
                 persistStatus.textContent = 'ninguno';
                 persistStatus.style.color = '#3a5375';
@@ -701,7 +684,7 @@
 
         function renderResults(items) {
             if (!items || items.length === 0) {
-                resultList.innerHTML = `<div class="empty-message">🔎 No se encontraron productos</div>`;
+                resultList.innerHTML = `<div class="empty-message" style="text-align:center; color:#8a9fb0; padding:2rem; font-size:1rem;">🔎 No se encontraron productos</div>`;
                 resultCount.textContent = '0';
                 cajasCount.textContent = '0';
                 unidadesCount.textContent = '0';
@@ -722,23 +705,23 @@
                 const unidadesStock = cantidad % factor;
                 const selectedClass = (idx === selectedIndex) ? ' selected' : '';
 
-                html += `<div class="result-item${selectedClass}" data-index="${idx}">
-                    <span class="codigo">${codigo}</span>
-                    <span class="fabrica">${fabrica}</span>
-                    <span class="descripcion">${desc}</span>
-                    <span class="unidad">${unidad}</span>
-                    <span class="stock-cajas">${cajasStock}</span>
-                    <span class="stock-unidades">${unidadesStock}</span>
-                    <div class="row1">
-                        <span class="codigo">${codigo}</span>
-                        <span class="fabrica">${fabrica}</span>
-                        <span class="unidad">${unidad}</span>
+                html += `<div class="result-item${selectedClass}" data-index="${idx}" style="display:grid; grid-template-columns:70px 100px 1fr 70px 60px 60px; align-items:center; padding:0.5rem 0.8rem; background:#f8fafc; border-radius:12px; border:1px solid #e8edf5; gap:0.3rem 0.6rem; cursor:pointer; transition:0.15s; font-size:0.9rem;">
+                    <span class="codigo" style="font-weight:700; color:#0b1a33; font-family:'Courier New', monospace;">${codigo}</span>
+                    <span class="fabrica" style="color:#4a6a8a; font-family:'Courier New', monospace; font-size:0.8rem;">${fabrica}</span>
+                    <span class="descripcion" style="color:#1e334d; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${desc}</span>
+                    <span class="unidad" style="background:#d9e4f0; color:#1f3a66; padding:0 0.5rem; border-radius:12px; font-size:0.7rem; font-weight:600; text-align:center;">${unidad}</span>
+                    <span class="stock-cajas" style="font-weight:700; color:#0b1a33; text-align:right; font-family:'Courier New', monospace;">${cajasStock}</span>
+                    <span class="stock-unidades" style="font-weight:700; color:#3a5a7a; text-align:right; font-family:'Courier New', monospace;">${unidadesStock}</span>
+                    <div class="row1" style="display:none;">
+                        <span class="codigo" style="font-weight:700; color:#0b1a33; font-family:'Courier New', monospace;">${codigo}</span>
+                        <span class="fabrica" style="color:#4a6a8a; font-family:'Courier New', monospace; font-size:0.8rem;">${fabrica}</span>
+                        <span class="unidad" style="background:#d9e4f0; color:#1f3a66; padding:0 0.5rem; border-radius:12px; font-size:0.7rem; font-weight:600; text-align:center;">${unidad}</span>
                     </div>
-                    <div class="row2">
-                        <span class="descripcion">${desc}</span>
-                        <span class="stock">
-                            <span class="cajas">${cajasStock} cj</span>
-                            <span class="unidades">${unidadesStock} und</span>
+                    <div class="row2" style="display:none;">
+                        <span class="descripcion" style="color:#1e334d; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${desc}</span>
+                        <span class="stock" style="display:flex; gap:0.8rem; font-size:1rem; font-weight:700; white-space:nowrap; background:#eef4fa; padding:0.2rem 0.8rem; border-radius:30px; align-self:flex-start;">
+                            <span class="cajas" style="color:#0b1a33;">${cajasStock} cj</span>
+                            <span class="unidades" style="color:#2b6c9e;">${unidadesStock} und</span>
                         </span>
                     </div>
                 </div>`;
@@ -767,37 +750,30 @@
         }
 
         // ============================================================
-        //  ACTUALIZAR CANTIDADES (CORREGIDO)
+        //  ACTUALIZAR CANTIDADES
         // ============================================================
         function actualizarCantidades(item) {
             const unidad = getUnidadRef(item);
-            // Obtener factor: primero intentar extraer de la unidad (ej: "CJ*12"), si no, del campo FactorEmpaque
             let factor = obtenerFactorEmpaque(unidad) || getFactorEmpaque(item) || 1;
             currentFactor = factor;
 
-            // Mostrar factor en la interfaz
             infoFactor.textContent = `Factor: ${factor}`;
 
-            // Siempre resetear valores
             txtCajas.value = '0';
             txtUnidades.value = '0';
 
-            // Habilitar/deshabilitar cajas según el factor
             if (factor === 1) {
-                // Producto suelto: solo unidades, deshabilitar cajas
                 txtCajas.disabled = true;
                 txtCajas.style.background = '#f0f4f9';
                 txtUnidades.disabled = false;
                 txtUnidades.style.background = 'white';
             } else {
-                // Producto con empaque: habilitar cajas
                 txtCajas.disabled = false;
                 txtCajas.style.background = 'white';
                 txtUnidades.disabled = false;
                 txtUnidades.style.background = 'white';
             }
 
-            // Mostrar stock teórico en cajas y unidades
             const cantidad = getCantidad(item);
             const cajasStock = Math.floor(cantidad / factor);
             const unidadesStock = cantidad % factor;
@@ -847,7 +823,6 @@
 
             let totalPedido = 0;
             if (esSuelta) {
-                // Si es suelto, solo se usan unidades (sumar cajas como unidades)
                 totalPedido = cajasPedido + unidadesPedido;
             } else {
                 totalPedido = (cajasPedido * factor) + unidadesPedido;
@@ -927,7 +902,7 @@
 
         function renderPedido() {
             if (pedido.length === 0) {
-                pedidoBody.innerHTML = `<tr><td colspan="8" class="empty-message">No hay productos en el pedido.</td></tr>`;
+                pedidoBody.innerHTML = `<tr><td colspan="8" class="empty-message" style="text-align:center; color:#8a9fb0; padding:2rem; font-size:1rem;">No hay productos en el pedido.</td></tr>`;
                 pedidoFoot.style.display = 'none';
                 totalCajasPedido.textContent = '0';
                 totalUnidadesPedido.textContent = '0';
@@ -942,13 +917,13 @@
                 totalUnidades += p.unidades;
                 html += `<tr>
                     <td>${idx + 1}</td>
-                    <td class="codigo-cell">${p.codigo}</td>
+                    <td class="codigo-cell" style="font-family:monospace; font-weight:600;">${p.codigo}</td>
                     <td>${p.codigoFabrica}</td>
                     <td>${p.descripcion}</td>
                     <td>${p.unidad}</td>
-                    <td class="cantidad-cell">${p.cajas}</td>
-                    <td class="cantidad-cell">${p.unidades}</td>
-                    <td class="acciones-cell"><button class="eliminar-fila" data-codigo="${p.codigo}">✕</button></td>
+                    <td class="cantidad-cell" style="text-align:center;">${p.cajas}</td>
+                    <td class="cantidad-cell" style="text-align:center;">${p.unidades}</td>
+                    <td class="acciones-cell" style="text-align:center;"><button class="eliminar-fila" data-codigo="${p.codigo}" style="background:none; border:none; color:#b33c3c; cursor:pointer; font-size:1.1rem; padding:0.2rem 0.5rem;">✕</button></td>
                 </tr>`;
             });
 
@@ -969,7 +944,7 @@
         }
 
         // ============================================================
-        //  EXPORTAR PEDIDO A EXCEL (local)
+        //  EXPORTAR PEDIDO
         // ============================================================
         function exportarPedido() {
             if (pedido.length === 0) {
@@ -1046,7 +1021,7 @@
         }
 
         // ============================================================
-        //  REGISTRAR DIFERENCIA (CORREGIDO: solo usa factor)
+        //  REGISTRAR DIFERENCIA
         // ============================================================
         function registrarDiferencia() {
             if (selectedIndex === -1 || selectedIndex >= filteredData.length) {
@@ -1063,13 +1038,11 @@
             let cajas = parseInt(txtCajas.value) || 0;
             let unidades = parseInt(txtUnidades.value) || 0;
 
-            // Si es suelto, las cajas se suman a unidades
             if (esSuelta) {
                 unidades += cajas;
                 cajas = 0;
             }
 
-            // Calcular stock físico total en unidades
             const stockFisico = (cajas * factor) + unidades;
 
             if (stockFisico === 0) {
@@ -1112,7 +1085,7 @@
         // ============================================================
         function renderDiferencias() {
             if (diferencias.length === 0) {
-                diffBody.innerHTML = `<tr><td colspan="8" class="empty-message">No hay diferencias registradas.</td></tr>`;
+                diffBody.innerHTML = `<tr><td colspan="8" class="empty-message" style="text-align:center; color:#8a9fb0; padding:2rem; font-size:1rem;">No hay diferencias registradas.</td></tr>`;
                 diffFoot.style.display = 'none';
                 diffResumen.style.display = 'none';
                 diffCount.textContent = '0 registros';
@@ -1132,9 +1105,9 @@
                     <td>${d.descripcion}</td>
                     <td>${d.stockTeorico}</td>
                     <td>${d.stockFisico}</td>
-                    <td class="${claseDiff}">${d.diferencia}</td>
+                    <td class="${claseDiff}" style="${d.diferencia >= 0 ? 'color:#1a7a4a;' : 'color:#b33c3c;'} font-weight:600;">${d.diferencia}</td>
                     <td>${d.fecha}</td>
-                    <td class="acciones-cell"><button class="eliminar-diff" data-index="${idx}">✕</button></td>
+                    <td class="acciones-cell" style="text-align:center;"><button class="eliminar-diff" data-index="${idx}" style="background:none; border:none; color:#b33c3c; cursor:pointer; font-size:1.1rem; padding:0.2rem 0.5rem;">✕</button></td>
                 </tr>`;
             });
 
@@ -1162,7 +1135,7 @@
         }
 
         // ============================================================
-        //  EXPORTAR DIFERENCIAS A EXCEL (local)
+        //  EXPORTAR DIFERENCIAS
         // ============================================================
         function exportarDiferencias() {
             if (diferencias.length === 0) {
@@ -1333,12 +1306,10 @@
 
             btnRegistrarDiff.addEventListener('click', registrarDiferencia);
 
-            // Eventos para pedido
             exportPedidoBtn.addEventListener('click', exportarPedido);
             guardarPedidoDriveBtn.addEventListener('click', guardarPedidoEnDrive);
             limpiarPedidoBtn.addEventListener('click', limpiarPedido);
 
-            // Eventos para diferencias
             exportDiffBtn.addEventListener('click', exportarDiferencias);
             clearDiffBtn.addEventListener('click', limpiarDiferencias);
             guardarDriveBtn.addEventListener('click', guardarEnDrive);
