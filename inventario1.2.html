@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+    <title>Buscador de Productos</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        /* (todos tus estilos, igual que antes) */
+        /* ... */
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🔍 Buscador de Productos <small>stock en cajas y unidades</small></h1>
+
+    <div class="card">
+        <div class="search-row">
+            <input type="text" id="searchInput" placeholder="Buscar código o descripción..." autofocus />
+            <button id="searchButton">Buscar</button>
+            <button id="refreshDriveBtn" class="btn" style="background:#22c55e; color:white; min-height:48px; padding:0.8rem 1.5rem; border-radius:40px; border:none; font-weight:600;">🔄 Actualizar Drive</button>
+        </div>
+        <div class="file-row">
+            <label for="fileInput">📂 Cargar archivo</label>
+            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" />
+            <button class="btn btn-secondary" id="loadTextBtn">Cargar desde texto</button>
+            <button class="btn btn-secondary" id="resetBtn">Usar ejemplo</button>
+            <span class="status" id="fileStatus">(cargando desde Google Sheets...)</span>
+        </div>
+        <div class="admin-upload">
+            <span style="font-size:0.85rem; color:#2563eb;">✅ Datos sincronizados desde Google Sheets (se actualiza cada 5 min)</span>
+        </div>
+        <div class="textarea-wrapper">
+            <textarea id="csvTextArea" rows="2" placeholder="Pega aquí el contenido CSV (con cabecera)"></textarea>
+        </div>
+        <div class="persist-row">
+            <span class="status-label">Datos guardados:</span>
+            <span class="status-value" id="persistStatus">ninguno</span>
+            <button class="btn btn-primary" id="saveDataBtn">💾 Guardar</button>
+            <button class="btn btn-secondary" id="loadDataBtn">📂 Cargar</button>
+            <button class="btn btn-danger" id="clearDataBtn">🗑️ Borrar</button>
+        </div>
+    </div>
+
+    <!-- Resto del HTML igual -->
+    <div class="card"> ... </div>
+    <div class="card"> ... </div>
+</div>
+
+<script>
+    (function() {
+        // ========== CONFIGURACIÓN ==========
+        const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRKg3h0F7KMnRz2Fm2co7zlUFW1uZXeka4ljxSEbWLjDvDch3tglSqCDMn9uMVKiQ/pub?gid=683330974&single=true&output=csv';
+
+        // ========== DATOS DE EJEMPLO ==========
+        const sampleData = [
+            { "Producto":"MANJAR ESPECIAL BAZO VELARDE BALDE X 20 KG","Codigo":"9010","CodigoFabrica":"50000111","Unidad Ref":"BAL/BAL","Cantidad":"15","FactorEmpaque":"1","Linea":"MANJARES: ESPECIAL","Marca":"BAZO VELARDE" },
+            { "Producto":"LECHE UHT LAIVE ENTERA CAJA 946ML","Codigo":"2136","CodigoFabrica":"50001059","Unidad Ref":"CJ*12","Cantidad":"16459","FactorEmpaque":"12","Linea":"LECHES FRESCAS: ENTERO (A)","Marca":"LAIVE" }
+        ];
+
+        // ========== ESTADO ==========
+        let currentData = [];
+        let filteredData = [];
+        let selectedIndex = -1;
+        let pedido = [];
+
+        // ========== DOM ==========
+        // (todos los elementos igual que antes)
+        const searchInput = document.getElementById('searchInput');
+        const searchButton = document.getElementById('searchButton');
+        const resultList = document.getElementById('resultList');
+        const resultCount = document.getElementById('resultCount');
+        const cajasCount = document.getElementById('cajasCount');
+        const unidadesCount = document.getElementById('unidadesCount');
+        const txtCajas = document.getElementById('txtCajas');
+        const txtUnidades = document.getElementById('txtUnidades');
+        const btnAgregar = document.getElementById('btnAgregar');
+        const btnEliminar = document.getElementById('btnEliminar');
+        const pedidoBody = document.getElementById('pedidoBody');
+        const pedidoFoot = document.getElementById('pedidoFoot');
+        const totalCajasFoot = document.getElementById('totalCajasFoot');
+        const totalUnidadesFoot = document.getElementById('totalUnidadesFoot');
+        const totalCajasPedido = document.getElementById('totalCajasPedido');
+        const totalUnidadesPedido = document.getElementById('totalUnidadesPedido');
+        const fileInput = document.getElementById('fileInput');
+        const csvTextArea = document.getElementById('csvTextArea');
+        const loadTextBtn = document.getElementById('loadTextBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const fileStatus = document.getElementById('fileStatus');
+        const saveDataBtn = document.getElementById('saveDataBtn');
+        const loadDataBtn = document.getElementById('loadDataBtn');
+        const clearDataBtn = document.getElementById('clearDataBtn');
+        const persistStatus = document.getElementById('persistStatus');
+        const refreshBtn = document.getElementById('refreshDriveBtn');
+
+        // ========== FUNCIONES DE MAPEO (iguales) ==========
+        function getField(item, ...aliases) { /* ... */ }
+        function getCodigo(item) { return getField(item, 'Codigo', 'Código', 'Cod. Producto', 'InventarioProductoCodigo', 'Cod'); }
+        function getCodigoFabrica(item) { return getField(item, 'CodigoFabrica', 'CódigoFábrica', 'Cod. Fabrica', 'CodigoFabrica', 'CodFabrica'); }
+        function getDescripcion(item) { return getField(item, 'Producto', 'Descripción', 'InventarioProductoDescripcion', 'Descripcion', 'Nombre'); }
+        function getUnidadRef(item) { return getField(item, 'Unidad Ref', 'Uni. Ref.', 'Unidad', 'InventarioProductoUnidadReferenciaAbreviacion', 'UnidadRef'); }
+        function getCantidad(item) {
+            const val = getField(item, 'InventarioProductoCantidad', 'Cantidad', 'Stock', 'Stock Fisico');
+            if (typeof val === 'string' && val.includes('/')) {
+                const partes = val.split('/');
+                if (partes.length > 0) return parseInt(partes[0]) || 0;
+            }
+            return parseFloat(val) || 0;
+        }
+        function getFactorEmpaque(item) {
+            const val = getField(item, 'InventarioProductoUnidadReferenciaFactor', 'FactorEmpaque', 'Factor', 'UnidadRefFactor');
+            return parseInt(val) || 1;
+        }
+        function getLinea(item) { return getField(item, 'Linea', 'Línea', 'InventarioProductoCategoriaDescripcion', 'Categoria'); }
+        function getMarca(item) { return getField(item, 'Marca', 'InventarioProductoProveedorNombre', 'Proveedor'); }
+
+        function obtenerFactorEmpaque(textoEmpaque) {
+            if (!textoEmpaque) return 1;
+            let factor = 1;
+            let pos = textoEmpaque.indexOf('*');
+            if (pos === -1) pos = textoEmpaque.indexOf('X');
+            if (pos !== -1) {
+                let extraido = textoEmpaque.substring(pos + 1).trim();
+                let numeros = extraido.replace(/\D/g, '');
+                if (parseInt(numeros) > 1) factor = parseInt(numeros);
+            }
+            return factor;
+        }
+        function esPiezaSueltaDirecta(textoEmpaque) {
+            if (!textoEmpaque) return false;
+            const upper = textoEmpaque.toUpperCase();
+            return upper.includes('MOL') || upper.includes('BAL') || upper.includes('UNI') || upper.includes('UND') || upper.includes('SHT') || upper.includes('BOL') || upper.includes('POR');
+        }
+
+        // ========== PERSISTENCIA LOCAL ==========
+        const STORAGE_KEY = 'buscador_productos_data';
+        function saveToStorage(data) {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                persistStatus.textContent = `guardado local (${data.length} registros)`;
+                persistStatus.style.color = '#16a34a';
+            } catch (e) {}
+        }
+        function loadFromStorage() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) return null;
+                return JSON.parse(raw);
+            } catch (e) { return null; }
+        }
+        function clearStorage() {
+            localStorage.removeItem(STORAGE_KEY);
+            persistStatus.textContent = 'ninguno';
+            persistStatus.style.color = '#94a3b8';
+        }
+        function checkStorage() {
+            const data = loadFromStorage();
+            if (data && data.length > 0) {
+                persistStatus.textContent = `guardado local (${data.length} registros)`;
+                persistStatus.style.color = '#16a34a';
+            } else {
+                persistStatus.textContent = 'ninguno';
+                persistStatus.style.color = '#94a3b8';
+            }
+        }
+
+        // ========== PARSEADOR CSV ==========
+        function parseCSV(csvText) {
+            const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
+            if (lines.length < 2) return null;
+            let delimiter = ',';
+            if (lines[0].includes(';')) delimiter = ';';
+            if (lines[0].includes('\t')) delimiter = '\t';
+            const headers = lines[0].split(delimiter).map(h => h.trim());
+            const result = [];
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(delimiter).map(v => v.trim());
+                if (values.length < headers.length) continue;
+                const obj = {};
+                headers.forEach((h, idx) => {
+                    obj[h] = values[idx] || '';
+                });
+                result.push(obj);
+            }
+            return result;
+        }
+
+        // ========== CARGA DESDE GOOGLE SHEETS ==========
+        function loadFromGoogleSheets() {
+            fileStatus.textContent = '(cargando desde Google Sheets...)';
+            fetch(GOOGLE_SHEETS_CSV_URL)
+                .then(res => {
+                    if (!res.ok) throw new Error('No se pudo obtener el CSV');
+                    return res.text();
+                })
+                .then(csvText => {
+                    const data = parseCSV(csvText);
+                    if (data && data.length > 0) {
+                        currentData = data;
+                        fileStatus.textContent = `(cargados ${data.length} registros de Google Sheets)`;
+                        searchInput.value = '';
+                        selectedIndex = -1;
+                        filteredData = [];
+                        renderResults([]);
+                        limpiarCantidades();
+                        saveToStorage(data);
+                        checkStorage();
+                        // Mantener el pedido (opcional: si quieres limpiarlo al actualizar, descomenta la línea)
+                        // pedido = [];
+                        // renderPedido();
+                    } else {
+                        fileStatus.textContent = '(Google Sheets vacío, usando ejemplo)';
+                        useLocalData();
+                    }
+                })
+                .catch(err => {
+                    console.warn('Error al cargar Google Sheets, usando datos locales.', err);
+                    fileStatus.textContent = '(sin conexión a Google Sheets, usando local)';
+                    useLocalData();
+                });
+        }
+
+        function useLocalData() {
+            const saved = loadFromStorage();
+            if (saved && saved.length > 0) {
+                currentData = saved;
+                fileStatus.textContent = `(cargados ${saved.length} registros locales)`;
+            } else {
+                currentData = [...sampleData];
+                fileStatus.textContent = `(cargados ${currentData.length} registros de ejemplo)`;
+            }
+            searchInput.value = '';
+            selectedIndex = -1;
+            filteredData = [];
+            renderResults([]);
+            limpiarCantidades();
+            checkStorage();
+        }
+
+        // ========== RENDER Y BÚSQUEDA (iguales) ==========
+        function performSearch() {
+            const term = searchInput.value.trim();
+            if (!term) {
+                filteredData = [];
+                renderResults([]);
+                return;
+            }
+            const palabras = term.split(/\s+/).filter(p => p.length > 0);
+            const palabrasUpper = palabras.map(p => p.toUpperCase());
+
+            filteredData = currentData.filter(item => {
+                const campos = [
+                    getCodigo(item).toUpperCase(),
+                    getCodigoFabrica(item).toUpperCase(),
+                    getDescripcion(item).toUpperCase(),
+                    getUnidadRef(item).toUpperCase(),
+                    getLinea(item).toUpperCase(),
+                    getMarca(item).toUpperCase()
+                ];
+                return palabrasUpper.every(pal => campos.some(campo => campo.includes(pal)));
+            });
+
+            renderResults(filteredData);
+        }
+
+        function renderResults(items) {
+            if (!items || items.length === 0) {
+                resultList.innerHTML = `<div class="empty-message">No se encontraron productos</div>`;
+                resultCount.textContent = '0';
+                cajasCount.textContent = '0';
+                unidadesCount.textContent = '0';
+                selectedIndex = -1;
+                limpiarCantidades();
+                return;
+            }
+
+            let html = '';
+            items.forEach((item, idx) => {
+                const codigo = getCodigo(item);
+                const fabrica = getCodigoFabrica(item);
+                const desc = getDescripcion(item);
+                const unidad = getUnidadRef(item);
+                const cantidad = getCantidad(item);
+                const factor = getFactorEmpaque(item) || 1;
+                const cajasStock = Math.floor(cantidad / factor);
+                const unidadesStock = cantidad % factor;
+                const selectedClass = (idx === selectedIndex) ? ' selected' : '';
+
+                html += `<div class="result-item${selectedClass}" data-index="${idx}">
+                    <span class="codigo">${codigo}</span>
+                    <span class="fabrica">${fabrica}</span>
+                    <span class="descripcion">${desc}</span>
+                    <span class="unidad">${unidad}</span>
+                    <span class="stock-cajas">${cajasStock}</span>
+                    <span class="stock-unidades">${unidadesStock}</span>
+                    <div class="row1">
+                        <span class="codigo">${codigo}</span>
+                        <span class="fabrica">${fabrica}</span>
+                        <span class="unidad">${unidad}</span>
+                    </div>
+                    <div class="row2">
+                        <span class="descripcion">${desc}</span>
+                        <span class="stock">
+                            <span class="cajas">${cajasStock} cj</span>
+                            <span class="unidades">${unidadesStock} und</span>
+                        </span>
+                    </div>
+                </div>`;
+            });
+            resultList.innerHTML = html;
+            resultCount.textContent = items.length;
+
+            if (selectedIndex !== -1 && selectedIndex < items.length) {
+                actualizarCantidades(items[selectedIndex]);
+            } else {
+                limpiarCantidades();
+            }
+
+            document.querySelectorAll('.result-item').forEach(el => {
+                el.addEventListener('click', function() {
+                    const idx = parseInt(this.dataset.index);
+                    if (idx === selectedIndex) return;
+                    document.querySelectorAll('.result-item').forEach(e => e.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedIndex = idx;
+                    if (selectedIndex < filteredData.length) {
+                        actualizarCantidades(filteredData[selectedIndex]);
+                    }
+                });
+                el.addEventListener('touchstart', function() {
+                    this.style.transform = 'scale(0.98)';
+                }, { passive: true });
+                el.addEventListener('touchend', function() {
+                    this.style.transform = 'scale(1)';
+                }, { passive: true });
+            });
+        }
+
+        function actualizarCantidades(item) {
+            const unidad = getUnidadRef(item);
+            const factor = obtenerFactorEmpaque(unidad) || getFactorEmpaque(item) || 1;
+            const esSuelta = esPiezaSueltaDirecta(unidad) || factor === 1;
+
+            txtCajas.value = '0';
+            txtUnidades.value = '0';
+
+            if (esSuelta || factor === 1) {
+                txtCajas.disabled = true;
+                txtCajas.style.background = '#e9edf2';
+                txtUnidades.disabled = false;
+                txtUnidades.style.background = 'white';
+            } else {
+                txtCajas.disabled = false;
+                txtCajas.style.background = 'white';
+                txtUnidades.disabled = false;
+                txtUnidades.style.background = 'white';
+            }
+            const cantidad = getCantidad(item);
+            const cajasStock = Math.floor(cantidad / factor);
+            const unidadesStock = cantidad % factor;
+            cajasCount.textContent = cajasStock;
+            unidadesCount.textContent = unidadesStock;
+        }
+
+        function limpiarCantidades() {
+            txtCajas.value = '0';
+            txtUnidades.value = '0';
+            txtCajas.disabled = true;
+            txtCajas.style.background = '#e9edf2';
+            txtUnidades.disabled = false;
+            txtUnidades.style.background = 'white';
+            cajasCount.textContent = '0';
+            unidadesCount.textContent = '0';
+        }
+
+        // ========== PEDIDO (igual) ==========
+        function agregarProducto() {
+            if (selectedIndex === -1 || selectedIndex >= filteredData.length) {
+                alert('Seleccione un producto de la lista.');
+                return;
+            }
+            const item = filteredData[selectedIndex];
+            const codigo = getCodigo(item);
+            const codigoFabrica = getCodigoFabrica(item);
+            const descripcion = getDescripcion(item);
+            const unidad = getUnidadRef(item);
+            const factor = obtenerFactorEmpaque(unidad) || getFactorEmpaque(item) || 1;
+            const esSuelta = esPiezaSueltaDirecta(unidad) || factor === 1;
+
+            const stockTotal = getCantidad(item);
+            const stockCajas = Math.floor(stockTotal / factor);
+            const stockUnidades = stockTotal % factor;
+
+            let cajasPedido = parseInt(txtCajas.value) || 0;
+            let unidadesPedido = parseInt(txtUnidades.value) || 0;
+            if (cajasPedido === 0 && unidadesPedido === 0) {
+                alert('Ingrese una cantidad (cajas o unidades).');
+                return;
+            }
+
+            let totalPedido = 0;
+            if (esSuelta || factor === 1) {
+                totalPedido = cajasPedido + unidadesPedido;
+            } else {
+                totalPedido = (cajasPedido * factor) + unidadesPedido;
+            }
+
+            if (totalPedido === 0) {
+                alert('Cantidad cero, no se agregará.');
+                return;
+            }
+
+            if (totalPedido > stockTotal) {
+                alert(`Stock insuficiente. Disponible: ${stockCajas} cajas y ${stockUnidades} unidades sueltas.`);
+                return;
+            }
+
+            let existing = pedido.find(p => p.codigo === codigo);
+            if (existing) {
+                let nuevasCajas = existing.cajas;
+                let nuevasUnidades = existing.unidades;
+                if (esSuelta || factor === 1) {
+                    let total = (nuevasCajas + nuevasUnidades) + (cajasPedido + unidadesPedido);
+                    nuevasCajas = 0;
+                    nuevasUnidades = total;
+                } else {
+                    let total = (nuevasCajas * factor) + nuevasUnidades + (cajasPedido * factor) + unidadesPedido;
+                    nuevasCajas = Math.floor(total / factor);
+                    nuevasUnidades = total % factor;
+                }
+                let totalActualizado = (nuevasCajas * factor) + nuevasUnidades;
+                if (totalActualizado > stockTotal) {
+                    alert(`No puedes agregar más de lo disponible. Stock: ${stockCajas} cajas y ${stockUnidades} unidades.`);
+                    return;
+                }
+                existing.cajas = nuevasCajas;
+                existing.unidades = nuevasUnidades;
+            } else {
+                let newCajas = 0, newUnidades = 0;
+                if (esSuelta || factor === 1) {
+                    newCajas = 0;
+                    newUnidades = totalPedido;
+                } else {
+                    newCajas = Math.floor(totalPedido / factor);
+                    newUnidades = totalPedido % factor;
+                }
+                pedido.push({
+                    codigo: codigo,
+                    codigoFabrica: codigoFabrica,
+                    descripcion: descripcion,
+                    unidad: unidad,
+                    cajas: newCajas,
+                    unidades: newUnidades,
+                    factor: factor,
+                    esSuelta: esSuelta
+                });
+            }
+
+            let totalPedidoAcumulado = 0;
+            pedido.forEach(p => {
+                if (p.codigo === codigo) {
+                    totalPedidoAcumulado = (p.cajas * p.factor) + p.unidades;
+                }
+            });
+            const restante = stockTotal - totalPedidoAcumulado;
+            const restCajas = Math.floor(restante / factor);
+            const restUnidades = restante % factor;
+            alert(`Producto agregado. Stock restante: ${restCajas} cajas y ${restUnidades} unidades.`);
+
+            txtCajas.value = '0';
+            txtUnidades.value = '0';
+            renderPedido();
+            if (selectedIndex < filteredData.length) {
+                actualizarCantidades(filteredData[selectedIndex]);
+            }
+        }
+
+        function eliminarDelPedido(codigo) {
+            pedido = pedido.filter(p => p.codigo !== codigo);
+            renderPedido();
+        }
+
+        function renderPedido() {
+            if (pedido.length === 0) {
+                pedidoBody.innerHTML = `<tr><td colspan="8" class="empty-message">No hay productos en el pedido.</td></tr>`;
+                pedidoFoot.style.display = 'none';
+                totalCajasPedido.textContent = '0';
+                totalUnidadesPedido.textContent = '0';
+                return;
+            }
+
+            let html = '';
+            let totalCajas = 0, totalUnidades = 0;
+            pedido.forEach((p, idx) => {
+                totalCajas += p.cajas;
+                totalUnidades += p.unidades;
+                html += `<tr>
+                    <td>${idx + 1}</td>
+                    <td class="codigo-cell">${p.codigo}</td>
+                    <td>${p.codigoFabrica}</td>
+                    <td>${p.descripcion}</td>
+                    <td>${p.unidad}</td>
+                    <td class="cantidad-cell">${p.cajas}</td>
+                    <td class="cantidad-cell">${p.unidades}</td>
+                    <td class="acciones-cell"><button class="eliminar-fila" data-codigo="${p.codigo}">✕</button></td>
+                </tr>`;
+            });
+
+            pedidoBody.innerHTML = html;
+            pedidoFoot.style.display = 'table-row-group';
+            totalCajasFoot.textContent = totalCajas;
+            totalUnidadesFoot.textContent = totalUnidades;
+            totalCajasPedido.textContent = totalCajas;
+            totalUnidadesPedido.textContent = totalUnidades;
+
+            document.querySelectorAll('.eliminar-fila').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const codigo = this.dataset.codigo;
+                    eliminarDelPedido(codigo);
+                });
+            });
+        }
+
+        // ========== CARGA LOCAL (archivo, CSV, ejemplo) ==========
+        function loadData(data, persist = true) {
+            if (!data || data.length === 0) {
+                alert('No se encontraron datos válidos.');
+                return;
+            }
+            currentData = data;
+            searchInput.value = '';
+            selectedIndex = -1;
+            filteredData = [];
+            renderResults([]);
+            fileStatus.textContent = `(cargados ${data.length} registros)`;
+            limpiarCantidades();
+            if (persist) {
+                saveToStorage(data);
+            }
+            checkStorage();
+        }
+
+        function readFileContent(file) {
+            const reader = new FileReader();
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (ext === 'csv') {
+                reader.onload = e => {
+                    const data = parseCSV(e.target.result);
+                    if (data) loadData(data, true);
+                    else alert('No se pudo parsear el CSV.');
+                };
+                reader.readAsText(file);
+            } else if (ext === 'xlsx' || ext === 'xls') {
+                reader.onload = e => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                        if (jsonData && jsonData.length > 0) loadData(jsonData, true);
+                        else alert('El archivo Excel no contiene datos.');
+                    } catch (err) {
+                        alert('Error al leer Excel: ' + err.message);
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            } else {
+                alert('Formato no soportado. Usa .xlsx, .xls o .csv');
+            }
+        }
+
+        // ========== INICIALIZACIÓN ==========
+        function init() {
+            // Cargar desde Google Sheets al iniciar
+            loadFromGoogleSheets();
+
+            // Botón de recarga manual
+            refreshBtn.addEventListener('click', function() {
+                this.textContent = '⏳ Cargando...';
+                loadFromGoogleSheets();
+                this.textContent = '🔄 Actualizar Drive';
+            });
+
+            // Auto-refresco cada 5 minutos
+            setInterval(function() {
+                loadFromGoogleSheets();
+            }, 300000);
+
+            // Eventos de búsqueda
+            searchButton.addEventListener('click', performSearch);
+            searchInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') performSearch();
+            });
+            let debounceTimer;
+            searchInput.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(performSearch, 250);
+            });
+            searchInput.addEventListener('blur', () => {
+                setTimeout(performSearch, 100);
+            });
+
+            btnAgregar.addEventListener('click', agregarProducto);
+
+            txtCajas.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    txtUnidades.focus();
+                }
+            });
+            txtUnidades.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    agregarProducto();
+                }
+            });
+
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                readFileContent(file);
+                fileInput.value = '';
+            });
+
+            loadTextBtn.addEventListener('click', function() {
+                const text = csvTextArea.value;
+                if (!text.trim()) {
+                    alert('Pega datos CSV en el área de texto.');
+                    return;
+                }
+                const data = parseCSV(text);
+                if (data && data.length > 0) {
+                    loadData(data, true);
+                    csvTextArea.value = '';
+                } else {
+                    alert('No se pudo parsear el CSV.');
+                }
+            });
+
+            resetBtn.addEventListener('click', function() {
+                currentData = [...sampleData];
+                searchInput.value = '';
+                csvTextArea.value = '';
+                filteredData = [];
+                selectedIndex = -1;
+                pedido = [];
+                renderResults([]);
+                renderPedido();
+                fileStatus.textContent = `(cargados ${currentData.length} registros de ejemplo)`;
+                resultCount.textContent = '0';
+                cajasCount.textContent = '0';
+                unidadesCount.textContent = '0';
+                limpiarCantidades();
+                saveToStorage(currentData);
+                checkStorage();
+            });
+
+            saveDataBtn.addEventListener('click', function() {
+                if (currentData && currentData.length > 0) {
+                    saveToStorage(currentData);
+                    alert('Datos guardados en el navegador local.');
+                } else {
+                    alert('No hay datos para guardar.');
+                }
+            });
+
+            loadDataBtn.addEventListener('click', function() {
+                const saved = loadFromStorage();
+                if (saved && saved.length > 0) {
+                    currentData = saved;
+                    fileStatus.textContent = `(cargados ${saved.length} registros locales)`;
+                    searchInput.value = '';
+                    selectedIndex = -1;
+                    filteredData = [];
+                    renderResults([]);
+                    limpiarCantidades();
+                    checkStorage();
+                    alert('Datos cargados desde el navegador local.');
+                } else {
+                    alert('No hay datos guardados localmente.');
+                }
+            });
+
+            clearDataBtn.addEventListener('click', function() {
+                if (confirm('¿Borrar todos los datos guardados en el navegador local?')) {
+                    clearStorage();
+                    loadFromGoogleSheets();
+                }
+            });
+
+            checkStorage();
+        }
+
+        init();
+    })();
+</script>
+</body>
+</html>
