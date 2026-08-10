@@ -3,284 +3,321 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
-    <title>Buscador de Productos - IEM GROUP</title>
+    <title>Buscador - IEM GROUP</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* ===== RESET Y ESTILOS BASE ===== */
+        /* === RESET === */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            font-family: 'Segoe UI', -apple-system, Roboto, sans-serif;
             background: linear-gradient(145deg, #0b1a2e 0%, #1a2d44 100%);
             min-height: 100vh;
             padding: 0.8rem;
             color: #dce4ec;
-            line-height: 1.5;
+            line-height: 1.4;
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+        .container { max-width: 1100px; margin: 0 auto; }
 
-        /* ===== ENCABEZADO CORREGIDO ===== */
+        /* === HEADER === */
         .header {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            margin-bottom: 1.2rem;
-            background: rgba(15, 30, 50, 0.85);
-            backdrop-filter: blur(8px);
-            padding: 0.6rem 1.2rem;
-            border-radius: 60px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.06);
+            justify-content: space-between;
             flex-wrap: wrap;
+            gap: 0.3rem 0.8rem;
+            background: rgba(15, 30, 50, 0.7);
+            backdrop-filter: blur(6px);
+            padding: 0.5rem 1rem;
+            border-radius: 40px;
+            border: 1px solid rgba(255,255,255,0.05);
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         }
-        .header .logo {
+        .header .brand {
             display: flex;
             align-items: baseline;
-            gap: 0.5rem;
+            gap: 0.4rem;
             flex-wrap: wrap;
         }
-        .header .logo .iemgroup {
-            font-size: 1.8rem;
+        .header .brand .iem {
+            font-size: 1.6rem;
             font-weight: 800;
-            color: #b8d4f0;
-            letter-spacing: -0.5px;
-            text-shadow: 0 0 20px rgba(70, 130, 200, 0.15);
+            color: #c8ddf0;
+            letter-spacing: -0.3px;
         }
-        .header .logo .laive {
-            font-size: 1rem;
+        .header .brand .laive {
+            font-size: 0.85rem;
             font-weight: 500;
             color: #8aaccc;
-            letter-spacing: 1px;
-            background: rgba(70, 130, 200, 0.1);
-            padding: 0.1rem 0.8rem;
+            background: rgba(70, 130, 200, 0.12);
+            padding: 0.1rem 0.7rem;
             border-radius: 30px;
-            border: 1px solid rgba(70, 130, 200, 0.1);
+            border: 1px solid rgba(70, 130, 200, 0.08);
         }
-        .header .badge-version {
-            margin-left: auto;
-            background: rgba(70, 130, 200, 0.15);
-            color: #8aaccc;
-            padding: 0.15rem 0.8rem;
+        .header .version {
+            font-size: 0.6rem;
+            color: #6a8aaa;
+            background: rgba(70, 130, 200, 0.08);
+            padding: 0.1rem 0.6rem;
             border-radius: 30px;
-            font-size: 0.65rem;
-            font-weight: 600;
-            white-space: nowrap;
-            border: 1px solid rgba(70, 130, 200, 0.15);
         }
 
-        /* ===== TARJETAS ===== */
+        /* === TARJETAS === */
         .card {
-            background: rgba(20, 40, 65, 0.85);
+            background: rgba(22, 42, 65, 0.75);
             backdrop-filter: blur(4px);
-            border-radius: 20px;
-            padding: 1rem 1.2rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            transition: box-shadow 0.3s;
-        }
-        .card:hover {
-            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.35);
+            border-radius: 18px;
+            padding: 0.8rem 1rem;
+            margin-bottom: 0.9rem;
+            border: 1px solid rgba(255,255,255,0.04);
+            box-shadow: 0 6px 24px rgba(0,0,0,0.2);
         }
 
-        /* ===== BOTONES OSCUROS ===== */
+        /* === INPUTS (más claros) === */
+        .search-row input {
+            flex: 1;
+            min-width: 140px;
+            padding: 0.6rem 1rem;
+            border: 1px solid #3a5a7a;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            background: rgba(210, 225, 240, 0.12);
+            color: #e8eef4;
+            outline: none;
+            transition: 0.2s;
+        }
+        .search-row input::placeholder { color: #8aaccc; }
+        .search-row input:focus {
+            border-color: #6a9ac0;
+            background: rgba(210, 225, 240, 0.18);
+            box-shadow: 0 0 0 3px rgba(70, 130, 200, 0.1);
+        }
+
+        .cantidad-row input {
+            width: 60px;
+            padding: 0.4rem 0.2rem;
+            border: 1px solid #3a5a7a;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.9rem;
+            background: rgba(210, 225, 240, 0.08);
+            color: #e8eef4;
+            outline: none;
+            transition: 0.2s;
+        }
+        .cantidad-row input:disabled {
+            background: rgba(30, 50, 70, 0.4);
+            color: #6a8aaa;
+        }
+        .cantidad-row input:focus {
+            border-color: #6a9ac0;
+            background: rgba(210, 225, 240, 0.12);
+        }
+
+        /* === BOTONES === */
         .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 0.3rem;
-            padding: 0.5rem 1rem;
+            padding: 0.45rem 1rem;
             border: none;
-            border-radius: 50px;
+            border-radius: 40px;
             font-weight: 600;
             font-size: 0.85rem;
             cursor: pointer;
-            transition: all 0.2s ease;
-            touch-action: manipulation;
-            min-height: 38px;
+            transition: 0.15s;
+            min-height: 36px;
             white-space: nowrap;
+            touch-action: manipulation;
         }
-        .btn:active { transform: scale(0.96); }
+        .btn:active { transform: scale(0.95); }
         .btn-primary {
             background: linear-gradient(135deg, #1a4b7a, #2a6a9a);
-            color: white;
-            box-shadow: 0 4px 16px rgba(26, 75, 122, 0.4);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(26,75,122,0.3);
         }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26, 75, 122, 0.5); }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(26,75,122,0.4); }
         .btn-success {
             background: linear-gradient(135deg, #1a6a3a, #2a8a4a);
-            color: white;
-            box-shadow: 0 4px 16px rgba(26, 106, 58, 0.4);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(26,106,58,0.3);
         }
-        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26, 106, 58, 0.5); }
-        .btn-danger {
-            background: linear-gradient(135deg, #8a2a2a, #aa3a3a);
-            color: white;
-            box-shadow: 0 4px 16px rgba(138, 42, 42, 0.4);
-        }
-        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(138, 42, 42, 0.5); }
+        .btn-success:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(26,106,58,0.4); }
         .btn-warning {
             background: linear-gradient(135deg, #b87a2a, #d08a3a);
-            color: white;
-            box-shadow: 0 4px 16px rgba(184, 122, 42, 0.4);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(184,122,42,0.3);
         }
-        .btn-warning:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(184, 122, 42, 0.5); }
+        .btn-warning:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(184,122,42,0.4); }
         .btn-outline {
             background: transparent;
-            border: 2px solid #3a5a7a;
+            border: 1px solid #3a5a7a;
             color: #aac0d4;
         }
-        .btn-outline:hover { background: rgba(58, 90, 122, 0.3); border-color: #5a8aaa; color: #dce4ec; }
+        .btn-outline:hover { background: rgba(58,90,122,0.2); border-color: #5a8aaa; }
         .btn-drive {
             background: linear-gradient(135deg, #2a5a9a, #3a7aba);
-            color: white;
-            box-shadow: 0 4px 16px rgba(42, 90, 154, 0.4);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(42,90,154,0.3);
         }
-        .btn-drive:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(42, 90, 154, 0.5); }
+        .btn-drive:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(42,90,154,0.4); }
         .btn-sm {
             padding: 0.2rem 0.7rem;
-            min-height: 28px;
             font-size: 0.7rem;
+            min-height: 28px;
         }
 
-        /* ===== INPUTS OSCUROS ===== */
-        .search-row input {
-            flex: 1;
-            min-width: 140px;
-            padding: 0.6rem 1rem;
-            border: 2px solid #2a4a6a;
-            border-radius: 50px;
-            font-size: 0.9rem;
-            outline: none;
-            background: rgba(10, 25, 45, 0.7);
-            color: #dce4ec;
-            transition: 0.2s;
+        /* === FILE ROW (solo cargar archivo) === */
+        .file-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.4rem;
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
         }
-        .search-row input::placeholder { color: #6a8aaa; }
-        .search-row input:focus {
-            border-color: #4a8aba;
-            box-shadow: 0 0 0 4px rgba(74, 138, 186, 0.15);
-            background: rgba(10, 25, 45, 0.9);
+        .file-row label {
+            background: rgba(40, 70, 100, 0.3);
+            padding: 0.3rem 0.9rem;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: 500;
+            color: #aac0d4;
+            border: 1px solid rgba(255,255,255,0.04);
+            transition: 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
         }
-        .cantidad-row input {
-            width: 60px;
-            padding: 0.4rem;
-            border: 2px solid #2a4a6a;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 0.9rem;
-            background: rgba(10, 25, 45, 0.7);
-            color: #dce4ec;
-            transition: 0.2s;
-            -webkit-appearance: none;
-            appearance: none;
-        }
-        .cantidad-row input:disabled { background: rgba(30, 50, 70, 0.5); color: #5a7a8a; }
-        .cantidad-row input:focus {
-            border-color: #4a8aba;
-            box-shadow: 0 0 0 3px rgba(74, 138, 186, 0.15);
+        .file-row label:hover { background: rgba(40, 70, 100, 0.5); }
+        .file-row input[type="file"] { display: none; }
+        .file-row .status {
+            color: #7a9aba;
+            font-size: 0.7rem;
+            margin-left: auto;
+            text-align: right;
         }
 
-        /* ===== RESULTADOS ===== */
+        /* === RESULTADOS === */
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.2rem 0.6rem;
+            margin-bottom: 0.5rem;
+        }
+        .results-header .count {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #c8ddf0;
+        }
+        .results-header .count span {
+            background: rgba(58,90,122,0.2);
+            padding: 0.05rem 0.6rem;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            color: #8aaccc;
+        }
+        .results-header .stats {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.8rem;
+            color: #8aaccc;
+        }
+        .results-header .stats .label { color: #6a8aaa; }
+
+        .result-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            max-height: 420px;
+            overflow-y: auto;
+            padding-right: 0.2rem;
+        }
+
+        /* === ITEMS DE RESULTADO (con fondo claro) === */
         .result-item {
             display: grid;
-            grid-template-columns: 70px 100px 1fr 70px 60px 60px;
+            grid-template-columns: 65px 90px 1fr 65px 55px 55px;
             align-items: center;
-            padding: 0.4rem 0.6rem;
-            background: rgba(15, 35, 55, 0.6);
+            padding: 0.35rem 0.6rem;
+            background: rgba(200, 220, 240, 0.06);
             border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255,255,255,0.03);
             gap: 0.2rem 0.4rem;
             cursor: pointer;
-            transition: 0.15s;
+            transition: 0.12s;
             font-size: 0.8rem;
             color: #c8d8e8;
         }
-        .result-item:hover { background: rgba(30, 60, 90, 0.5); border-color: rgba(74, 138, 186, 0.2); }
+        .result-item:hover { background: rgba(200, 220, 240, 0.1); }
         .result-item.selected {
-            background: rgba(30, 70, 110, 0.5);
-            border-color: #4a8aba;
-            box-shadow: 0 0 0 2px rgba(74, 138, 186, 0.15);
+            background: rgba(70, 130, 200, 0.12);
+            border-color: rgba(70, 130, 200, 0.15);
+            box-shadow: 0 0 0 1px rgba(70, 130, 200, 0.1);
         }
-        .result-item .codigo { font-weight: 700; color: #b8d4f0; font-family: 'Courier New', monospace; }
-        .result-item .fabrica { color: #7a9aba; font-family: 'Courier New', monospace; font-size: 0.7rem; }
-        .result-item .descripcion { color: #aac0d4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .result-item .unidad { background: rgba(58, 90, 122, 0.3); color: #8aaccc; padding: 0 0.4rem; border-radius: 12px; font-size: 0.6rem; font-weight: 600; text-align: center; }
-        .result-item .stock-cajas, .result-item .stock-unidades { font-weight: 700; color: #b8d4f0; text-align: right; font-family: 'Courier New', monospace; font-size: 0.8rem; }
+        .result-item .codigo { font-weight: 700; color: #c8ddf0; font-family: monospace; }
+        .result-item .fabrica { color: #7a9aba; font-family: monospace; font-size: 0.7rem; }
+        .result-item .descripcion { color: #b0c8dc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .result-item .unidad { background: rgba(58,90,122,0.2); color: #8aaccc; padding: 0 0.4rem; border-radius: 12px; font-size: 0.6rem; font-weight: 600; }
+        .result-item .stock-cajas, .result-item .stock-unidades {
+            font-weight: 600;
+            font-family: monospace;
+            font-size: 0.8rem;
+            text-align: right;
+        }
+        .result-item .stock-cajas { color: #c8ddf0; }
         .result-item .stock-unidades { color: #8aaccc; }
 
-        /* ===== TABLAS OSCURAS ===== */
-        .diff-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.75rem;
-            color: #c8d8e8;
-        }
-        .diff-table th {
-            background: rgba(20, 50, 80, 0.5);
-            color: #8aaccc;
-            border-bottom: 2px solid rgba(74, 138, 186, 0.2);
-            font-size: 0.7rem;
-            padding: 0.3rem 0.4rem;
-            font-weight: 600;
-        }
-        .diff-table td {
-            padding: 0.3rem 0.4rem;
-            font-size: 0.7rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-        }
-        .diff-table .diff-positivo { color: #5aba7a; font-weight: 600; }
-        .diff-table .diff-negativo { color: #da6a6a; font-weight: 600; }
-
-        /* ===== MÓVIL ===== */
+        /* === MÓVIL: tarjetas === */
         @media (max-width: 640px) {
-            body { padding: 0.4rem; }
-            .header {
-                padding: 0.4rem 0.8rem;
-                border-radius: 30px;
-                gap: 0.3rem;
-            }
-            .header .logo .iemgroup { font-size: 1.3rem; }
-            .header .logo .laive { font-size: 0.7rem; padding: 0.05rem 0.6rem; }
-            .header .badge-version { font-size: 0.5rem; padding: 0.1rem 0.5rem; }
-            .card { padding: 0.6rem 0.8rem; border-radius: 16px; margin-bottom: 0.6rem; }
-
-            .search-row { gap: 0.3rem; }
-            .search-row input { font-size: 0.8rem; padding: 0.5rem 0.8rem; min-width: 100px; }
-            .btn { font-size: 0.7rem; padding: 0.4rem 0.7rem; min-height: 32px; }
-            .btn-sm { font-size: 0.6rem; padding: 0.15rem 0.5rem; min-height: 24px; }
-
-            .file-row { flex-direction: column; align-items: stretch; gap: 0.3rem; font-size: 0.75rem; }
-            .file-row .status { text-align: center; margin-left: 0; }
-
-            .persist-row { flex-direction: column; align-items: stretch; gap: 0.3rem; font-size: 0.75rem; }
-            .persist-row .btn { justify-content: center; }
-
-            .results-header { flex-direction: column; align-items: flex-start; gap: 0.2rem; }
-            .results-header .count { font-size: 0.9rem; }
-            .results-header .stats { font-size: 0.75rem; gap: 0.8rem; }
-
             .result-item {
                 display: flex;
                 flex-direction: column;
-                padding: 0.5rem 0.6rem;
+                padding: 0.5rem 0.7rem;
                 border-radius: 12px;
                 gap: 0.1rem;
-                background: rgba(15, 35, 55, 0.6);
-                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                background: rgba(200, 220, 240, 0.05);
                 margin-bottom: 0.3rem;
-                font-size: 0.75rem;
+                border: 1px solid rgba(255,255,255,0.02);
             }
-            .result-item .row1 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.5rem; }
-            .result-item .row1 .codigo { font-size: 0.95rem; font-weight: 700; color: #b8d4f0; }
-            .result-item .row1 .fabrica { font-size: 0.75rem; color: #7a9aba; }
-            .result-item .row1 .unidad { font-size: 0.6rem; padding: 0.05rem 0.4rem; background: rgba(58, 90, 122, 0.3); border-radius: 12px; color: #8aaccc; }
-            .result-item .row2 { display: flex; flex-wrap: wrap; flex-direction: column; align-items: flex-start; gap: 0.2rem; width: 100%; }
-            .result-item .row2 .descripcion { font-size: 0.85rem; white-space: normal; word-break: break-word; line-height: 1.3; color: #aac0d4; }
-            .result-item .row2 .stock { display: flex; gap: 0.5rem; font-size: 0.8rem; font-weight: 700; background: rgba(20, 50, 80, 0.4); padding: 0.1rem 0.6rem; border-radius: 30px; align-self: flex-start; }
-            .result-item .row2 .stock .cajas { color: #b8d4f0; }
+            .result-item .row1 {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: baseline;
+                gap: 0.2rem 0.5rem;
+            }
+            .result-item .row1 .codigo { font-size: 0.95rem; font-weight: 700; color: #c8ddf0; }
+            .result-item .row1 .fabrica { font-size: 0.7rem; color: #7a9aba; }
+            .result-item .row1 .unidad { font-size: 0.6rem; padding: 0.05rem 0.4rem; background: rgba(58,90,122,0.15); border-radius: 12px; color: #8aaccc; }
+            .result-item .row2 {
+                display: flex;
+                flex-wrap: wrap;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.15rem;
+                width: 100%;
+            }
+            .result-item .row2 .descripcion {
+                font-size: 0.85rem;
+                white-space: normal;
+                word-break: break-word;
+                line-height: 1.3;
+                color: #b0c8dc;
+            }
+            .result-item .row2 .stock {
+                display: flex;
+                gap: 0.5rem;
+                font-size: 0.8rem;
+                font-weight: 600;
+                background: rgba(20, 50, 80, 0.2);
+                padding: 0.1rem 0.6rem;
+                border-radius: 30px;
+                align-self: flex-start;
+            }
+            .result-item .row2 .stock .cajas { color: #c8ddf0; }
             .result-item .row2 .stock .unidades { color: #8aaccc; }
             .result-item .codigo, .result-item .fabrica, .result-item .unidad,
             .result-item .stock-cajas, .result-item .stock-unidades,
@@ -288,162 +325,213 @@
             .result-item .row1, .result-item .row2 { display: flex !important; }
             .result-item .row1 .codigo, .result-item .row1 .fabrica, .result-item .row1 .unidad,
             .result-item .row2 .descripcion, .result-item .row2 .stock { display: inline !important; }
-            .result-list { max-height: 50vh !important; min-height: 150px; }
-
-            .cantidad-row {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 0.4rem;
-                margin-top: 0.5rem;
-                padding-top: 0.5rem;
-                border-top: 1px solid rgba(255,255,255,0.05);
-            }
-            .cantidad-row .group { justify-content: space-between; }
-            .cantidad-row input { width: 55px; font-size: 0.8rem; padding: 0.3rem; }
-            .cantidad-row .acciones { justify-content: center; margin-left: 0; flex-wrap: wrap; }
-            .cantidad-row .info-text { font-size: 0.7rem; padding: 0.1rem 0.5rem; }
-
-            .section-title {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 0.3rem;
-            }
-            .section-title h2 { font-size: 1rem; color: #b8d4f0; }
-            .section-title > div { margin-left: 0 !important; justify-content: center; flex-wrap: wrap; }
-
-            .diff-table-wrap { font-size: 0.65rem; }
-            .diff-table th, .diff-table td { padding: 0.15rem 0.2rem; font-size: 0.6rem; }
-
-            .diff-totales { font-size: 0.75rem; gap: 0.5rem; flex-direction: column; color: #aac0d4; }
-            .empty-message { font-size: 0.8rem; padding: 1rem; color: #6a8aaa; }
+            .result-list { max-height: 55vh !important; min-height: 180px; }
         }
 
-        @media (max-width: 400px) {
-            .header .logo .iemgroup { font-size: 1.1rem; }
-            .header .logo .laive { font-size: 0.6rem; }
-            .btn { font-size: 0.6rem; padding: 0.3rem 0.5rem; min-height: 28px; }
-            .search-row input { font-size: 0.7rem; padding: 0.4rem 0.6rem; min-width: 80px; }
-            .result-item .row1 .codigo { font-size: 0.85rem; }
-            .result-item .row2 .descripcion { font-size: 0.75rem; }
+        /* === CANTIDADES === */
+        .cantidad-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.4rem 0.8rem;
+            margin-top: 0.6rem;
+            padding-top: 0.6rem;
+            border-top: 1px solid rgba(255,255,255,0.04);
+        }
+        .cantidad-row .group {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .cantidad-row label {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #8aaccc;
+        }
+        .cantidad-row .info-factor {
+            font-size: 0.7rem;
+            color: #7a9aba;
+            background: rgba(20,50,80,0.2);
+            padding: 0.1rem 0.6rem;
+            border-radius: 30px;
+        }
+        .cantidad-row .acciones {
+            display: flex;
+            gap: 0.3rem;
+            flex-wrap: wrap;
+            margin-left: auto;
         }
 
-        /* ===== COLORES DE TEXTO GENERALES ===== */
-        .status-label { color: #8aaccc; }
-        .status-value { color: #aac0d4; background: rgba(20, 50, 80, 0.3); padding: 0.1rem 0.5rem; border-radius: 20px; font-size: 0.7rem; }
-        .badge { background: rgba(58, 90, 122, 0.3); color: #8aaccc; padding: 0.05rem 0.5rem; border-radius: 30px; font-size: 0.6rem; font-weight: 600; }
-        .info-text { font-size: 0.7rem; color: #7a9aba; background: rgba(20, 50, 80, 0.3); padding: 0.1rem 0.5rem; border-radius: 30px; display: inline-flex; align-items: center; gap: 0.2rem; }
-        .count { color: #b8d4f0; }
-        .count span { background: rgba(58, 90, 122, 0.3); color: #8aaccc; padding: 0.05rem 0.5rem; border-radius: 30px; font-size: 0.75rem; }
-        .stats { color: #8aaccc; }
-        .stats .label { color: #6a8aaa; }
-        h2 { color: #b8d4f0; }
-        .file-row label { background: rgba(20, 50, 80, 0.3); color: #aac0d4; padding: 0.3rem 0.8rem; border-radius: 40px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; }
-        .file-row label:hover { background: rgba(30, 60, 90, 0.4); }
-        .file-row .status { color: #6a8aaa; }
+        /* === TABLAS (pedido y diferencias) === */
+        .diff-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.7rem;
+            color: #c8d8e8;
+        }
+        .diff-table th {
+            background: rgba(20, 50, 80, 0.3);
+            color: #8aaccc;
+            padding: 0.25rem 0.4rem;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(74,138,186,0.1);
+            text-align: left;
+        }
+        .diff-table td {
+            padding: 0.25rem 0.4rem;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+        }
+        .diff-table .diff-positivo { color: #5aba7a; font-weight: 600; }
+        .diff-table .diff-negativo { color: #da6a6a; font-weight: 600; }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            padding-bottom: 0.3rem;
+            margin-bottom: 0.4rem;
+            flex-wrap: wrap;
+        }
+        .section-title h2 {
+            font-size: 1rem;
+            color: #c8ddf0;
+            margin: 0;
+        }
+        .section-title .badge {
+            background: rgba(58,90,122,0.15);
+            color: #8aaccc;
+            padding: 0.05rem 0.6rem;
+            border-radius: 30px;
+            font-size: 0.6rem;
+        }
+        .section-title .actions {
+            margin-left: auto;
+            display: flex;
+            gap: 0.3rem;
+            flex-wrap: wrap;
+        }
+
+        .empty-message {
+            text-align: center;
+            color: #6a8aaa;
+            padding: 1.2rem;
+            font-size: 0.85rem;
+        }
+
+        /* === RESPONSIVE GENERAL === */
+        @media (max-width: 640px) {
+            body { padding: 0.4rem; }
+            .header { padding: 0.4rem 0.7rem; border-radius: 30px; }
+            .header .brand .iem { font-size: 1.2rem; }
+            .header .brand .laive { font-size: 0.7rem; }
+            .card { padding: 0.6rem 0.7rem; border-radius: 14px; }
+            .search-row { flex-direction: column; gap: 0.3rem; }
+            .search-row input { width: 100%; font-size: 0.8rem; padding: 0.5rem 0.8rem; }
+            .search-row .btn { width: 100%; justify-content: center; font-size: 0.75rem; padding: 0.4rem; }
+            .file-row { flex-direction: column; align-items: stretch; gap: 0.3rem; }
+            .file-row .status { margin-left: 0; text-align: center; }
+            .cantidad-row { flex-direction: column; align-items: stretch; gap: 0.4rem; }
+            .cantidad-row .acciones { margin-left: 0; justify-content: center; }
+            .section-title { flex-direction: column; align-items: stretch; gap: 0.2rem; }
+            .section-title .actions { margin-left: 0; justify-content: center; }
+            .diff-table { font-size: 0.6rem; }
+        }
+
+        /* scrollbar personalizada */
+        .result-list::-webkit-scrollbar { width: 4px; }
+        .result-list::-webkit-scrollbar-track { background: rgba(20,50,80,0.1); border-radius: 4px; }
+        .result-list::-webkit-scrollbar-thumb { background: rgba(70,130,200,0.2); border-radius: 4px; }
     </style>
 </head>
 <body>
 <div class="container">
 
-    <!-- ===== ENCABEZADO CORREGIDO ===== -->
+    <!-- === HEADER === -->
     <div class="header">
-        <div class="logo">
-            <span class="iemgroup">IEM GROUP</span>
+        <div class="brand">
+            <span class="iem">IEM GROUP</span>
             <span class="laive">LAIVE</span>
         </div>
-        <div class="badge-version">v2.0</div>
+        <div class="version">v2.0</div>
     </div>
 
-    <!-- ===== CARD: BÚSQUEDA ===== -->
+    <!-- === BÚSQUEDA === -->
     <div class="card">
-        <div class="search-row" style="display:flex; flex-wrap:wrap; gap:0.4rem; align-items:center;">
-            <input type="text" id="searchInput" placeholder="Buscar por código, descripción o marca..." autofocus>
+        <div class="search-row">
+            <input type="text" id="searchInput" placeholder="Buscar por código o descripción..." autofocus>
             <button class="btn btn-primary" id="searchButton">🔍 Buscar</button>
             <button class="btn btn-success" id="refreshDriveBtn">🔄 Actualizar</button>
         </div>
-        <div class="file-row" style="display:flex; flex-wrap:wrap; align-items:center; gap:0.3rem; margin-top:0.5rem; font-size:0.8rem;">
-            <label for="fileInput">📂 Cargar</label>
-            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none;">
+        <div class="file-row">
+            <label for="fileInput">📂 Cargar archivo</label>
+            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
             <button class="btn btn-outline btn-sm" id="loadTextBtn">📄 Texto</button>
             <button class="btn btn-outline btn-sm" id="resetBtn">🔄 Ejemplo</button>
-            <span class="status" id="fileStatus" style="color:#6a8aaa; margin-left:auto; font-size:0.7rem; text-align:right;">(cargando...)</span>
+            <span class="status" id="fileStatus">(cargando...)</span>
         </div>
-        <div class="textarea-wrapper" style="margin-top:0.3rem;">
-            <textarea id="csvTextArea" rows="2" placeholder="Pega aquí CSV (con cabecera)" style="width:100%; padding:0.4rem; border-radius:10px; border:1px solid #2a4a6a; background:rgba(10,25,45,0.5); color:#dce4ec; display:none; font-family:monospace; font-size:0.7rem;"></textarea>
-        </div>
-        <div class="persist-row" style="display:flex; flex-wrap:wrap; gap:0.4rem; margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid rgba(255,255,255,0.05); align-items:center; font-size:0.75rem;">
-            <span class="status-label">📌 Datos:</span>
-            <span class="status-value" id="persistStatus">ninguno</span>
-            <button class="btn btn-outline btn-sm" id="saveDataBtn">💾 Guardar</button>
-            <button class="btn btn-outline btn-sm" id="loadDataBtn">📂 Cargar</button>
-            <button class="btn btn-danger btn-sm" id="clearDataBtn">🗑️ Borrar</button>
+        <div style="margin-top:0.3rem;">
+            <textarea id="csvTextArea" rows="2" placeholder="Pega CSV aquí" style="width:100%; padding:0.4rem; border-radius:10px; border:1px solid #2a4a6a; background:rgba(10,25,45,0.4); color:#dce4ec; display:none; font-size:0.7rem; font-family:monospace;"></textarea>
         </div>
     </div>
 
-    <!-- ===== CARD: RESULTADOS Y CANTIDADES ===== -->
+    <!-- === RESULTADOS === -->
     <div class="card">
-        <div class="results-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.2rem; margin-bottom:0.5rem;">
+        <div class="results-header">
             <div class="count">📋 Resultados <span id="resultCount">0</span></div>
             <div class="stats">
                 <span><span class="label">📦 Cajas:</span> <span id="cajasCount">0</span></span>
                 <span><span class="label">🧩 Unidades:</span> <span id="unidadesCount">0</span></span>
             </div>
         </div>
-        <div id="resultList" class="result-list" style="display:flex; flex-direction:column; gap:0.3rem; max-height:400px; overflow-y:auto; padding-right:0.2rem;">
+        <div id="resultList" class="result-list">
             <div class="empty-message">🔎 Escribe algo para buscar.</div>
         </div>
 
-        <!-- ===== CANTIDADES ===== -->
-        <div class="cantidad-row" style="display:flex; flex-wrap:wrap; align-items:center; gap:0.4rem 1rem; margin-top:0.6rem; padding-top:0.6rem; border-top:1px solid rgba(255,255,255,0.05);">
-            <div class="group" style="display:flex; align-items:center; gap:0.3rem; flex-wrap:wrap;">
-                <label for="txtCajas" style="font-weight:500; color:#8aaccc; font-size:0.8rem;">📦 Cajas:</label>
+        <!-- Cantidades -->
+        <div class="cantidad-row">
+            <div class="group">
+                <label for="txtCajas">📦 Cajas:</label>
                 <input type="number" id="txtCajas" value="0" min="0" disabled>
             </div>
-            <div class="group" style="display:flex; align-items:center; gap:0.3rem; flex-wrap:wrap;">
-                <label for="txtUnidades" style="font-weight:500; color:#8aaccc; font-size:0.8rem;">🧩 Unidades:</label>
+            <div class="group">
+                <label for="txtUnidades">🧩 Unidades:</label>
                 <input type="number" id="txtUnidades" value="0" min="0">
             </div>
-            <div class="info-text" id="infoFactor">Factor: 1</div>
-            <div class="acciones" style="display:flex; gap:0.3rem; flex-wrap:wrap; margin-left:auto;">
+            <div class="info-factor" id="infoFactor">Factor: 1</div>
+            <div class="acciones">
                 <button class="btn btn-success" id="btnAgregar">➕ Pedido</button>
                 <button class="btn btn-warning" id="btnRegistrarDiff">📝 Diferencia</button>
             </div>
         </div>
     </div>
 
-    <!-- ===== CARD: PEDIDO ACTUAL ===== -->
+    <!-- === PEDIDO === -->
     <div class="card">
-        <div class="section-title" style="display:flex; align-items:center; gap:0.3rem; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:0.4rem; margin-bottom:0.6rem; flex-wrap:wrap;">
+        <div class="section-title">
             <h2>📦 Pedido actual</h2>
             <span class="badge" id="pedidoCount">0 productos</span>
-            <div style="margin-left:auto; display:flex; gap:0.4rem; font-size:0.75rem; flex-wrap:wrap;">
-                <span style="color:#8aaccc;">📦 Cajas: <strong id="totalCajasPedido" style="color:#b8d4f0;">0</strong></span>
-                <span style="color:#8aaccc;">🧩 Unidades: <strong id="totalUnidadesPedido" style="color:#b8d4f0;">0</strong></span>
+            <div class="actions">
+                <span style="font-size:0.7rem; color:#8aaccc;">Cajas: <strong id="totalCajasPedido" style="color:#c8ddf0;">0</strong></span>
+                <span style="font-size:0.7rem; color:#8aaccc;">Unidades: <strong id="totalUnidadesPedido" style="color:#c8ddf0;">0</strong></span>
                 <button class="btn btn-success btn-sm" id="exportPedidoBtn">📥 Excel</button>
                 <button class="btn btn-drive btn-sm" id="guardarPedidoDriveBtn">☁️ Drive</button>
                 <button class="btn btn-danger btn-sm" id="limpiarPedidoBtn">🗑️</button>
             </div>
         </div>
-        <div id="pedidoContainer">
+        <div style="overflow-x:auto;">
             <table class="diff-table" id="pedidoTable">
                 <thead><tr>
-                    <th>#</th>
-                    <th>Código</th>
-                    <th>Cód. Fábrica</th>
-                    <th>Descripción</th>
-                    <th>Unidad</th>
-                    <th>Cajas</th>
-                    <th>Unidades</th>
-                    <th>Acción</th>
+                    <th>#</th><th>Código</th><th>Cód.Fábrica</th><th>Descripción</th><th>Unidad</th><th>Cajas</th><th>Unidades</th><th>Acción</th>
                 </tr></thead>
                 <tbody id="pedidoBody">
                     <tr><td colspan="8" class="empty-message">No hay productos en el pedido.</td></tr>
                 </tbody>
                 <tfoot id="pedidoFoot" style="display:none;">
-                    <tr style="font-weight:600; background:rgba(20,50,80,0.3);">
+                    <tr style="background:rgba(20,50,80,0.2); font-weight:600;">
                         <td colspan="5" style="text-align:right;">Totales</td>
-                        <td id="totalCajasFoot" style="color:#b8d4f0;">0</td>
-                        <td id="totalUnidadesFoot" style="color:#b8d4f0;">0</td>
+                        <td id="totalCajasFoot" style="color:#c8ddf0;">0</td>
+                        <td id="totalUnidadesFoot" style="color:#c8ddf0;">0</td>
                         <td></td>
                     </tr>
                 </tfoot>
@@ -451,72 +539,57 @@
         </div>
     </div>
 
-    <!-- ===== CARD: DIFERENCIAS ===== -->
+    <!-- === DIFERENCIAS === -->
     <div class="card" id="diffSection">
-        <div class="section-title" style="display:flex; align-items:center; gap:0.3rem; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:0.4rem; margin-bottom:0.6rem; flex-wrap:wrap;">
+        <div class="section-title">
             <h2>📊 Diferencias</h2>
             <span class="badge" id="diffCount">0 registros</span>
-            <div style="margin-left:auto; display:flex; gap:0.3rem; flex-wrap:wrap;">
+            <div class="actions">
                 <button class="btn btn-success btn-sm" id="exportDiffBtn">📥 Excel</button>
                 <button class="btn btn-drive btn-sm" id="guardarDriveBtn">☁️ Drive</button>
                 <button class="btn btn-danger btn-sm" id="clearDiffBtn">🗑️</button>
             </div>
         </div>
-        <div class="diff-table-wrap" style="margin-top:0.5rem; overflow-x:auto;">
+        <div style="overflow-x:auto;">
             <table class="diff-table" id="diffTable">
                 <thead><tr>
-                    <th>#</th>
-                    <th>Código</th>
-                    <th>Descripción</th>
-                    <th>Teórico</th>
-                    <th>Físico</th>
-                    <th>Diferencia</th>
-                    <th>Fecha/Hora</th>
-                    <th>Acción</th>
+                    <th>#</th><th>Código</th><th>Descripción</th><th>Teórico</th><th>Físico</th><th>Diferencia</th><th>Fecha/Hora</th><th>Acción</th>
                 </tr></thead>
                 <tbody id="diffBody">
                     <tr><td colspan="8" class="empty-message">No hay diferencias registradas.</td></tr>
                 </tbody>
                 <tfoot id="diffFoot" style="display:none;">
-                    <tr style="font-weight:600; background:rgba(20,50,80,0.3);">
+                    <tr style="background:rgba(20,50,80,0.2); font-weight:600;">
                         <td colspan="3" style="text-align:right;">Totales</td>
-                        <td id="diffTotalTeorico" style="color:#b8d4f0;">0</td>
-                        <td id="diffTotalFisico" style="color:#b8d4f0;">0</td>
-                        <td id="diffTotalDiferencia" style="color:#b8d4f0;">0</td>
+                        <td id="diffTotalTeorico" style="color:#c8ddf0;">0</td>
+                        <td id="diffTotalFisico" style="color:#c8ddf0;">0</td>
+                        <td id="diffTotalDiferencia" style="color:#c8ddf0;">0</td>
                         <td></td><td></td>
                     </tr>
                 </tfoot>
             </table>
         </div>
-        <div class="diff-totales" id="diffResumen" style="display:none; gap:0.8rem; margin-top:0.3rem; font-weight:600; flex-wrap:wrap; font-size:0.75rem;">
-            <span>📦 Teórico total: <strong id="resTeorico" style="color:#b8d4f0;">0</strong></span>
-            <span>🔎 Físico total: <strong id="resFisico" style="color:#b8d4f0;">0</strong></span>
-            <span>📊 Diferencia total: <strong id="resDiferencia" style="color:#b8d4f0;">0</strong></span>
+        <div id="diffResumen" style="display:none; gap:0.6rem; margin-top:0.3rem; font-weight:600; flex-wrap:wrap; font-size:0.75rem; color:#aac0d4;">
+            <span>📦 Teórico: <strong id="resTeorico" style="color:#c8ddf0;">0</strong></span>
+            <span>🔎 Físico: <strong id="resFisico" style="color:#c8ddf0;">0</strong></span>
+            <span>📊 Diferencia: <strong id="resDiferencia" style="color:#c8ddf0;">0</strong></span>
         </div>
     </div>
 </div>
 
 <script>
     (function() {
-        // ============================================================
-        //  CONFIGURACIÓN
-        // ============================================================
+        // ======= CONFIG =======
         const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRKg3h0F7KMnRz2Fm2co7zlUFW1uZXeka4ljxSEbWLjDvDch3tglSqCDMn9uMVKiQ/pub?gid=683330974&single=true&output=csv';
-
-        // ⚠️ IMPORTANTE: Reemplaza con la URL de tu Apps Script
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyhnv5rsC8MNNhzKJMakeSyC3yNm01qDe6fE6wmDdtlZCNEkww8f5V0-L51Akjrw8Y00w/exec';
 
-        // ============================================================
-        //  DATOS DE EJEMPLO (fallback)
-        // ============================================================
+        // ======= DATOS EJEMPLO =======
         const sampleData = [
             {"Producto":"MANJAR ESPECIAL BAZO VELARDE BALDE X 20 KG","Codigo":"9010","CodigoFabrica":"50000111","Unidad Ref":"BAL/BAL","Cantidad":"15","FactorEmpaque":"1","Linea":"MANJARES: ESPECIAL","Marca":"BAZO VELARDE"},
             {"Producto":"LECHE UHT LAIVE ENTERA CAJA 946ML","Codigo":"2136","CodigoFabrica":"50001059","Unidad Ref":"CJ*12","Cantidad":"16459","FactorEmpaque":"12","Linea":"LECHES FRESCAS: ENTERO (A)","Marca":"LAIVE"}
         ];
 
-        // ============================================================
-        //  ESTADO
-        // ============================================================
+        // ======= ESTADO =======
         let currentData = [];
         let filteredData = [];
         let selectedIndex = -1;
@@ -524,251 +597,177 @@
         let diferencias = [];
         let currentFactor = 1;
 
-        // DOM
-        const searchInput = document.getElementById('searchInput');
-        const searchButton = document.getElementById('searchButton');
-        const resultList = document.getElementById('resultList');
-        const resultCount = document.getElementById('resultCount');
-        const cajasCount = document.getElementById('cajasCount');
-        const unidadesCount = document.getElementById('unidadesCount');
-        const txtCajas = document.getElementById('txtCajas');
-        const txtUnidades = document.getElementById('txtUnidades');
-        const infoFactor = document.getElementById('infoFactor');
-        const btnAgregar = document.getElementById('btnAgregar');
-        const btnRegistrarDiff = document.getElementById('btnRegistrarDiff');
-        const pedidoBody = document.getElementById('pedidoBody');
-        const pedidoFoot = document.getElementById('pedidoFoot');
-        const totalCajasFoot = document.getElementById('totalCajasFoot');
-        const totalUnidadesFoot = document.getElementById('totalUnidadesFoot');
-        const totalCajasPedido = document.getElementById('totalCajasPedido');
-        const totalUnidadesPedido = document.getElementById('totalUnidadesPedido');
-        const pedidoCount = document.getElementById('pedidoCount');
-        const fileInput = document.getElementById('fileInput');
-        const csvTextArea = document.getElementById('csvTextArea');
-        const loadTextBtn = document.getElementById('loadTextBtn');
-        const resetBtn = document.getElementById('resetBtn');
-        const fileStatus = document.getElementById('fileStatus');
-        const saveDataBtn = document.getElementById('saveDataBtn');
-        const loadDataBtn = document.getElementById('loadDataBtn');
-        const clearDataBtn = document.getElementById('clearDataBtn');
-        const persistStatus = document.getElementById('persistStatus');
-        const refreshBtn = document.getElementById('refreshDriveBtn');
+        // ======= DOM =======
+        const $ = id => document.getElementById(id);
+        const searchInput = $('searchInput');
+        const searchButton = $('searchButton');
+        const resultList = $('resultList');
+        const resultCount = $('resultCount');
+        const cajasCount = $('cajasCount');
+        const unidadesCount = $('unidadesCount');
+        const txtCajas = $('txtCajas');
+        const txtUnidades = $('txtUnidades');
+        const infoFactor = $('infoFactor');
+        const btnAgregar = $('btnAgregar');
+        const btnRegistrarDiff = $('btnRegistrarDiff');
+        const pedidoBody = $('pedidoBody');
+        const pedidoFoot = $('pedidoFoot');
+        const totalCajasFoot = $('totalCajasFoot');
+        const totalUnidadesFoot = $('totalUnidadesFoot');
+        const totalCajasPedido = $('totalCajasPedido');
+        const totalUnidadesPedido = $('totalUnidadesPedido');
+        const pedidoCount = $('pedidoCount');
+        const fileInput = $('fileInput');
+        const csvTextArea = $('csvTextArea');
+        const loadTextBtn = $('loadTextBtn');
+        const resetBtn = $('resetBtn');
+        const fileStatus = $('fileStatus');
+        const refreshBtn = $('refreshDriveBtn');
 
-        const diffBody = document.getElementById('diffBody');
-        const diffFoot = document.getElementById('diffFoot');
-        const diffCount = document.getElementById('diffCount');
-        const diffTotalTeorico = document.getElementById('diffTotalTeorico');
-        const diffTotalFisico = document.getElementById('diffTotalFisico');
-        const diffTotalDiferencia = document.getElementById('diffTotalDiferencia');
-        const diffResumen = document.getElementById('diffResumen');
-        const resTeorico = document.getElementById('resTeorico');
-        const resFisico = document.getElementById('resFisico');
-        const resDiferencia = document.getElementById('resDiferencia');
-        const exportDiffBtn = document.getElementById('exportDiffBtn');
-        const clearDiffBtn = document.getElementById('clearDiffBtn');
-        const guardarDriveBtn = document.getElementById('guardarDriveBtn');
+        const diffBody = $('diffBody');
+        const diffFoot = $('diffFoot');
+        const diffCount = $('diffCount');
+        const diffTotalTeorico = $('diffTotalTeorico');
+        const diffTotalFisico = $('diffTotalFisico');
+        const diffTotalDiferencia = $('diffTotalDiferencia');
+        const diffResumen = $('diffResumen');
+        const resTeorico = $('resTeorico');
+        const resFisico = $('resFisico');
+        const resDiferencia = $('resDiferencia');
+        const exportDiffBtn = $('exportDiffBtn');
+        const clearDiffBtn = $('clearDiffBtn');
+        const guardarDriveBtn = $('guardarDriveBtn');
+        const exportPedidoBtn = $('exportPedidoBtn');
+        const guardarPedidoDriveBtn = $('guardarPedidoDriveBtn');
+        const limpiarPedidoBtn = $('limpiarPedidoBtn');
 
-        const exportPedidoBtn = document.getElementById('exportPedidoBtn');
-        const guardarPedidoDriveBtn = document.getElementById('guardarPedidoDriveBtn');
-        const limpiarPedidoBtn = document.getElementById('limpiarPedidoBtn');
-
-        // ============================================================
-        //  FUNCIONES DE MAPEO
-        // ============================================================
+        // ======= MAPEO DE CAMPOS =======
         function getField(item, ...aliases) {
-            for (let alias of aliases) {
-                if (item.hasOwnProperty(alias) && item[alias] !== undefined && item[alias] !== '') return item[alias];
+            for (let a of aliases) {
+                if (item.hasOwnProperty(a) && item[a] !== undefined && item[a] !== '') return item[a];
             }
-            const keys = Object.keys(item);
-            for (let alias of aliases) {
-                const lowerAlias = alias.toLowerCase();
-                for (let key of keys) {
-                    if (key.toLowerCase() === lowerAlias) return item[key];
+            let keys = Object.keys(item);
+            for (let a of aliases) {
+                let lower = a.toLowerCase();
+                for (let k of keys) {
+                    if (k.toLowerCase() === lower) return item[k];
                 }
             }
             return '';
         }
-        function getCodigo(item) { return getField(item, 'Codigo', 'Código', 'Cod. Producto', 'InventarioProductoCodigo', 'Cod'); }
-        function getCodigoFabrica(item) { return getField(item, 'CodigoFabrica', 'CódigoFábrica', 'Cod. Fabrica', 'CodigoFabrica', 'CodFabrica'); }
-        function getDescripcion(item) { return getField(item, 'Producto', 'Descripción', 'InventarioProductoDescripcion', 'Descripcion', 'Nombre'); }
-        function getUnidadRef(item) { return getField(item, 'Unidad Ref', 'Uni. Ref.', 'Unidad', 'InventarioProductoUnidadReferenciaAbreviacion', 'UnidadRef'); }
+        function getCodigo(item) { return getField(item, 'Codigo','Código','Cod. Producto','InventarioProductoCodigo','Cod'); }
+        function getCodigoFabrica(item) { return getField(item, 'CodigoFabrica','CódigoFábrica','Cod. Fabrica','CodigoFabrica','CodFabrica'); }
+        function getDescripcion(item) { return getField(item, 'Producto','Descripción','InventarioProductoDescripcion','Descripcion','Nombre'); }
+        function getUnidadRef(item) { return getField(item, 'Unidad Ref','Uni. Ref.','Unidad','InventarioProductoUnidadReferenciaAbreviacion','UnidadRef'); }
         function getCantidad(item) {
-            const val = getField(item, 'InventarioProductoCantidad', 'Cantidad', 'Stock', 'Stock Fisico');
+            let val = getField(item, 'InventarioProductoCantidad','Cantidad','Stock','Stock Fisico');
             if (typeof val === 'string' && val.includes('/')) {
-                const partes = val.split('/');
-                if (partes.length > 0) return parseInt(partes[0]) || 0;
+                let p = val.split('/');
+                if (p.length > 0) return parseInt(p[0]) || 0;
             }
             return parseFloat(val) || 0;
         }
         function getFactorEmpaque(item) {
-            const val = getField(item, 'InventarioProductoUnidadReferenciaFactor', 'FactorEmpaque', 'Factor', 'UnidadRefFactor');
+            let val = getField(item, 'InventarioProductoUnidadReferenciaFactor','FactorEmpaque','Factor','UnidadRefFactor');
             return parseInt(val) || 1;
         }
-        function getLinea(item) { return getField(item, 'Linea', 'Línea', 'InventarioProductoCategoriaDescripcion', 'Categoria'); }
-        function getMarca(item) { return getField(item, 'Marca', 'InventarioProductoProveedorNombre', 'Proveedor'); }
-
-        function obtenerFactorEmpaque(textoEmpaque) {
-            if (!textoEmpaque) return 1;
+        function obtenerFactorEmpaque(texto) {
+            if (!texto) return 1;
             let factor = 1;
-            let pos = textoEmpaque.indexOf('*');
-            if (pos === -1) pos = textoEmpaque.indexOf('X');
+            let pos = texto.indexOf('*');
+            if (pos === -1) pos = texto.indexOf('X');
             if (pos !== -1) {
-                let extraido = textoEmpaque.substring(pos + 1).trim();
-                let numeros = extraido.replace(/\D/g, '');
-                if (parseInt(numeros) > 1) factor = parseInt(numeros);
+                let extra = texto.substring(pos+1).trim();
+                let num = extra.replace(/\D/g,'');
+                if (parseInt(num) > 1) factor = parseInt(num);
             }
             return factor;
         }
 
-        // ============================================================
-        //  PERSISTENCIA LOCAL
-        // ============================================================
-        const STORAGE_KEY = 'buscador_productos_data';
+        // ======= PERSISTENCIA LOCAL (solo para diferencias) =======
         const DIFF_KEY = 'buscador_diferencias_data';
-
-        function saveToStorage(data) {
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-                persistStatus.textContent = `guardado local (${data.length} registros)`;
-                persistStatus.style.color = '#5aba7a';
-            } catch (e) {}
-        }
-        function loadFromStorage() {
-            try {
-                const raw = localStorage.getItem(STORAGE_KEY);
-                if (!raw) return null;
-                return JSON.parse(raw);
-            } catch (e) { return null; }
-        }
-        function clearStorage() {
-            localStorage.removeItem(STORAGE_KEY);
-            persistStatus.textContent = 'ninguno';
-            persistStatus.style.color = '#6a8aaa';
-        }
-        function checkStorage() {
-            const data = loadFromStorage();
-            if (data && data.length > 0) {
-                persistStatus.textContent = `guardado local (${data.length} registros)`;
-                persistStatus.style.color = '#5aba7a';
-            } else {
-                persistStatus.textContent = 'ninguno';
-                persistStatus.style.color = '#6a8aaa';
-            }
-        }
-
         function saveDiferencias() {
-            try {
-                localStorage.setItem(DIFF_KEY, JSON.stringify(diferencias));
-            } catch (e) {}
+            try { localStorage.setItem(DIFF_KEY, JSON.stringify(diferencias)); } catch(e) {}
         }
         function loadDiferencias() {
             try {
-                const raw = localStorage.getItem(DIFF_KEY);
-                if (raw) {
-                    diferencias = JSON.parse(raw);
-                }
-            } catch (e) { diferencias = []; }
+                let raw = localStorage.getItem(DIFF_KEY);
+                if (raw) diferencias = JSON.parse(raw);
+            } catch(e) { diferencias = []; }
         }
 
-        // ============================================================
-        //  PARSEADOR CSV
-        // ============================================================
-        function parseCSV(csvText) {
-            const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
+        // ======= PARSE CSV =======
+        function parseCSV(csv) {
+            let lines = csv.split(/\r?\n/).filter(l => l.trim() !== '');
             if (lines.length < 2) return null;
-            let delimiter = ',';
-            if (lines[0].includes(';')) delimiter = ';';
-            if (lines[0].includes('\t')) delimiter = '\t';
-            const headers = lines[0].split(delimiter).map(h => h.trim());
-            const result = [];
-            for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].split(delimiter).map(v => v.trim());
-                if (values.length < headers.length) continue;
-                const obj = {};
-                headers.forEach((h, idx) => {
-                    obj[h] = values[idx] || '';
-                });
+            let delim = ',';
+            if (lines[0].includes(';')) delim = ';';
+            if (lines[0].includes('\t')) delim = '\t';
+            let headers = lines[0].split(delim).map(h => h.trim());
+            let result = [];
+            for (let i=1; i<lines.length; i++) {
+                let vals = lines[i].split(delim).map(v => v.trim());
+                if (vals.length < headers.length) continue;
+                let obj = {};
+                headers.forEach((h,idx) => { obj[h] = vals[idx] || ''; });
                 result.push(obj);
             }
             return result;
         }
 
-        // ============================================================
-        //  CARGA DESDE GOOGLE SHEETS
-        // ============================================================
+        // ======= CARGA DESDE GOOGLE SHEETS =======
         function loadFromGoogleSheets() {
-            fileStatus.textContent = '(cargando desde Google Sheets...)';
+            fileStatus.textContent = '(cargando...)';
             fetch(GOOGLE_SHEETS_CSV_URL)
                 .then(res => {
-                    if (!res.ok) throw new Error('No se pudo obtener el CSV');
+                    if (!res.ok) throw new Error('Error');
                     return res.text();
                 })
-                .then(csvText => {
-                    const data = parseCSV(csvText);
+                .then(csv => {
+                    let data = parseCSV(csv);
                     if (data && data.length > 0) {
                         currentData = data;
-                        fileStatus.textContent = `✅ ${data.length} registros desde Google Sheets`;
+                        fileStatus.textContent = `✅ ${data.length} registros`;
                         searchInput.value = '';
                         selectedIndex = -1;
                         filteredData = [];
                         renderResults([]);
                         limpiarCantidades();
-                        saveToStorage(data);
-                        checkStorage();
                     } else {
-                        fileStatus.textContent = '⚠️ Google Sheets vacío, usando ejemplo';
+                        fileStatus.textContent = '⚠️ Vacío, usando ejemplo';
                         useLocalData();
                     }
                 })
-                .catch(err => {
-                    console.warn('Error al cargar Google Sheets, usando datos locales.', err);
-                    fileStatus.textContent = '⚠️ Sin conexión, usando local';
+                .catch(() => {
+                    fileStatus.textContent = '⚠️ Sin conexión, local';
                     useLocalData();
                 });
         }
 
         function useLocalData() {
-            const saved = loadFromStorage();
-            if (saved && saved.length > 0) {
-                currentData = saved;
-                fileStatus.textContent = `📂 ${saved.length} registros locales`;
-            } else {
-                currentData = [...sampleData];
-                fileStatus.textContent = `📋 ${currentData.length} registros de ejemplo`;
-            }
+            currentData = [...sampleData];
+            fileStatus.textContent = `📋 ${currentData.length} ejemplo`;
             searchInput.value = '';
             selectedIndex = -1;
             filteredData = [];
             renderResults([]);
             limpiarCantidades();
-            checkStorage();
         }
 
-        // ============================================================
-        //  BÚSQUEDA Y RENDER
-        // ============================================================
+        // ======= BÚSQUEDA Y RENDER =======
         function performSearch() {
-            const term = searchInput.value.trim();
-            if (!term) {
-                filteredData = [];
-                renderResults([]);
-                return;
-            }
-            const palabras = term.split(/\s+/).filter(p => p.length > 0);
-            const palabrasUpper = palabras.map(p => p.toUpperCase());
-
+            let term = searchInput.value.trim();
+            if (!term) { filteredData = []; renderResults([]); return; }
+            let palabras = term.split(/\s+/).filter(p => p.length > 0).map(p => p.toUpperCase());
             filteredData = currentData.filter(item => {
-                const campos = [
+                let campos = [
                     getCodigo(item).toUpperCase(),
                     getCodigoFabrica(item).toUpperCase(),
                     getDescripcion(item).toUpperCase(),
-                    getUnidadRef(item).toUpperCase(),
-                    getLinea(item).toUpperCase(),
-                    getMarca(item).toUpperCase()
+                    getUnidadRef(item).toUpperCase()
                 ];
-                return palabrasUpper.every(pal => campos.some(campo => campo.includes(pal)));
+                return palabras.every(pal => campos.some(c => c.includes(pal)));
             });
-
             renderResults(filteredData);
         }
 
@@ -782,19 +781,18 @@
                 limpiarCantidades();
                 return;
             }
-
             let html = '';
             items.forEach((item, idx) => {
-                const codigo = getCodigo(item);
-                const fabrica = getCodigoFabrica(item);
-                const desc = getDescripcion(item);
-                const unidad = getUnidadRef(item);
-                const cantidad = getCantidad(item);
-                const factor = getFactorEmpaque(item) || 1;
-                const cajasStock = Math.floor(cantidad / factor);
-                const unidadesStock = cantidad % factor;
-                const selectedClass = (idx === selectedIndex) ? ' selected' : '';
-
+                let codigo = getCodigo(item);
+                let fabrica = getCodigoFabrica(item);
+                let desc = getDescripcion(item);
+                let unidad = getUnidadRef(item);
+                let cantidad = getCantidad(item);
+                let factor = getFactorEmpaque(item) || 1;
+                // Si es suelto (factor 1) mostramos solo unidades
+                let cajasStock = (factor === 1) ? 0 : Math.floor(cantidad / factor);
+                let unidadesStock = (factor === 1) ? cantidad : cantidad % factor;
+                let selectedClass = (idx === selectedIndex) ? ' selected' : '';
                 html += `<div class="result-item${selectedClass}" data-index="${idx}">
                     <span class="codigo">${codigo}</span>
                     <span class="fabrica">${fabrica}</span>
@@ -818,16 +816,14 @@
             });
             resultList.innerHTML = html;
             resultCount.textContent = items.length;
-
             if (selectedIndex !== -1 && selectedIndex < items.length) {
                 actualizarCantidades(items[selectedIndex]);
             } else {
                 limpiarCantidades();
             }
-
             document.querySelectorAll('.result-item').forEach(el => {
                 el.addEventListener('click', function() {
-                    const idx = parseInt(this.dataset.index);
+                    let idx = parseInt(this.dataset.index);
                     if (idx === selectedIndex) return;
                     document.querySelectorAll('.result-item').forEach(e => e.classList.remove('selected'));
                     this.classList.add('selected');
@@ -839,34 +835,29 @@
             });
         }
 
-        // ============================================================
-        //  ACTUALIZAR CANTIDADES
-        // ============================================================
+        // ======= ACTUALIZAR CANTIDADES (con factor 1 corregido) =======
         function actualizarCantidades(item) {
-            const unidad = getUnidadRef(item);
+            let unidad = getUnidadRef(item);
             let factor = obtenerFactorEmpaque(unidad) || getFactorEmpaque(item) || 1;
             currentFactor = factor;
-
             infoFactor.textContent = `Factor: ${factor}`;
-
             txtCajas.value = '0';
             txtUnidades.value = '0';
-
+            // Si factor = 1, deshabilitar cajas (solo unidades)
             if (factor === 1) {
                 txtCajas.disabled = true;
-                txtCajas.style.background = 'rgba(30,50,70,0.4)';
+                txtCajas.style.background = 'rgba(30,50,70,0.3)';
                 txtUnidades.disabled = false;
-                txtUnidades.style.background = 'rgba(10,25,45,0.7)';
+                txtUnidades.style.background = 'rgba(210,225,240,0.06)';
             } else {
                 txtCajas.disabled = false;
-                txtCajas.style.background = 'rgba(10,25,45,0.7)';
+                txtCajas.style.background = 'rgba(210,225,240,0.06)';
                 txtUnidades.disabled = false;
-                txtUnidades.style.background = 'rgba(10,25,45,0.7)';
+                txtUnidades.style.background = 'rgba(210,225,240,0.06)';
             }
-
-            const cantidad = getCantidad(item);
-            const cajasStock = Math.floor(cantidad / factor);
-            const unidadesStock = cantidad % factor;
+            let cantidad = getCantidad(item);
+            let cajasStock = (factor === 1) ? 0 : Math.floor(cantidad / factor);
+            let unidadesStock = (factor === 1) ? cantidad : cantidad % factor;
             cajasCount.textContent = cajasStock;
             unidadesCount.textContent = unidadesStock;
         }
@@ -877,57 +868,42 @@
             currentFactor = 1;
             infoFactor.textContent = 'Factor: 1';
             txtCajas.disabled = true;
-            txtCajas.style.background = 'rgba(30,50,70,0.4)';
+            txtCajas.style.background = 'rgba(30,50,70,0.3)';
             txtUnidades.disabled = false;
-            txtUnidades.style.background = 'rgba(10,25,45,0.7)';
+            txtUnidades.style.background = 'rgba(210,225,240,0.06)';
             cajasCount.textContent = '0';
             unidadesCount.textContent = '0';
         }
 
-        // ============================================================
-        //  PEDIDO
-        // ============================================================
+        // ======= PEDIDO =======
         function agregarProducto() {
             if (selectedIndex === -1 || selectedIndex >= filteredData.length) {
-                alert('Seleccione un producto de la lista.');
+                alert('Seleccione un producto.');
                 return;
             }
-            const item = filteredData[selectedIndex];
-            const codigo = getCodigo(item);
-            const codigoFabrica = getCodigoFabrica(item);
-            const descripcion = getDescripcion(item);
-            const unidad = getUnidadRef(item);
-            const factor = currentFactor;
-            const esSuelta = factor === 1;
-
-            const stockTotal = getCantidad(item);
-            const stockCajas = Math.floor(stockTotal / factor);
-            const stockUnidades = stockTotal % factor;
+            let item = filteredData[selectedIndex];
+            let codigo = getCodigo(item);
+            let codigoFabrica = getCodigoFabrica(item);
+            let descripcion = getDescripcion(item);
+            let unidad = getUnidadRef(item);
+            let factor = currentFactor;
+            let esSuelta = factor === 1;
+            let stockTotal = getCantidad(item);
+            let stockCajas = (factor === 1) ? 0 : Math.floor(stockTotal / factor);
+            let stockUnidades = (factor === 1) ? stockTotal : stockTotal % factor;
 
             let cajasPedido = parseInt(txtCajas.value) || 0;
             let unidadesPedido = parseInt(txtUnidades.value) || 0;
             if (cajasPedido === 0 && unidadesPedido === 0) {
-                alert('Ingrese una cantidad (cajas o unidades).');
+                alert('Ingrese cantidad.');
                 return;
             }
-
-            let totalPedido = 0;
-            if (esSuelta) {
-                totalPedido = cajasPedido + unidadesPedido;
-            } else {
-                totalPedido = (cajasPedido * factor) + unidadesPedido;
-            }
-
-            if (totalPedido === 0) {
-                alert('Cantidad cero, no se agregará.');
-                return;
-            }
-
+            let totalPedido = esSuelta ? (cajasPedido + unidadesPedido) : (cajasPedido * factor + unidadesPedido);
+            if (totalPedido === 0) { alert('Cantidad cero.'); return; }
             if (totalPedido > stockTotal) {
-                alert(`Stock insuficiente. Disponible: ${stockCajas} cajas y ${stockUnidades} unidades sueltas.`);
+                alert(`Stock insuficiente. Disponible: ${stockCajas} cajas y ${stockUnidades} und.`);
                 return;
             }
-
             let existing = pedido.find(p => p.codigo === codigo);
             if (existing) {
                 let nuevasCajas = existing.cajas;
@@ -943,7 +919,7 @@
                 }
                 let totalActualizado = (nuevasCajas * factor) + nuevasUnidades;
                 if (totalActualizado > stockTotal) {
-                    alert(`No puedes agregar más de lo disponible. Stock: ${stockCajas} cajas y ${stockUnidades} unidades.`);
+                    alert(`Stock insuficiente.`);
                     return;
                 }
                 existing.cajas = nuevasCajas;
@@ -957,66 +933,48 @@
                     newCajas = Math.floor(totalPedido / factor);
                     newUnidades = totalPedido % factor;
                 }
-                pedido.push({
-                    codigo: codigo,
-                    codigoFabrica: codigoFabrica,
-                    descripcion: descripcion,
-                    unidad: unidad,
-                    cajas: newCajas,
-                    unidades: newUnidades,
-                    factor: factor,
-                    esSuelta: esSuelta
-                });
+                pedido.push({ codigo, codigoFabrica, descripcion, unidad, cajas: newCajas, unidades: newUnidades, factor, esSuelta });
             }
-
             txtCajas.value = '0';
             txtUnidades.value = '0';
             renderPedido();
-            if (selectedIndex < filteredData.length) {
-                actualizarCantidades(filteredData[selectedIndex]);
-            }
+            if (selectedIndex < filteredData.length) actualizarCantidades(filteredData[selectedIndex]);
         }
 
         function eliminarDelPedido(codigo) {
             pedido = pedido.filter(p => p.codigo !== codigo);
             renderPedido();
         }
-
         function limpiarPedido() {
             if (pedido.length === 0) return;
-            if (confirm('¿Eliminar todos los productos del pedido?')) {
-                pedido = [];
-                renderPedido();
-            }
+            if (confirm('¿Eliminar todo el pedido?')) { pedido = []; renderPedido(); }
         }
 
         function renderPedido() {
             if (pedido.length === 0) {
-                pedidoBody.innerHTML = `<tr><td colspan="8" class="empty-message">No hay productos en el pedido.</td></tr>`;
+                pedidoBody.innerHTML = `<tr><td colspan="8" class="empty-message">No hay productos.</td></tr>`;
                 pedidoFoot.style.display = 'none';
                 totalCajasPedido.textContent = '0';
                 totalUnidadesPedido.textContent = '0';
                 pedidoCount.textContent = '0 productos';
                 return;
             }
-
             let html = '';
             let totalCajas = 0, totalUnidades = 0;
             pedido.forEach((p, idx) => {
                 totalCajas += p.cajas;
                 totalUnidades += p.unidades;
                 html += `<tr>
-                    <td>${idx + 1}</td>
-                    <td class="codigo-cell" style="font-family:monospace; font-weight:600; color:#b8d4f0;">${p.codigo}</td>
+                    <td>${idx+1}</td>
+                    <td style="font-weight:600;color:#c8ddf0;">${p.codigo}</td>
                     <td style="color:#8aaccc;">${p.codigoFabrica}</td>
-                    <td style="color:#aac0d4;">${p.descripcion}</td>
+                    <td style="color:#b0c8dc;">${p.descripcion}</td>
                     <td style="color:#8aaccc;">${p.unidad}</td>
-                    <td class="cantidad-cell" style="text-align:center; color:#b8d4f0;">${p.cajas}</td>
-                    <td class="cantidad-cell" style="text-align:center; color:#b8d4f0;">${p.unidades}</td>
-                    <td class="acciones-cell" style="text-align:center;"><button class="eliminar-fila" data-codigo="${p.codigo}" style="background:none; border:none; color:#da6a6a; cursor:pointer; font-size:1rem; padding:0.1rem 0.3rem;">✕</button></td>
+                    <td style="text-align:center;color:#c8ddf0;">${p.cajas}</td>
+                    <td style="text-align:center;color:#c8ddf0;">${p.unidades}</td>
+                    <td style="text-align:center;"><button class="eliminar-fila" data-codigo="${p.codigo}" style="background:none;border:none;color:#da6a6a;cursor:pointer;font-size:1rem;">✕</button></td>
                 </tr>`;
             });
-
             pedidoBody.innerHTML = html;
             pedidoFoot.style.display = 'table-row-group';
             totalCajasFoot.textContent = totalCajas;
@@ -1024,199 +982,81 @@
             totalCajasPedido.textContent = totalCajas;
             totalUnidadesPedido.textContent = totalUnidades;
             pedidoCount.textContent = `${pedido.length} productos`;
-
             document.querySelectorAll('.eliminar-fila').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const codigo = this.dataset.codigo;
-                    eliminarDelPedido(codigo);
-                });
+                btn.addEventListener('click', function() { eliminarDelPedido(this.dataset.codigo); });
             });
         }
 
-        // ============================================================
-        //  EXPORTAR PEDIDO
-        // ============================================================
-        function exportarPedido() {
-            if (pedido.length === 0) {
-                alert('No hay productos en el pedido para exportar.');
-                return;
-            }
-
-            const dataToExport = pedido.map((p, idx) => ({
-                '#': idx + 1,
-                'Código': p.codigo,
-                'Código Fábrica': p.codigoFabrica,
-                'Descripción': p.descripcion,
-                'Unidad': p.unidad,
-                'Cajas': p.cajas,
-                'Unidades': p.unidades,
-                'Factor': p.factor,
-                'Total (und)': (p.cajas * p.factor) + p.unidades
-            }));
-
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.json_to_sheet(dataToExport);
-            XLSX.utils.book_append_sheet(wb, ws, 'Pedido');
-            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-            const blob = new Blob([wbout], { type: 'application/octet-stream' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `pedido_${new Date().toISOString().slice(0,10)}.xlsx`;
-            link.click();
-            URL.revokeObjectURL(link.href);
-        }
-
-        // ============================================================
-        //  GUARDAR PEDIDO EN DRIVE
-        // ============================================================
-        function guardarPedidoEnDrive() {
-            if (pedido.length === 0) {
-                alert('No hay productos en el pedido para guardar.');
-                return;
-            }
-
-            const dataToExport = pedido.map((p, idx) => ({
-                '#': idx + 1,
-                'Código': p.codigo,
-                'Código Fábrica': p.codigoFabrica,
-                'Descripción': p.descripcion,
-                'Unidad': p.unidad,
-                'Cajas': p.cajas,
-                'Unidades': p.unidades,
-                'Factor': p.factor,
-                'Total (und)': (p.cajas * p.factor) + p.unidades
-            }));
-
-            guardarPedidoDriveBtn.textContent = '⏳ Subiendo...';
-            guardarPedidoDriveBtn.disabled = true;
-
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(dataToExport)
-            })
-            .then(() => {
-                alert('✅ Pedido guardado en Google Drive.\nRevisa tu carpeta "Inventario - Diferencias".');
-                guardarPedidoDriveBtn.textContent = '☁️ Drive';
-                guardarPedidoDriveBtn.disabled = false;
-            })
-            .catch(err => {
-                alert('❌ Error al guardar en Drive: ' + err.message);
-                guardarPedidoDriveBtn.textContent = '☁️ Drive';
-                guardarPedidoDriveBtn.disabled = false;
-            });
-        }
-
-        // ============================================================
-        //  REGISTRAR DIFERENCIA
-        // ============================================================
+        // ======= DIFERENCIA =======
         function registrarDiferencia() {
             if (selectedIndex === -1 || selectedIndex >= filteredData.length) {
-                alert('Seleccione un producto de la lista.');
+                alert('Seleccione un producto.');
                 return;
             }
-            const item = filteredData[selectedIndex];
-            const codigo = getCodigo(item);
-            const descripcion = getDescripcion(item);
-            const stockTeorico = getCantidad(item);
-            const factor = currentFactor;
-            const esSuelta = factor === 1;
-
+            let item = filteredData[selectedIndex];
+            let codigo = getCodigo(item);
+            let descripcion = getDescripcion(item);
+            let stockTeorico = getCantidad(item);
+            let factor = currentFactor;
+            let esSuelta = factor === 1;
             let cajas = parseInt(txtCajas.value) || 0;
             let unidades = parseInt(txtUnidades.value) || 0;
-
-            if (esSuelta) {
-                unidades += cajas;
-                cajas = 0;
-            }
-
-            const stockFisico = (cajas * factor) + unidades;
-
-            if (stockFisico === 0) {
-                alert('Ingrese una cantidad (cajas o unidades) mayor que cero.');
-                return;
-            }
-
-            const diferencia = stockFisico - stockTeorico;
-
+            if (esSuelta) { unidades += cajas; cajas = 0; }
+            let stockFisico = (cajas * factor) + unidades;
+            if (stockFisico === 0) { alert('Ingrese cantidad > 0.'); return; }
+            let diferencia = stockFisico - stockTeorico;
             if (diferencia === 0) {
-                if (!confirm(`Stock teórico: ${stockTeorico}\nStock físico: ${stockFisico}\nLa diferencia es cero. ¿Deseas registrar de todas formas?`)) {
-                    return;
-                }
+                if (!confirm(`Teórico: ${stockTeorico}\nFísico: ${stockFisico}\nDiferencia 0. ¿Registrar igual?`)) return;
             }
-
-            const ahora = new Date();
-            const fechaStr = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
-
-            diferencias.push({
-                codigo: codigo,
-                descripcion: descripcion,
-                stockTeorico: stockTeorico,
-                stockFisico: stockFisico,
-                diferencia: diferencia,
-                fecha: fechaStr
-            });
-
+            let fecha = new Date().toLocaleString();
+            diferencias.push({ codigo, descripcion, stockTeorico, stockFisico, diferencia, fecha });
             saveDiferencias();
             renderDiferencias();
             txtCajas.value = '0';
             txtUnidades.value = '0';
-            alert(`✅ Diferencia registrada.\nTeórico: ${stockTeorico}\nFísico: ${stockFisico}\nDiferencia: ${diferencia}`);
-            if (selectedIndex < filteredData.length) {
-                actualizarCantidades(filteredData[selectedIndex]);
-            }
+            alert(`✅ Diferencia registrada. Teórico: ${stockTeorico} | Físico: ${stockFisico} | Diff: ${diferencia}`);
+            if (selectedIndex < filteredData.length) actualizarCantidades(filteredData[selectedIndex]);
         }
 
-        // ============================================================
-        //  RENDER DIFERENCIAS
-        // ============================================================
         function renderDiferencias() {
             if (diferencias.length === 0) {
-                diffBody.innerHTML = `<tr><td colspan="8" class="empty-message">No hay diferencias registradas.</td></tr>`;
+                diffBody.innerHTML = `<tr><td colspan="8" class="empty-message">No hay diferencias.</td></tr>`;
                 diffFoot.style.display = 'none';
                 diffResumen.style.display = 'none';
                 diffCount.textContent = '0 registros';
                 return;
             }
-
             let html = '';
-            let totalTeorico = 0, totalFisico = 0, totalDiff = 0;
+            let totalTeo = 0, totalFis = 0, totalDiff = 0;
             diferencias.forEach((d, idx) => {
-                totalTeorico += d.stockTeorico;
-                totalFisico += d.stockFisico;
+                totalTeo += d.stockTeorico;
+                totalFis += d.stockFisico;
                 totalDiff += d.diferencia;
-                const claseDiff = d.diferencia >= 0 ? 'diff-positivo' : 'diff-negativo';
+                let cls = d.diferencia >= 0 ? 'diff-positivo' : 'diff-negativo';
                 html += `<tr>
-                    <td>${idx + 1}</td>
-                    <td style="color:#b8d4f0; font-weight:600;">${d.codigo}</td>
-                    <td style="color:#aac0d4;">${d.descripcion}</td>
-                    <td style="color:#b8d4f0;">${d.stockTeorico}</td>
-                    <td style="color:#b8d4f0;">${d.stockFisico}</td>
-                    <td class="${claseDiff}" style="${d.diferencia >= 0 ? 'color:#5aba7a;' : 'color:#da6a6a;'} font-weight:600;">${d.diferencia}</td>
-                    <td style="color:#8aaccc;">${d.fecha}</td>
-                    <td class="acciones-cell" style="text-align:center;"><button class="eliminar-diff" data-index="${idx}" style="background:none; border:none; color:#da6a6a; cursor:pointer; font-size:1rem; padding:0.1rem 0.3rem;">✕</button></td>
+                    <td>${idx+1}</td>
+                    <td style="color:#c8ddf0;font-weight:600;">${d.codigo}</td>
+                    <td style="color:#b0c8dc;">${d.descripcion}</td>
+                    <td style="color:#c8ddf0;">${d.stockTeorico}</td>
+                    <td style="color:#c8ddf0;">${d.stockFisico}</td>
+                    <td class="${cls}">${d.diferencia}</td>
+                    <td style="color:#8aaccc;font-size:0.65rem;">${d.fecha}</td>
+                    <td style="text-align:center;"><button class="eliminar-diff" data-index="${idx}" style="background:none;border:none;color:#da6a6a;cursor:pointer;font-size:1rem;">✕</button></td>
                 </tr>`;
             });
-
             diffBody.innerHTML = html;
             diffFoot.style.display = 'table-row-group';
-            diffTotalTeorico.textContent = totalTeorico;
-            diffTotalFisico.textContent = totalFisico;
+            diffTotalTeorico.textContent = totalTeo;
+            diffTotalFisico.textContent = totalFis;
             diffTotalDiferencia.textContent = totalDiff;
-
             diffResumen.style.display = 'flex';
-            resTeorico.textContent = totalTeorico;
-            resFisico.textContent = totalFisico;
+            resTeorico.textContent = totalTeo;
+            resFisico.textContent = totalFis;
             resDiferencia.textContent = totalDiff;
-
             diffCount.textContent = `${diferencias.length} registros`;
-
             document.querySelectorAll('.eliminar-diff').forEach(btn => {
                 btn.addEventListener('click', function() {
-                    const idx = parseInt(this.dataset.index);
+                    let idx = parseInt(this.dataset.index);
                     diferencias.splice(idx, 1);
                     saveDiferencias();
                     renderDiferencias();
@@ -1224,148 +1064,144 @@
             });
         }
 
-        // ============================================================
-        //  EXPORTAR DIFERENCIAS
-        // ============================================================
-        function exportarDiferencias() {
-            if (diferencias.length === 0) {
-                alert('No hay diferencias para exportar.');
-                return;
-            }
-
-            const dataToExport = diferencias.map((d, idx) => ({
-                '#': idx + 1,
-                'Código': d.codigo,
-                'Descripción': d.descripcion,
-                'Stock Teórico': d.stockTeorico,
-                'Stock Físico': d.stockFisico,
-                'Diferencia': d.diferencia,
-                'Fecha/Hora': d.fecha
-            }));
-
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.json_to_sheet(dataToExport);
-            XLSX.utils.book_append_sheet(wb, ws, 'Diferencias');
-            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-            const blob = new Blob([wbout], { type: 'application/octet-stream' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `diferencias_inventario_${new Date().toISOString().slice(0,10)}.xlsx`;
-            link.click();
-            URL.revokeObjectURL(link.href);
-        }
-
-        // ============================================================
-        //  GUARDAR DIFERENCIAS EN DRIVE
-        // ============================================================
-        function guardarEnDrive() {
-            if (diferencias.length === 0) {
-                alert('No hay diferencias para guardar en Drive.');
-                return;
-            }
-
-            const dataToExport = diferencias.map((d, idx) => ({
-                '#': idx + 1,
-                'Código': d.codigo,
-                'Descripción': d.descripcion,
-                'Stock Teórico': d.stockTeorico,
-                'Stock Físico': d.stockFisico,
-                'Diferencia': d.diferencia,
-                'Fecha/Hora': d.fecha
-            }));
-
-            guardarDriveBtn.textContent = '⏳ Subiendo...';
-            guardarDriveBtn.disabled = true;
-
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(dataToExport)
-            })
-            .then(() => {
-                alert('✅ Diferencias guardadas en Google Drive.\nRevisa tu carpeta "Inventario - Diferencias".');
-                guardarDriveBtn.textContent = '☁️ Drive';
-                guardarDriveBtn.disabled = false;
-            })
-            .catch(err => {
-                alert('❌ Error al guardar en Drive: ' + err.message);
-                guardarDriveBtn.textContent = '☁️ Drive';
-                guardarDriveBtn.disabled = false;
-            });
-        }
-
-        // ============================================================
-        //  LIMPIAR DIFERENCIAS
-        // ============================================================
         function limpiarDiferencias() {
             if (diferencias.length === 0) return;
-            if (confirm('¿Eliminar todas las diferencias registradas?')) {
+            if (confirm('¿Eliminar todas las diferencias?')) {
                 diferencias = [];
                 saveDiferencias();
                 renderDiferencias();
             }
         }
 
-        // ============================================================
-        //  CARGA LOCAL
-        // ============================================================
-        function loadData(data, persist = true) {
-            if (!data || data.length === 0) {
-                alert('No se encontraron datos válidos.');
-                return;
-            }
-            currentData = data;
-            searchInput.value = '';
-            selectedIndex = -1;
-            filteredData = [];
-            renderResults([]);
-            fileStatus.textContent = `📂 ${data.length} registros cargados`;
-            limpiarCantidades();
-            if (persist) {
-                saveToStorage(data);
-            }
-            checkStorage();
+        // ======= EXPORTAR A EXCEL =======
+        function exportar(data, nombre) {
+            if (!data || data.length === 0) { alert('No hay datos.'); return; }
+            let wb = XLSX.utils.book_new();
+            let ws = XLSX.utils.json_to_sheet(data);
+            XLSX.utils.book_append_sheet(wb, ws, nombre);
+            let wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            let blob = new Blob([wbout], { type: 'application/octet-stream' });
+            let link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `${nombre}_${new Date().toISOString().slice(0,10)}.xlsx`;
+            link.click();
+            URL.revokeObjectURL(link.href);
         }
 
-        function readFileContent(file) {
-            const reader = new FileReader();
-            const ext = file.name.split('.').pop().toLowerCase();
+        function exportarPedido() {
+            if (pedido.length === 0) { alert('Pedido vacío.'); return; }
+            let data = pedido.map((p, i) => ({
+                '#': i+1, 'Código': p.codigo, 'Cód.Fábrica': p.codigoFabrica,
+                'Descripción': p.descripcion, 'Unidad': p.unidad,
+                'Cajas': p.cajas, 'Unidades': p.unidades, 'Factor': p.factor,
+                'Total': (p.cajas * p.factor) + p.unidades
+            }));
+            exportar(data, 'Pedido');
+        }
+
+        function exportarDiferencias() {
+            if (diferencias.length === 0) { alert('Sin diferencias.'); return; }
+            let data = diferencias.map((d, i) => ({
+                '#': i+1, 'Código': d.codigo, 'Descripción': d.descripcion,
+                'Stock Teórico': d.stockTeorico, 'Stock Físico': d.stockFisico,
+                'Diferencia': d.diferencia, 'Fecha/Hora': d.fecha
+            }));
+            exportar(data, 'Diferencias');
+        }
+
+        // ======= GUARDAR EN DRIVE =======
+        function guardarDrive(data, nombre, btn) {
+            if (!data || data.length === 0) { alert('No hay datos.'); return; }
+            btn.textContent = '⏳ Subiendo...';
+            btn.disabled = true;
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(() => {
+                alert(`✅ ${nombre} guardado en Drive.`);
+                btn.textContent = '☁️ Drive';
+                btn.disabled = false;
+            })
+            .catch(err => {
+                alert('❌ Error: ' + err.message);
+                btn.textContent = '☁️ Drive';
+                btn.disabled = false;
+            });
+        }
+
+        function guardarPedidoDrive() {
+            if (pedido.length === 0) { alert('Pedido vacío.'); return; }
+            let data = pedido.map((p, i) => ({
+                '#': i+1, 'Código': p.codigo, 'Cód.Fábrica': p.codigoFabrica,
+                'Descripción': p.descripcion, 'Unidad': p.unidad,
+                'Cajas': p.cajas, 'Unidades': p.unidades, 'Factor': p.factor,
+                'Total': (p.cajas * p.factor) + p.unidades
+            }));
+            guardarDrive(data, 'Pedido', guardarPedidoDriveBtn);
+        }
+
+        function guardarDiferenciasDrive() {
+            if (diferencias.length === 0) { alert('Sin diferencias.'); return; }
+            let data = diferencias.map((d, i) => ({
+                '#': i+1, 'Código': d.codigo, 'Descripción': d.descripcion,
+                'Stock Teórico': d.stockTeorico, 'Stock Físico': d.stockFisico,
+                'Diferencia': d.diferencia, 'Fecha/Hora': d.fecha
+            }));
+            guardarDrive(data, 'Diferencias', guardarDriveBtn);
+        }
+
+        // ======= LEER ARCHIVO =======
+        function readFile(file) {
+            let reader = new FileReader();
+            let ext = file.name.split('.').pop().toLowerCase();
             if (ext === 'csv') {
                 reader.onload = e => {
-                    const data = parseCSV(e.target.result);
-                    if (data) loadData(data, true);
-                    else alert('No se pudo parsear el CSV.');
+                    let data = parseCSV(e.target.result);
+                    if (data) { currentData = data; fileStatus.textContent = `✅ ${data.length} registros`; resetUI(); }
+                    else alert('Error al parsear CSV.');
                 };
                 reader.readAsText(file);
             } else if (ext === 'xlsx' || ext === 'xls') {
                 reader.onload = e => {
                     try {
-                        const data = new Uint8Array(e.target.result);
-                        const workbook = XLSX.read(data, { type: 'array' });
-                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                        const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-                        if (jsonData && jsonData.length > 0) loadData(jsonData, true);
-                        else alert('El archivo Excel no contiene datos.');
-                    } catch (err) {
-                        alert('Error al leer Excel: ' + err.message);
-                    }
+                        let data = new Uint8Array(e.target.result);
+                        let wb = XLSX.read(data, { type: 'array' });
+                        let sheet = wb.Sheets[wb.SheetNames[0]];
+                        let json = XLSX.utils.sheet_to_json(sheet);
+                        if (json && json.length > 0) { currentData = json; fileStatus.textContent = `✅ ${json.length} registros`; resetUI(); }
+                        else alert('Excel vacío.');
+                    } catch(err) { alert('Error al leer Excel: '+err.message); }
                 };
                 reader.readAsArrayBuffer(file);
             } else {
-                alert('Formato no soportado. Usa .xlsx, .xls o .csv');
+                alert('Formato no soportado.');
             }
         }
 
-        // ============================================================
-        //  INICIALIZACIÓN
-        // ============================================================
+        function resetUI() {
+            searchInput.value = '';
+            selectedIndex = -1;
+            filteredData = [];
+            pedido = [];
+            renderResults([]);
+            renderPedido();
+            limpiarCantidades();
+        }
+
+        // ======= INICIALIZACIÓN =======
         function init() {
             loadDiferencias();
             renderDiferencias();
             loadFromGoogleSheets();
+
+            // Eventos
+            searchButton.addEventListener('click', performSearch);
+            searchInput.addEventListener('keyup', e => { if (e.key === 'Enter') performSearch(); });
+            let debounce;
+            searchInput.addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(performSearch, 250); });
 
             refreshBtn.addEventListener('click', function() {
                 this.textContent = '⏳ Cargando...';
@@ -1373,111 +1209,39 @@
                 setTimeout(() => { this.textContent = '🔄 Actualizar'; }, 1500);
             });
 
-            setInterval(function() { loadFromGoogleSheets(); }, 300000);
-
-            searchButton.addEventListener('click', performSearch);
-            searchInput.addEventListener('keyup', (e) => {
-                if (e.key === 'Enter') performSearch();
-            });
-            let debounceTimer;
-            searchInput.addEventListener('input', () => {
-                clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(performSearch, 300);
-            });
-            searchInput.addEventListener('blur', () => { setTimeout(performSearch, 100); });
-
             btnAgregar.addEventListener('click', agregarProducto);
-            txtCajas.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') { e.preventDefault(); txtUnidades.focus(); }
-            });
-            txtUnidades.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') { e.preventDefault(); agregarProducto(); }
-            });
-
             btnRegistrarDiff.addEventListener('click', registrarDiferencia);
 
             exportPedidoBtn.addEventListener('click', exportarPedido);
-            guardarPedidoDriveBtn.addEventListener('click', guardarPedidoEnDrive);
+            guardarPedidoDriveBtn.addEventListener('click', guardarPedidoDrive);
             limpiarPedidoBtn.addEventListener('click', limpiarPedido);
 
             exportDiffBtn.addEventListener('click', exportarDiferencias);
+            guardarDriveBtn.addEventListener('click', guardarDiferenciasDrive);
             clearDiffBtn.addEventListener('click', limpiarDiferencias);
-            guardarDriveBtn.addEventListener('click', guardarEnDrive);
 
             fileInput.addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-                readFileContent(file);
-                fileInput.value = '';
+                let file = e.target.files[0];
+                if (file) { readFile(file); fileInput.value = ''; }
             });
 
             loadTextBtn.addEventListener('click', function() {
-                const text = csvTextArea.value;
-                if (!text.trim()) {
-                    alert('Pega datos CSV en el área de texto.');
-                    return;
-                }
-                const data = parseCSV(text);
-                if (data && data.length > 0) {
-                    loadData(data, true);
-                    csvTextArea.value = '';
-                } else {
-                    alert('No se pudo parsear el CSV.');
-                }
+                let text = csvTextArea.value;
+                if (!text.trim()) { alert('Pega CSV.'); return; }
+                let data = parseCSV(text);
+                if (data) { currentData = data; fileStatus.textContent = `✅ ${data.length} registros`; resetUI(); csvTextArea.value = ''; }
+                else alert('Error al parsear CSV.');
             });
 
             resetBtn.addEventListener('click', function() {
                 currentData = [...sampleData];
-                searchInput.value = '';
-                csvTextArea.value = '';
-                filteredData = [];
-                selectedIndex = -1;
-                pedido = [];
-                renderResults([]);
-                renderPedido();
-                fileStatus.textContent = `📋 ${currentData.length} registros de ejemplo`;
-                resultCount.textContent = '0';
-                cajasCount.textContent = '0';
-                unidadesCount.textContent = '0';
-                limpiarCantidades();
-                saveToStorage(currentData);
-                checkStorage();
+                fileStatus.textContent = `📋 ${currentData.length} ejemplo`;
+                resetUI();
             });
 
-            saveDataBtn.addEventListener('click', function() {
-                if (currentData && currentData.length > 0) {
-                    saveToStorage(currentData);
-                    alert('Datos guardados en el navegador local.');
-                } else {
-                    alert('No hay datos para guardar.');
-                }
-            });
-
-            loadDataBtn.addEventListener('click', function() {
-                const saved = loadFromStorage();
-                if (saved && saved.length > 0) {
-                    currentData = saved;
-                    fileStatus.textContent = `📂 ${saved.length} registros locales`;
-                    searchInput.value = '';
-                    selectedIndex = -1;
-                    filteredData = [];
-                    renderResults([]);
-                    limpiarCantidades();
-                    checkStorage();
-                    alert('Datos cargados desde el navegador local.');
-                } else {
-                    alert('No hay datos guardados localmente.');
-                }
-            });
-
-            clearDataBtn.addEventListener('click', function() {
-                if (confirm('¿Borrar todos los datos guardados en el navegador local?')) {
-                    clearStorage();
-                    loadFromGoogleSheets();
-                }
-            });
-
-            checkStorage();
+            // Enter en campos de cantidad
+            txtCajas.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); txtUnidades.focus(); } });
+            txtUnidades.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); agregarProducto(); } });
         }
 
         init();
