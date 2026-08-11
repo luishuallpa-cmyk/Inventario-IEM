@@ -577,6 +577,94 @@
         }
 
         /* ============================================================
+           PANTALLA DE INICIO DE SESIÓN
+           ============================================================ */
+        .login-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 1rem;
+        }
+        .login-overlay.hidden { display: none; }
+        .login-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 2rem 1.5rem;
+            width: 100%;
+            max-width: 360px;
+            box-shadow: var(--card-shadow);
+            text-align: center;
+        }
+        .login-logo {
+            margin-bottom: 1.2rem;
+            display: flex;
+            justify-content: center;
+            align-items: baseline;
+            gap: 0.4rem;
+        }
+        .login-logo .iem {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--heading-color);
+            letter-spacing: -0.5px;
+        }
+        .login-logo .laive {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            background: var(--badge-bg);
+            padding: 0.05rem 0.7rem;
+            border-radius: 30px;
+        }
+        .login-card h2 {
+            color: var(--heading-color);
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-bottom: 1.3rem;
+        }
+        .login-field { text-align: left; margin-bottom: 0.9rem; }
+        .login-field label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.35rem;
+        }
+        .login-field input {
+            width: 100%;
+            padding: 0.6rem 0.9rem;
+            border-radius: 14px;
+            border: 1px solid var(--input-border);
+            background: var(--input-bg);
+            color: var(--text-primary);
+            font-family: var(--font);
+            font-size: 0.9rem;
+            outline: none;
+            transition: 0.2s;
+        }
+        .login-field input:focus {
+            border-color: var(--input-focus);
+            box-shadow: 0 0 0 3px rgba(74, 138, 186, 0.15);
+        }
+        .login-error {
+            color: var(--danger);
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 0.8rem;
+        }
+        .login-error.hidden { display: none; }
+        .login-btn { width: 100%; min-height: 46px; margin-top: 0.3rem; }
+
+        #appContainer.oculto { display: none; }
+
+        /* ============================================================
            TARJETA DE PRODUCTO SELECCIONADO (solo se activa en móvil,
            ver media query más abajo). En escritorio permanece oculta y
            la lista de resultados sigue visible como siempre.
@@ -963,7 +1051,26 @@
     </style>
 </head>
 <body>
-<div class="container">
+<div class="login-overlay" id="loginOverlay">
+    <div class="login-card">
+        <div class="login-logo">
+            <span class="iem">IEM GROUP</span>
+            <span class="laive">LAIVE</span>
+        </div>
+        <h2>Iniciar sesión</h2>
+        <div class="login-field">
+            <label for="loginUsuario">Usuario</label>
+            <input type="text" id="loginUsuario" autocomplete="username" placeholder="Tu usuario" autocapitalize="off">
+        </div>
+        <div class="login-field">
+            <label for="loginClave">Clave</label>
+            <input type="password" id="loginClave" autocomplete="current-password" placeholder="Tu clave">
+        </div>
+        <div class="login-error hidden" id="loginError"></div>
+        <button type="button" class="btn btn-primary login-btn" id="loginBtn">Entrar</button>
+    </div>
+</div>
+<div class="container" id="appContainer">
 
     <!-- ============================================================
     HEADER
@@ -1186,6 +1293,23 @@
         let inventarioFisico = [];
         let currentFactor = 1;
         let autoRefreshTimer = null;
+        let syncTimer = null;
+        let sincronizando = false;
+
+        // Identificador anónimo de este celular/navegador (no es un nombre de
+        // usuario, solo sirve para que cada lote tenga un ID único al
+        // combinarse con lo que cuentan otros celulares).
+        const DEVICE_ID_KEY = 'iem_device_id';
+        function obtenerDeviceId() {
+            let id = null;
+            try { id = localStorage.getItem(DEVICE_ID_KEY); } catch (e) {}
+            if (!id) {
+                id = 'dev_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+                try { localStorage.setItem(DEVICE_ID_KEY, id); } catch (e) {}
+            }
+            return id;
+        }
+        const deviceId = obtenerDeviceId();
 
         // DOM
         const searchInput = document.getElementById('searchInput');
@@ -2049,6 +2173,82 @@
         }
 
         // ============================================================
+        // CONTEO EN VIVO COMPARTIDO (varios celulares al mismo tiempo)
+        // ============================================================
+        // Envía un solo lote recién contado a la hoja "ConteoVivo" para que
+        // los demás celulares lo vean en su próxima sincronización. No hace
+        // falta leer la respuesta: si la red falla, el conteo local no se
+        // pierde (queda guardado igual) y se puede reintentar más tarde.
+        function sincronizarLoteAlServidor(record, lote) {
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({
+                    accion: 'agregar_lote',
+                    id: lote.id,
+                    codigo: record.codigo,
+                    descripcion: record.descripcion,
+                    linea: record.linea,
+                    cantidad: lote.cantidad,
+                    vencimiento: lote.vencimiento,
+                    fecha: lote.fecha
+                })
+            }).catch(() => { /* sin red: se reintentará en la próxima sincronización */ });
+        }
+
+        // Combina un registro recibido del servidor con el inventario local,
+        // sin duplicar (cada lote tiene un id único por celular + hora).
+        function fusionarRegistroRemoto(r) {
+            let record = inventarioFisico.find(d => d.codigo === r.codigo);
+            if (!record) {
+                record = {
+                    codigo: r.codigo,
+                    descripcion: r.descripcion,
+                    linea: r.linea || 'SIN LÍNEA',
+                    stockTeorico: 0,
+                    stockFisico: 0,
+                    diferencia: 0,
+                    lotes: [],
+                    fecha: r.fecha,
+                    fechaISO: new Date().toISOString()
+                };
+                const item = currentData.find(it => getCodigo(it) === r.codigo);
+                if (item) record.stockTeorico = getCantidad(item);
+                inventarioFisico.push(record);
+            }
+            const yaExiste = record.lotes.some(l => l.id === r.id);
+            if (!yaExiste) {
+                record.lotes.push({
+                    id: r.id,
+                    vencimiento: r.vencimiento,
+                    cantidad: Number(r.cantidad) || 0,
+                    fecha: r.fecha,
+                    fechaISO: new Date().toISOString()
+                });
+            }
+            record.stockFisico = record.lotes.reduce((sum, l) => sum + l.cantidad, 0);
+            record.diferencia = record.stockFisico - record.stockTeorico;
+        }
+
+        // Consulta la hoja "ConteoVivo" y trae lo que hayan contado otros
+        // celulares desde la última vez. Se llama sola cada 10 segundos.
+        function sincronizarDesdeServidor() {
+            if (sincronizando) return;
+            sincronizando = true;
+            fetch(SCRIPT_URL)
+                .then(r => r.json())
+                .then(data => {
+                    const registros = (data && data.registros) || [];
+                    if (registros.length === 0) return;
+                    registros.forEach(fusionarRegistroRemoto);
+                    saveInventario();
+                    renderInventario();
+                })
+                .catch(() => { /* sin red: se sigue mostrando lo último conocido */ })
+                .finally(() => { sincronizando = false; });
+        }
+
+        // ============================================================
         // REGISTRAR INVENTARIO FÍSICO
         // ============================================================
         function registrarFisico() {
@@ -2104,17 +2304,23 @@
                 inventarioFisico.push(record);
             }
 
-            record.lotes.push({
+            const nuevoLote = {
+                id: deviceId + '_' + ahora.getTime(),
                 vencimiento: vencimiento,
                 cantidad: cantidadLote,
                 fecha: fechaStr,
                 fechaISO: ahora.toISOString()
-            });
+            };
+            record.lotes.push(nuevoLote);
             record.stockTeorico = stockTeorico;
             record.stockFisico = record.lotes.reduce((sum, l) => sum + l.cantidad, 0);
             record.diferencia = record.stockFisico - record.stockTeorico;
             record.fecha = fechaStr;
             record.fechaISO = ahora.toISOString();
+
+            // Comparte este lote de inmediato con los demás celulares que
+            // estén contando al mismo tiempo (vía la hoja "ConteoVivo").
+            sincronizarLoteAlServidor(record, nuevoLote);
 
             saveInventario();
             renderInventario();
@@ -2317,11 +2523,16 @@
         // ============================================================
         function limpiarInventario() {
             if (inventarioFisico.length === 0) return;
-            if (confirm('¿Eliminar todos los registros del inventario físico?')) {
+            if (confirm('¿Eliminar todos los registros del inventario físico? Esto también borra el conteo compartido en la nube para todos los celulares.')) {
                 inventarioFisico = [];
                 saveInventario();
                 renderInventario();
-                showToast('Inventario limpiado.', 'info');
+                fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ accion: 'limpiar_conteo' })
+                }).catch(() => {});
+                showToast('Inventario limpiado (local y compartido).', 'info');
             }
         }
 
@@ -2370,6 +2581,11 @@
             renderInventario();
             loadPedido();
             loadFromGoogleSheets();
+
+            // Sincronización en vivo del conteo compartido entre celulares.
+            sincronizarDesdeServidor();
+            if (syncTimer) clearInterval(syncTimer);
+            syncTimer = setInterval(sincronizarDesdeServidor, 10000);
 
             refreshBtn.addEventListener('click', function() {
                 this.textContent = '⏳';
@@ -2440,7 +2656,88 @@
             guardarDriveBtn.addEventListener('click', guardarInventarioDrive);
         }
 
-        init();
+        // ============================================================
+        // INICIO DE SESIÓN (usuario y clave por persona)
+        // ============================================================
+        // ⚠️ IMPORTANTE: como esta app es un solo archivo HTML sin servidor
+        // propio, esta lista queda dentro del código fuente. No es una
+        // seguridad robusta (alguien que revise el código puede verla), pero
+        // sirve como filtro para que no entre cualquiera. Agrega o cambia
+        // aquí los usuarios autorizados (usuario y clave, en minúsculas):
+        const USUARIOS_VALIDOS = [
+            { usuario: 'usuario1', clave: 'clave1' },
+            { usuario: 'usuario2', clave: 'clave2' }
+            // { usuario: 'nombre3', clave: 'clave3' },
+        ];
+
+        const SESSION_KEY = 'iem_sesion_activa';
+        const SESSION_HORAS = 24; // pide iniciar sesión de nuevo una vez al día
+
+        const loginOverlay = document.getElementById('loginOverlay');
+        const loginUsuario = document.getElementById('loginUsuario');
+        const loginClave = document.getElementById('loginClave');
+        const loginError = document.getElementById('loginError');
+        const loginBtn = document.getElementById('loginBtn');
+        const appContainer = document.getElementById('appContainer');
+        let appIniciado = false;
+
+        function sesionValida() {
+            try {
+                const raw = localStorage.getItem(SESSION_KEY);
+                if (!raw) return false;
+                const data = JSON.parse(raw);
+                if (!data || !data.ts) return false;
+                const horas = (Date.now() - data.ts) / 3600000;
+                return horas < SESSION_HORAS;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function mostrarApp() {
+            loginOverlay.classList.add('hidden');
+            appContainer.classList.remove('oculto');
+            if (!appIniciado) {
+                appIniciado = true;
+                init();
+            }
+        }
+
+        function mostrarLogin() {
+            appContainer.classList.add('oculto');
+            loginOverlay.classList.remove('hidden');
+            loginUsuario.value = '';
+            loginClave.value = '';
+            loginError.classList.add('hidden');
+            loginUsuario.focus();
+        }
+
+        // No se guarda qué usuario inició sesión: solo se registra la hora,
+        // para saber si ya pasó el día y hay que volver a pedir la clave.
+        function intentarLogin() {
+            const usuario = loginUsuario.value.trim().toLowerCase();
+            const clave = loginClave.value;
+            const valido = USUARIOS_VALIDOS.some(u => u.usuario.toLowerCase() === usuario && u.clave === clave);
+            if (valido) {
+                try { localStorage.setItem(SESSION_KEY, JSON.stringify({ ts: Date.now() })); } catch (e) {}
+                mostrarApp();
+            } else {
+                loginError.textContent = 'Usuario o clave incorrectos.';
+                loginError.classList.remove('hidden');
+                loginClave.value = '';
+                loginClave.focus();
+            }
+        }
+
+        loginBtn.addEventListener('click', intentarLogin);
+        loginClave.addEventListener('keyup', (e) => { if (e.key === 'Enter') intentarLogin(); });
+        loginUsuario.addEventListener('keyup', (e) => { if (e.key === 'Enter') loginClave.focus(); });
+
+        if (sesionValida()) {
+            mostrarApp();
+        } else {
+            mostrarLogin();
+        }
     })();
 </script>
 </body>
