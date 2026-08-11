@@ -926,12 +926,10 @@
                 text-align: center;
             }
             body.modo-seleccion .cantidad-row .info-text { display: none; }
-            body.modo-seleccion .cantidad-row .acciones {
-                flex: 1 1 100%;
-                margin-top: 0.2rem;
-                margin-left: 0;
-            }
-            body.modo-seleccion .cantidad-row .acciones .btn { width: 100%; }
+            /* El botón de "Pedido" es para otra función (sugerencia de pedido
+               al proveedor); en la toma de inventario física solo se usa el
+               botón GUARDAR de más abajo, así que aquí se oculta. */
+            body.modo-seleccion .cantidad-row .acciones { display: none; }
 
             body.modo-seleccion .pa-total-box {
                 display: flex;
@@ -2447,4 +2445,3 @@
 </script>
 </body>
 </html>
-
