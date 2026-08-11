@@ -846,7 +846,6 @@
                los datos del producto, cantidades e info de vencimiento
                fáciles de tocar con el dedo.
                ======================================================== */
-            body.modo-seleccion #searchSection { display: none; }
             body.modo-seleccion #resultsSection .results-header { display: none; }
             body.modo-seleccion #resultList { display: none; }
 
@@ -876,12 +875,6 @@
                 color: rgba(255,255,255,0.7);
                 margin-top: 0.2rem;
                 font-family: monospace;
-            }
-            body.modo-seleccion .pa-btn-cambiar {
-                background: rgba(255,255,255,0.15);
-                border: 1px solid rgba(255,255,255,0.35);
-                color: #fff;
-                flex-shrink: 0;
             }
             body.modo-seleccion .pa-meta {
                 display: flex;
@@ -1020,11 +1013,11 @@
                     <div class="pa-descripcion" id="paDescripcion"></div>
                     <div class="pa-codigo" id="paCodigo"></div>
                 </div>
-                <button type="button" class="btn btn-outline btn-sm pa-btn-cambiar" id="btnCambiarProducto">✏️ Cambiar</button>
             </div>
             <div class="pa-meta">
                 <span>UM: <strong id="paUnidad">-</strong></span>
-                <span>Unidades x Caja: <strong id="paFactor">-</strong></span>
+                <span>Empaque: <strong id="paFactor">-</strong></span>
+                <span>Stock: <strong id="paStock">-</strong></span>
             </div>
         </div>
 
@@ -1224,7 +1217,7 @@
         const paCodigo = document.getElementById('paCodigo');
         const paUnidad = document.getElementById('paUnidad');
         const paFactor = document.getElementById('paFactor');
-        const btnCambiarProducto = document.getElementById('btnCambiarProducto');
+        const paStock = document.getElementById('paStock');
         const paTotalValor = document.getElementById('paTotalValor');
         const paTotalUnidad = document.getElementById('paTotalUnidad');
 
@@ -1753,7 +1746,10 @@
             paDescripcion.textContent = getDescripcion(item);
             paCodigo.textContent = getCodigo(item);
             paUnidad.textContent = getUnidadRef(item) || '-';
-            paFactor.textContent = factor;
+            paFactor.textContent = factor === 1 ? 'Unidad suelta' : `${factor} und/caja`;
+            paStock.textContent = factor === 1
+                ? `${unidadesStock} unidades`
+                : `${cajasStock} cajas, ${unidadesStock} unidades`;
             paTotalUnidad.textContent = getUnidadRef(item) || '';
             actualizarTotalCalculado();
         }
@@ -2397,6 +2393,13 @@
             searchInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') performSearch(); });
             let debounceTimer;
             searchInput.addEventListener('input', () => {
+                // Si había un producto seleccionado (tarjeta grande visible) y el
+                // usuario vuelve a escribir en el buscador, se sale de ese modo
+                // para poder elegir otro producto de la lista.
+                if (selectedIndex !== -1) {
+                    selectedIndex = -1;
+                    limpiarCantidades();
+                }
                 clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(performSearch, 300);
             });
@@ -2407,11 +2410,25 @@
             txtCajas.addEventListener('input', actualizarTotalCalculado);
             txtUnidades.addEventListener('input', actualizarTotalCalculado);
 
-            btnCambiarProducto.addEventListener('click', () => {
-                selectedIndex = -1;
-                document.querySelectorAll('.result-item').forEach(e => e.classList.remove('selected'));
-                limpiarCantidades();
-                searchInput.focus();
+            // Al tocar/enfocar la casilla de Cajas o Unidades, si tiene "0"
+            // se borra por completo para que quede vacía y lista para
+            // escribir directamente (en vez de sumarse al cero). Si el
+            // usuario sale del campo sin escribir nada, vuelve a mostrar "0".
+            [txtCajas, txtUnidades].forEach(inp => {
+                function limpiarCero() {
+                    if (inp.value === '0') inp.value = '';
+                }
+                inp.addEventListener('focus', limpiarCero);
+                inp.addEventListener('click', limpiarCero);
+                inp.addEventListener('touchstart', limpiarCero);
+                inp.addEventListener('blur', function() {
+                    if (inp.value.trim() === '') inp.value = '0';
+                });
+                inp.addEventListener('input', function() {
+                    if (this.value.length > 1 && this.value.startsWith('0')) {
+                        this.value = this.value.replace(/^0+/, '') || '0';
+                    }
+                });
             });
 
             btnRegistrarFisico.addEventListener('click', registrarFisico);
@@ -2430,3 +2447,4 @@
 </script>
 </body>
 </html>
+
