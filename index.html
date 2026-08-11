@@ -9,12 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             --bg-gradient: linear-gradient(145deg, #0b1a2e 0%, #1a2d44 100%);
@@ -40,7 +35,6 @@
             --divider: rgba(255, 255, 255, 0.06);
             --shadow-color: rgba(0, 0, 0, 0.3);
         }
-
         body.light-theme {
             --bg-gradient: linear-gradient(145deg, #eef2f7 0%, #dbe4ee 100%);
             --card-bg: rgba(255, 255, 255, 0.75);
@@ -61,7 +55,6 @@
             --divider: rgba(0, 0, 0, 0.06);
             --shadow-color: rgba(0, 0, 0, 0.1);
         }
-
         body {
             font-family: var(--font);
             background: var(--bg-gradient);
@@ -71,12 +64,7 @@
             transition: background 0.4s, color 0.3s;
             line-height: 1.5;
         }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
+        .container { max-width: 1400px; margin: 0 auto; }
         .card {
             background: var(--card-bg);
             backdrop-filter: blur(12px);
@@ -88,7 +76,6 @@
             box-shadow: var(--card-shadow);
             transition: background 0.3s, border 0.3s, box-shadow 0.3s;
         }
-
         .card-header {
             display: flex;
             align-items: center;
@@ -98,14 +85,12 @@
             padding-bottom: 0.6rem;
             border-bottom: 1px solid var(--divider);
         }
-
         .card-header h2 {
             font-size: 1.2rem;
             font-weight: 600;
             color: var(--heading-color);
             letter-spacing: -0.3px;
         }
-
         .badge {
             background: var(--badge-bg);
             color: var(--badge-text);
@@ -115,7 +100,6 @@
             font-weight: 600;
             white-space: nowrap;
         }
-
         .btn {
             display: inline-flex;
             align-items: center;
@@ -137,48 +121,19 @@
             border: 1px solid transparent;
         }
         .btn:active { transform: scale(0.94); }
-        .btn-primary {
-            background: var(--accent);
-            color: #fff;
-            box-shadow: 0 4px 12px rgba(74, 138, 186, 0.3);
-        }
+        .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 4px 12px rgba(74, 138, 186, 0.3); }
         .btn-primary:hover { background: var(--accent-light); transform: translateY(-1px); }
-        .btn-success {
-            background: var(--success);
-            color: #fff;
-            box-shadow: 0 4px 12px rgba(59, 170, 106, 0.3);
-        }
+        .btn-success { background: var(--success); color: #fff; box-shadow: 0 4px 12px rgba(59, 170, 106, 0.3); }
         .btn-success:hover { filter: brightness(1.08); transform: translateY(-1px); }
-        .btn-warning {
-            background: var(--warning);
-            color: #fff;
-            box-shadow: 0 4px 12px rgba(212, 154, 58, 0.3);
-        }
+        .btn-warning { background: var(--warning); color: #fff; box-shadow: 0 4px 12px rgba(212, 154, 58, 0.3); }
         .btn-warning:hover { filter: brightness(1.08); transform: translateY(-1px); }
-        .btn-danger {
-            background: var(--danger);
-            color: #fff;
-            box-shadow: 0 4px 12px rgba(212, 90, 90, 0.3);
-        }
+        .btn-danger { background: var(--danger); color: #fff; box-shadow: 0 4px 12px rgba(212, 90, 90, 0.3); }
         .btn-danger:hover { filter: brightness(1.08); transform: translateY(-1px); }
-        .btn-outline {
-            background: transparent;
-            border: 1.5px solid var(--text-muted);
-            color: var(--text-secondary);
-        }
+        .btn-outline { background: transparent; border: 1.5px solid var(--text-muted); color: var(--text-secondary); }
         .btn-outline:hover { background: rgba(255, 255, 255, 0.05); }
-        .btn-sm {
-            padding: 0.2rem 0.7rem;
-            min-height: 28px;
-            font-size: 0.7rem;
-        }
-        .btn-drive {
-            background: #2a5a9a;
-            color: #fff;
-            box-shadow: 0 4px 12px rgba(42, 90, 154, 0.3);
-        }
+        .btn-sm { padding: 0.2rem 0.7rem; min-height: 28px; font-size: 0.7rem; }
+        .btn-drive { background: #2a5a9a; color: #fff; box-shadow: 0 4px 12px rgba(42, 90, 154, 0.3); }
         .btn-drive:hover { background: #3a7aba; transform: translateY(-1px); }
-
         .header {
             display: flex;
             align-items: center;
@@ -192,128 +147,27 @@
             margin-bottom: 1.5rem;
             flex-wrap: wrap;
         }
-        .header .logo {
-            display: flex;
-            align-items: baseline;
-            gap: 0.4rem;
-        }
-        .header .logo .iem {
-            font-size: 1.6rem;
-            font-weight: 800;
-            color: var(--heading-color);
-            letter-spacing: -0.5px;
-        }
-        .header .logo .laive {
-            font-size: 0.8rem;
-            font-weight: 500;
-            color: var(--text-secondary);
-            background: var(--badge-bg);
-            padding: 0.05rem 0.8rem;
-            border-radius: 30px;
-            border: 1px solid var(--card-border);
-        }
-        .header .version {
-            font-size: 0.6rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            background: var(--badge-bg);
-            padding: 0.1rem 0.6rem;
-            border-radius: 30px;
-        }
-        .header .theme-toggle {
-            margin-left: auto;
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            background: var(--badge-bg);
-            border: 1px solid var(--card-border);
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: 0.2s;
-            flex-shrink: 0;
-        }
+        .header .logo { display: flex; align-items: baseline; gap: 0.4rem; }
+        .header .logo .iem { font-size: 1.6rem; font-weight: 800; color: var(--heading-color); letter-spacing: -0.5px; }
+        .header .logo .laive { font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); background: var(--badge-bg); padding: 0.05rem 0.8rem; border-radius: 30px; border: 1px solid var(--card-border); }
+        .header .version { font-size: 0.6rem; font-weight: 600; color: var(--text-muted); background: var(--badge-bg); padding: 0.1rem 0.6rem; border-radius: 30px; }
+        .header .theme-toggle { margin-left: auto; width: 38px; height: 38px; border-radius: 50%; background: var(--badge-bg); border: 1px solid var(--card-border); color: var(--text-secondary); font-size: 1.1rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; flex-shrink: 0; }
         .header .theme-toggle:hover { background: rgba(74, 138, 186, 0.2); transform: rotate(10deg); }
-
-        .search-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            align-items: center;
-        }
-        .search-row input {
-            flex: 1;
-            min-width: 150px;
-            padding: 0.6rem 1rem;
-            border: 1px solid var(--input-border);
-            border-radius: 60px;
-            background: var(--input-bg);
-            color: var(--text-primary);
-            font-size: 0.9rem;
-            font-family: var(--font);
-            outline: none;
-            transition: 0.2s;
-            backdrop-filter: blur(4px);
-        }
+        .search-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+        .search-row input { flex: 1; min-width: 150px; padding: 0.6rem 1rem; border: 1px solid var(--input-border); border-radius: 60px; background: var(--input-bg); color: var(--text-primary); font-size: 0.9rem; font-family: var(--font); outline: none; transition: 0.2s; backdrop-filter: blur(4px); }
         .search-row input::placeholder { color: var(--text-muted); }
-        .search-row input:focus {
-            border-color: var(--input-focus);
-            box-shadow: 0 0 0 3px rgba(74, 138, 186, 0.15);
-            background: rgba(255, 255, 255, 0.1);
-        }
+        .search-row input:focus { border-color: var(--input-focus); box-shadow: 0 0 0 3px rgba(74, 138, 186, 0.15); background: rgba(255, 255, 255, 0.1); }
         .search-row .btn { flex-shrink: 0; }
-
-        #fileStatus {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            text-align: right;
-            margin-top: 0.3rem;
-        }
-
-        .results-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 0.2rem 0.8rem;
-            margin-bottom: 0.6rem;
-        }
-        .results-header .count {
-            font-weight: 500;
-            font-size: 0.95rem;
-        }
-        .results-header .count span {
-            background: var(--badge-bg);
-            color: var(--badge-text);
-            padding: 0.05rem 0.6rem;
-            border-radius: 30px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin-left: 0.3rem;
-        }
-        .results-header .stats {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            display: flex;
-            gap: 0.8rem;
-        }
+        #fileStatus { font-size: 0.7rem; color: var(--text-muted); text-align: right; margin-top: 0.3rem; }
+        .results-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.2rem 0.8rem; margin-bottom: 0.6rem; }
+        .results-header .count { font-weight: 500; font-size: 0.95rem; }
+        .results-header .count span { background: var(--badge-bg); color: var(--badge-text); padding: 0.05rem 0.6rem; border-radius: 30px; font-size: 0.75rem; font-weight: 600; margin-left: 0.3rem; }
+        .results-header .stats { font-size: 0.8rem; color: var(--text-secondary); display: flex; gap: 0.8rem; }
         .results-header .stats .label { color: var(--text-muted); }
-
-        .result-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.4rem;
-            max-height: 420px;
-            overflow-y: auto;
-            padding-right: 0.2rem;
-        }
+        .result-list { display: flex; flex-direction: column; gap: 0.4rem; max-height: 420px; overflow-y: auto; padding-right: 0.2rem; }
         .result-list::-webkit-scrollbar { width: 4px; }
         .result-list::-webkit-scrollbar-track { background: transparent; }
         .result-list::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
-
         .result-item {
             display: grid;
             grid-template-columns: 70px 90px 1fr 70px 60px 60px;
@@ -331,39 +185,14 @@
             backdrop-filter: blur(4px);
         }
         .result-item:hover { background: rgba(255,255,255,0.08); border-color: var(--accent); }
-        .result-item.selected {
-            border-color: var(--accent);
-            background: rgba(74, 138, 186, 0.12);
-            box-shadow: 0 0 0 2px rgba(74, 138, 186, 0.2);
-        }
+        .result-item.selected { border-color: var(--accent); background: rgba(74, 138, 186, 0.12); box-shadow: 0 0 0 2px rgba(74, 138, 186, 0.2); }
         .result-item .codigo { font-weight: 700; color: var(--heading-color); font-family: monospace; }
         .result-item .fabrica { color: var(--text-muted); font-family: monospace; font-size: 0.65rem; }
-        .result-item .descripcion {
-            color: var(--text-secondary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .result-item .unidad {
-            background: var(--badge-bg);
-            color: var(--badge-text);
-            padding: 0.05rem 0.4rem;
-            border-radius: 20px;
-            font-size: 0.6rem;
-            font-weight: 600;
-            text-align: center;
-        }
-        .result-item .stock-cajas, .result-item .stock-unidades {
-            font-weight: 600;
-            color: var(--heading-color);
-            font-family: monospace;
-            text-align: right;
-            font-size: 0.8rem;
-        }
+        .result-item .descripcion { color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .result-item .unidad { background: var(--badge-bg); color: var(--badge-text); padding: 0.05rem 0.4rem; border-radius: 20px; font-size: 0.6rem; font-weight: 600; text-align: center; }
+        .result-item .stock-cajas, .result-item .stock-unidades { font-weight: 600; color: var(--heading-color); font-family: monospace; text-align: right; font-size: 0.8rem; }
         .result-item .stock-unidades { color: var(--text-secondary); }
-
         .result-item .row1, .result-item .row2 { display: none; }
-
         .cantidad-row {
             display: flex;
             flex-wrap: wrap;
@@ -373,128 +202,32 @@
             padding-top: 0.8rem;
             border-top: 1px solid var(--divider);
         }
-        .cantidad-row .group {
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
-        .cantidad-row .group label {
-            font-size: 0.8rem;
-            font-weight: 500;
-            color: var(--text-secondary);
-        }
-        .cantidad-row .group input {
-            width: 60px;
-            padding: 0.3rem 0.4rem;
-            border: 1px solid var(--input-border);
-            border-radius: 12px;
-            background: var(--input-bg);
-            color: var(--text-primary);
-            font-size: 0.85rem;
-            text-align: center;
-            font-family: var(--font);
-            transition: 0.2s;
-            -webkit-appearance: none;
-            appearance: none;
-        }
-        .cantidad-row .group input:focus {
-            border-color: var(--input-focus);
-            box-shadow: 0 0 0 3px rgba(74, 138, 186, 0.15);
-            outline: none;
-        }
-        .cantidad-row .group input:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-        .info-text {
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-            background: var(--badge-bg);
-            padding: 0.1rem 0.6rem;
-            border-radius: 30px;
-        }
-        .cantidad-row .acciones {
-            display: flex;
-            gap: 0.4rem;
-            flex-wrap: wrap;
-            margin-left: auto;
-        }
+        .cantidad-row .group { display: flex; align-items: center; gap: 0.3rem; }
+        .cantidad-row .group label { font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); }
+        .cantidad-row .group input { width: 60px; padding: 0.3rem 0.4rem; border: 1px solid var(--input-border); border-radius: 12px; background: var(--input-bg); color: var(--text-primary); font-size: 0.85rem; text-align: center; font-family: var(--font); transition: 0.2s; -webkit-appearance: none; appearance: none; }
+        .cantidad-row .group input:focus { border-color: var(--input-focus); box-shadow: 0 0 0 3px rgba(74, 138, 186, 0.15); outline: none; }
+        .cantidad-row .group input:disabled { opacity: 0.4; cursor: not-allowed; }
+        .info-text { font-size: 0.7rem; color: var(--text-secondary); background: var(--badge-bg); padding: 0.1rem 0.6rem; border-radius: 30px; }
+        .cantidad-row .acciones { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-left: auto; }
         .cantidad-row .acciones .btn { min-height: 34px; font-size: 0.75rem; }
         .cajas-group.hidden { display: none !important; }
-
-        .table-wrap {
-            overflow-x: auto;
-            margin-top: 0.4rem;
-            border-radius: 16px;
-            border: 1px solid var(--card-border);
-        }
-        .diff-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            min-width: 500px;
-        }
-        .diff-table th {
-            background: var(--table-header-bg);
-            color: var(--heading-color);
-            font-weight: 600;
-            padding: 0.4rem 0.5rem;
-            text-align: left;
-            border-bottom: 2px solid var(--divider);
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
-        .diff-table td {
-            padding: 0.35rem 0.5rem;
-            border-bottom: 1px solid var(--divider);
-            vertical-align: middle;
-        }
+        .table-wrap { overflow-x: auto; margin-top: 0.4rem; border-radius: 16px; border: 1px solid var(--card-border); }
+        .diff-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; color: var(--text-secondary); min-width: 500px; }
+        .diff-table th { background: var(--table-header-bg); color: var(--heading-color); font-weight: 600; padding: 0.4rem 0.5rem; text-align: left; border-bottom: 2px solid var(--divider); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.3px; }
+        .diff-table td { padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--divider); vertical-align: middle; }
         .diff-table tbody tr:nth-child(even) { background: var(--table-row-alt); }
         .diff-table .diff-positivo { color: var(--success); font-weight: 600; }
         .diff-table .diff-negativo { color: var(--danger); font-weight: 600; }
         .diff-table .codigo-cell { font-family: monospace; font-weight: 600; color: var(--heading-color); }
         .diff-table .cantidad-cell { text-align: center; font-weight: 600; color: var(--heading-color); }
         .diff-table .acciones-cell { text-align: center; }
-        .diff-table .acciones-cell button {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            font-size: 1rem;
-            padding: 0.1rem 0.3rem;
-            transition: 0.2s;
-            border-radius: 8px;
-        }
+        .diff-table .acciones-cell button { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 0.1rem 0.3rem; transition: 0.2s; border-radius: 8px; }
         .diff-table .acciones-cell button:hover { color: var(--danger); background: rgba(212, 90, 90, 0.1); }
-        .diff-table tfoot tr {
-            background: var(--table-header-bg);
-            font-weight: 600;
-            border-top: 2px solid var(--divider);
-        }
+        .diff-table tfoot tr { background: var(--table-header-bg); font-weight: 600; border-top: 2px solid var(--divider); }
         .diff-table tfoot td { color: var(--heading-color); padding: 0.4rem 0.5rem; }
-        .empty-message {
-            text-align: center;
-            color: var(--text-muted);
-            padding: 1.5rem;
-            font-size: 0.85rem;
-        }
-
-        .diff-totales {
-            display: flex;
-            gap: 0.8rem 1.5rem;
-            flex-wrap: wrap;
-            margin-top: 0.6rem;
-            font-size: 0.8rem;
-            font-weight: 500;
-            color: var(--text-secondary);
-            padding: 0.4rem 0.6rem;
-            background: var(--table-header-bg);
-            border-radius: 16px;
-        }
+        .empty-message { text-align: center; color: var(--text-muted); padding: 1.5rem; font-size: 0.85rem; }
+        .diff-totales { display: flex; gap: 0.8rem 1.5rem; flex-wrap: wrap; margin-top: 0.6rem; font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); padding: 0.4rem 0.6rem; background: var(--table-header-bg); border-radius: 16px; }
         .diff-totales strong { color: var(--heading-color); }
-
         .toast {
             position: fixed;
             bottom: 20px;
@@ -518,11 +251,7 @@
         .toast.success { border-left: 4px solid var(--success); }
         .toast.error { border-left: 4px solid var(--danger); }
         .toast.info { border-left: 4px solid var(--accent); }
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-            to { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
-
+        @keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
         @media (max-width: 640px) {
             body { padding: 0.5rem; }
             .header { padding: 0.4rem 0.8rem; border-radius: 40px; gap: 0.4rem; }
@@ -554,94 +283,26 @@
             .result-item > .unidad,
             .result-item > .stock-cajas,
             .result-item > .stock-unidades,
-            .result-item > .descripcion {
-                display: none !important;
-            }
-            .result-item .row1 {
-                display: flex !important;
-                align-items: center;
-                gap: 0.4rem;
-                width: 100%;
-                flex-wrap: nowrap;
-            }
-            .result-item .row1 .codigo {
-                display: inline !important;
-                font-size: 0.85rem;
-                font-weight: 700;
-                color: var(--heading-color);
-                flex-shrink: 0;
-            }
-            .result-item .row1 .fabrica {
-                display: inline !important;
-                font-size: 0.65rem;
-                color: var(--text-muted);
-                flex-shrink: 0;
-            }
-            .result-item .row1 .unidad {
-                display: inline !important;
-                font-size: 0.55rem;
-                padding: 0.02rem 0.5rem;
-                background: var(--badge-bg);
-                border-radius: 20px;
-                color: var(--badge-text);
-                margin-left: auto;
-                flex-shrink: 0;
-            }
-            .result-item .row2 {
-                display: flex !important;
-                flex-direction: column;
-                align-items: stretch;
-                gap: 0.15rem;
-                width: 100%;
-            }
-            .result-item .row2 .descripcion {
-                display: -webkit-box !important;
-                -webkit-line-clamp: 2;
-                -webkit-box-orient: vertical;
-                overflow: hidden;
-                word-break: break-word;
-                white-space: normal;
-                flex: 1 1 auto;
-                min-width: 0;
-                font-size: 0.75rem;
-                line-height: 1.3;
-                color: var(--text-secondary);
-            }
-            .result-item .row2 .stock {
-                display: flex !important;
-                gap: 0.5rem;
-                font-size: 0.7rem;
-                font-weight: 600;
-                background: var(--badge-bg);
-                padding: 0.1rem 0.7rem;
-                border-radius: 30px;
-                flex-shrink: 0;
-                color: var(--heading-color);
-                align-self: flex-start;
-                margin-top: 0.1rem;
-            }
+            .result-item > .descripcion { display: none !important; }
+            .result-item .row1 { display: flex !important; align-items: center; gap: 0.4rem; width: 100%; flex-wrap: nowrap; }
+            .result-item .row1 .codigo { display: inline !important; font-size: 0.85rem; font-weight: 700; color: var(--heading-color); flex-shrink: 0; }
+            .result-item .row1 .fabrica { display: inline !important; font-size: 0.65rem; color: var(--text-muted); flex-shrink: 0; }
+            .result-item .row1 .unidad { display: inline !important; font-size: 0.55rem; padding: 0.02rem 0.5rem; background: var(--badge-bg); border-radius: 20px; color: var(--badge-text); margin-left: auto; flex-shrink: 0; }
+            .result-item .row2 { display: flex !important; flex-direction: column; align-items: stretch; gap: 0.15rem; width: 100%; }
+            .result-item .row2 .descripcion { display: -webkit-box !important; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; white-space: normal; flex: 1 1 auto; min-width: 0; font-size: 0.75rem; line-height: 1.3; color: var(--text-secondary); }
+            .result-item .row2 .stock { display: flex !important; gap: 0.5rem; font-size: 0.7rem; font-weight: 600; background: var(--badge-bg); padding: 0.1rem 0.7rem; border-radius: 30px; flex-shrink: 0; color: var(--heading-color); align-self: flex-start; margin-top: 0.1rem; }
             .result-item .row2 .stock .cajas { color: var(--heading-color); }
             .result-item .row2 .stock .unidades { color: var(--text-secondary); }
-            .cantidad-row {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 0.4rem;
-                padding-top: 0.6rem;
-                margin-top: 0.6rem;
-            }
+            .cantidad-row { flex-direction: column; align-items: stretch; gap: 0.4rem; padding-top: 0.6rem; margin-top: 0.6rem; }
             .cantidad-row .group { justify-content: space-between; }
             .cantidad-row .group input { width: 55px; }
-            .cantidad-row .acciones {
-                margin-left: 0;
-                justify-content: center;
-            }
+            .cantidad-row .acciones { margin-left: 0; justify-content: center; }
             .cantidad-row .acciones .btn { flex: 1; min-width: 0; padding: 0.3rem 0.5rem; font-size: 0.65rem; }
             .diff-table { font-size: 0.65rem; min-width: 400px; }
             .diff-table th, .diff-table td { padding: 0.2rem 0.3rem; font-size: 0.6rem; }
             .diff-totales { font-size: 0.7rem; gap: 0.3rem 0.8rem; padding: 0.3rem 0.5rem; }
             .toast { font-size: 0.8rem; padding: 0.5rem 1rem; bottom: 10px; }
         }
-
         @media (max-width: 400px) {
             .header .logo .iem { font-size: 1rem; }
             .btn { font-size: 0.6rem; padding: 0.25rem 0.6rem; min-height: 28px; }
@@ -769,4 +430,5 @@
                     <tr>
                         <td colspan="3" style="text-align:right;">Totales</td>
                         <td id="diffTotalTeorico" style="color:var(--heading-color);">0</td>
-                        <td id="diffTotalFisico" style="color:var(--heading-color
+                        <td id="diffTotalFisico" style="color:var(--heading-color);">0</td>
+                        <td id="diffTotalDiferencia" style="color:var(--
