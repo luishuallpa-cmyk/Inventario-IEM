@@ -446,6 +446,143 @@
         .cajas-group.hidden { display: none !important; }
 
         /* ============================================================
+           VENCIMIENTO (control de fechas)
+           ============================================================ */
+        .venc-block {
+            margin-top: 0.9rem;
+            padding-top: 0.9rem;
+            border-top: 1px solid var(--divider);
+        }
+        .venc-block.hidden { display: none !important; }
+        .venc-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 0.6rem;
+        }
+        .venc-history {
+            border: 1px solid var(--input-border);
+            border-radius: 16px;
+            padding: 0.6rem 0.7rem;
+            margin-bottom: 0.8rem;
+            background: var(--input-bg);
+        }
+        .venc-history-title {
+            font-size: 0.7rem;
+            color: var(--accent-light);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .venc-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+        }
+        .venc-chip {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--card-border);
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.35rem 0.5rem 0.35rem 0.8rem;
+            border-radius: 30px;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .venc-chip-del {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.7rem;
+            line-height: 1;
+            padding: 0.2rem;
+            border-radius: 50%;
+            transition: 0.15s;
+        }
+        .venc-chip-del:hover { color: var(--danger); background: rgba(212, 90, 90, 0.15); }
+        .venc-chip-empty {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        .venc-selects {
+            display: flex;
+            gap: 0.6rem;
+            margin-bottom: 0.8rem;
+        }
+        .venc-select-group { flex: 1; min-width: 0; }
+        .venc-select-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: var(--accent-light);
+            margin-bottom: 0.3rem;
+            letter-spacing: 0.5px;
+        }
+        .venc-select {
+            width: 100%;
+            padding: 0.55rem 0.8rem;
+            border-radius: 14px;
+            border: 1.5px solid var(--input-focus);
+            background: var(--input-bg);
+            color: var(--heading-color);
+            font-family: var(--font);
+            font-weight: 700;
+            font-size: 0.9rem;
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+        .year-tabs {
+            display: flex;
+            gap: 0.4rem;
+            overflow-x: auto;
+            padding-bottom: 0.3rem;
+            margin-bottom: 0.9rem;
+        }
+        .year-tabs::-webkit-scrollbar { height: 3px; }
+        .year-tabs::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
+        .year-tab {
+            flex-shrink: 0;
+            padding: 0.5rem 0.9rem;
+            border-radius: 14px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text-muted);
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.15s;
+            font-family: var(--font);
+        }
+        .year-tab:hover { border-color: var(--accent); }
+        .year-tab.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+        .btn-guardar-grande {
+            width: 100%;
+            padding: 0.9rem;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            min-height: 52px;
+        }
+
+        @media (max-width: 640px) {
+            .venc-selects { gap: 0.5rem; }
+            .venc-select { font-size: 0.8rem; padding: 0.5rem 0.6rem; }
+            .year-tab { padding: 0.4rem 0.7rem; font-size: 0.7rem; }
+        }
+
+        /* ============================================================
            TABLAS (Pedido e Inventario)
            ============================================================ */
         .table-wrap {
@@ -760,17 +897,87 @@
             <span class="info-text" id="infoFactor">Factor: 1</span>
             <div class="acciones">
                 <button class="btn btn-success" id="btnAgregar">➕ Pedido</button>
-                <button class="btn btn-warning" id="btnRegistrarFisico">📝 Contar</button>
             </div>
+        </div>
+
+        <!-- Vencimiento (control de fechas) -->
+        <div class="venc-block hidden" id="vencBlock">
+            <div class="venc-label">📅 Vencimiento</div>
+            <div class="venc-history">
+                <div class="venc-history-title">🕒 Fechas registradas (últimas 2 semanas)</div>
+                <div class="venc-chips" id="vencChips">
+                    <span class="venc-chip-empty">Sin registros recientes para este producto.</span>
+                </div>
+            </div>
+            <div class="venc-selects">
+                <div class="venc-select-group">
+                    <div class="venc-select-label">DÍA</div>
+                    <select class="venc-select" id="selDia"></select>
+                </div>
+                <div class="venc-select-group">
+                    <div class="venc-select-label">MES</div>
+                    <select class="venc-select" id="selMes"></select>
+                </div>
+            </div>
+            <div class="year-tabs" id="yearTabs"></div>
+            <button class="btn btn-success btn-guardar-grande" id="btnRegistrarFisico">➕ GUARDAR</button>
         </div>
     </section>
 
     <!-- ============================================================
-    PEDIDO ACTUAL
+    INVENTARIO FÍSICO
     ============================================================ -->
     <section class="card">
         <div class="card-header">
-            <h2>📦 Pedido actual</h2>
+            <h2>📊 Inventario Físico</h2>
+            <span class="badge" id="diffCount">0 registros</span>
+            <div style="margin-left:auto; display:flex; gap:0.3rem; flex-wrap:wrap;">
+                <button class="btn btn-success btn-sm" id="exportDiffBtn">📥 Excel</button>
+                <button class="btn btn-drive btn-sm" id="guardarDriveBtn">☁️ Drive</button>
+                <button class="btn btn-danger btn-sm" id="clearDiffBtn">🗑️ Limpiar</button>
+            </div>
+        </div>
+        <div class="table-wrap">
+            <table class="diff-table" id="diffTable">
+                <thead><tr>
+                    <th>#</th>
+                    <th>Código</th>
+                    <th>Descripción</th>
+                    <th>Teórico</th>
+                    <th>Físico</th>
+                    <th>Diferencia</th>
+                    <th>Vencimiento</th>
+                    <th>Fecha/Hora</th>
+                    <th>Acción</th>
+                </tr></thead>
+                <tbody id="diffBody">
+                    <tr><td colspan="9" class="empty-message">No hay productos contados aún.</td></tr>
+                </tbody>
+                <tfoot id="diffFoot" style="display:none;">
+                    <tr>
+                        <td colspan="3" style="text-align:right;">Totales</td>
+                        <td id="diffTotalTeorico" style="color:var(--heading-color);">0</td>
+                        <td id="diffTotalFisico" style="color:var(--heading-color);">0</td>
+                        <td id="diffTotalDiferencia" style="color:var(--heading-color);">0</td>
+                        <td></td><td></td><td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <div class="diff-totales" id="diffResumen" style="display:none;">
+            <span>📦 Teórico: <strong id="resTeorico">0</strong></span>
+            <span>🔎 Físico: <strong id="resFisico">0</strong></span>
+            <span>📊 Diferencia: <strong id="resDiferencia">0</strong></span>
+            <span>Contados: <strong id="resContados">0</strong></span>
+        </div>
+    </section>
+
+    <!-- ============================================================
+    PEDIDO ACTUAL (sugerencia de pedido al proveedor)
+    ============================================================ -->
+    <section class="card">
+        <div class="card-header">
+            <h2>📦 Sugerencia de Pedido</h2>
             <span class="badge" id="pedidoCount">0 productos</span>
             <div style="margin-left:auto; display:flex; gap:0.3rem; flex-wrap:wrap;">
                 <span style="font-size:0.7rem; color:var(--text-muted);">Cajas <strong id="totalCajasPedido" style="color:var(--heading-color);">0</strong></span>
@@ -804,53 +1011,6 @@
                     </tr>
                 </tfoot>
             </table>
-        </div>
-    </section>
-
-    <!-- ============================================================
-    INVENTARIO FÍSICO
-    ============================================================ -->
-    <section class="card">
-        <div class="card-header">
-            <h2>📊 Inventario Físico</h2>
-            <span class="badge" id="diffCount">0 registros</span>
-            <div style="margin-left:auto; display:flex; gap:0.3rem; flex-wrap:wrap;">
-                <button class="btn btn-success btn-sm" id="exportDiffBtn">📥 Excel</button>
-                <button class="btn btn-drive btn-sm" id="guardarDriveBtn">☁️ Drive</button>
-                <button class="btn btn-danger btn-sm" id="clearDiffBtn">🗑️ Limpiar</button>
-            </div>
-        </div>
-        <div class="table-wrap">
-            <table class="diff-table" id="diffTable">
-                <thead><tr>
-                    <th>#</th>
-                    <th>Código</th>
-                    <th>Descripción</th>
-                    <th>Teórico</th>
-                    <th>Físico</th>
-                    <th>Diferencia</th>
-                    <th>Fecha/Hora</th>
-                    <th>Acción</th>
-                </tr></thead>
-                <tbody id="diffBody">
-                    <tr><td colspan="8" class="empty-message">No hay productos contados aún.</td></tr>
-                </tbody>
-                <tfoot id="diffFoot" style="display:none;">
-                    <tr>
-                        <td colspan="3" style="text-align:right;">Totales</td>
-                        <td id="diffTotalTeorico" style="color:var(--heading-color);">0</td>
-                        <td id="diffTotalFisico" style="color:var(--heading-color);">0</td>
-                        <td id="diffTotalDiferencia" style="color:var(--heading-color);">0</td>
-                        <td></td><td></td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
-        <div class="diff-totales" id="diffResumen" style="display:none;">
-            <span>📦 Teórico: <strong id="resTeorico">0</strong></span>
-            <span>🔎 Físico: <strong id="resFisico">0</strong></span>
-            <span>📊 Diferencia: <strong id="resDiferencia">0</strong></span>
-            <span>Contados: <strong id="resContados">0</strong></span>
         </div>
     </section>
 </div>
@@ -908,6 +1068,13 @@
         const pedidoCount = document.getElementById('pedidoCount');
         const fileStatus = document.getElementById('fileStatus');
         const refreshBtn = document.getElementById('refreshDriveBtn');
+
+        const vencBlock = document.getElementById('vencBlock');
+        const vencChips = document.getElementById('vencChips');
+        const selDia = document.getElementById('selDia');
+        const selMes = document.getElementById('selMes');
+        const yearTabs = document.getElementById('yearTabs');
+        let anioSeleccionado = new Date().getFullYear();
 
         const diffBody = document.getElementById('diffBody');
         const diffFoot = document.getElementById('diffFoot');
@@ -1206,6 +1373,127 @@
         }
 
         // ============================================================
+        // VENCIMIENTO (control de fechas)
+        // ============================================================
+        const MESES_CORTOS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+
+        function poblarSelectDia() {
+            selDia.innerHTML = '';
+            for (let d = 1; d <= 31; d++) {
+                const opt = document.createElement('option');
+                opt.value = d;
+                opt.textContent = String(d).padStart(2, '0');
+                selDia.appendChild(opt);
+            }
+        }
+
+        function poblarSelectMes() {
+            selMes.innerHTML = '';
+            MESES_CORTOS.forEach((m, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx + 1;
+                opt.textContent = `${String(idx + 1).padStart(2, '0')}-${m}`;
+                selMes.appendChild(opt);
+            });
+        }
+
+        function poblarYearTabs() {
+            const base = new Date().getFullYear();
+            yearTabs.innerHTML = '';
+            for (let y = base; y <= base + 7; y++) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'year-tab' + (y === anioSeleccionado ? ' active' : '');
+                btn.textContent = y;
+                btn.dataset.year = y;
+                btn.addEventListener('click', () => {
+                    anioSeleccionado = y;
+                    document.querySelectorAll('.year-tab').forEach(t => t.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+                yearTabs.appendChild(btn);
+            }
+        }
+
+        function resetVencimientoAHoy() {
+            const hoy = new Date();
+            selDia.value = hoy.getDate();
+            selMes.value = hoy.getMonth() + 1;
+            anioSeleccionado = hoy.getFullYear();
+            document.querySelectorAll('.year-tab').forEach(t => {
+                t.classList.toggle('active', parseInt(t.dataset.year) === anioSeleccionado);
+            });
+        }
+
+        function obtenerVencimientoSeleccionado() {
+            const dia = String(selDia.value).padStart(2, '0');
+            const mes = String(selMes.value).padStart(2, '0');
+            return `${dia}-${mes}-${anioSeleccionado}`;
+        }
+
+        // Muestra en chips las fechas de vencimiento registradas para este
+        // código de producto en los últimos 14 días (según la fecha/hora en
+        // que se hizo el registro, no la fecha de vencimiento en sí). Cada
+        // chip es un lote independiente y se puede eliminar por separado.
+        function renderFechasRegistradas(codigo, unidadRef) {
+            const LIMITE_DIAS = 14;
+            const ahora = Date.now();
+            const record = inventarioFisico.find(d => d.codigo === codigo);
+            const lotes = (record && record.lotes) ? record.lotes : [];
+
+            const recientes = lotes
+                .map((l, idx) => ({ ...l, idx }))
+                .filter(l => {
+                    if (!l.fechaISO) return true; // lotes antiguos sin marca de tiempo: se muestran igual
+                    const dias = (ahora - new Date(l.fechaISO).getTime()) / 86400000;
+                    return dias <= LIMITE_DIAS;
+                });
+
+            if (recientes.length === 0) {
+                vencChips.innerHTML = `<span class="venc-chip-empty">Sin registros recientes para este producto.</span>`;
+                return;
+            }
+
+            vencChips.innerHTML = recientes.map(l => `
+                <span class="venc-chip">
+                    ${l.vencimiento || 'S/F'} · ${l.cantidad} ${unidadRef || ''}
+                    <button type="button" class="venc-chip-del" data-codigo="${codigo}" data-idx="${l.idx}" title="Eliminar este lote">✕</button>
+                </span>
+            `).join('');
+
+            document.querySelectorAll('.venc-chip-del').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    eliminarLote(this.dataset.codigo, parseInt(this.dataset.idx));
+                });
+            });
+        }
+
+        // Elimina un lote puntual (una cantidad con su fecha) de un producto
+        // ya contado, y recalcula el total físico y la diferencia. Si era el
+        // único lote, se elimina la fila completa del inventario físico.
+        function eliminarLote(codigo, idx) {
+            const record = inventarioFisico.find(d => d.codigo === codigo);
+            if (!record || !record.lotes) return;
+            record.lotes.splice(idx, 1);
+            if (record.lotes.length === 0) {
+                inventarioFisico = inventarioFisico.filter(d => d.codigo !== codigo);
+            } else {
+                record.stockFisico = record.lotes.reduce((sum, l) => sum + l.cantidad, 0);
+                record.diferencia = record.stockFisico - record.stockTeorico;
+            }
+            saveInventario();
+            renderInventario();
+            if (selectedIndex !== -1 && selectedIndex < filteredData.length) {
+                const item = filteredData[selectedIndex];
+                if (getCodigo(item) === codigo) {
+                    renderFechasRegistradas(codigo, getUnidadRef(item));
+                }
+            }
+            showToast('Lote eliminado.', 'info');
+        }
+
+        // ============================================================
         // ACTUALIZAR CANTIDADES
         // ============================================================
         function actualizarCantidades(item) {
@@ -1232,6 +1520,10 @@
             const unidadesStock = factor === 1 ? cantidad : cantidad % factor;
             cajasCount.textContent = cajasStock;
             unidadesCount.textContent = unidadesStock;
+
+            vencBlock.classList.remove('hidden');
+            resetVencimientoAHoy();
+            renderFechasRegistradas(getCodigo(item), getUnidadRef(item));
         }
 
         function limpiarCantidades() {
@@ -1244,6 +1536,7 @@
             txtUnidades.disabled = false;
             cajasCount.textContent = '0';
             unidadesCount.textContent = '0';
+            vencBlock.classList.add('hidden');
         }
 
         // ============================================================
@@ -1542,48 +1835,57 @@
                 cajas = 0;
             }
 
-            const stockFisico = (cajas * factor) + unidades;
+            // Cantidad de este lote (no el total del producto): se suma a lo
+            // que ya se hubiera registrado antes para el mismo código, cada
+            // porción con su propia fecha de vencimiento.
+            const cantidadLote = (cajas * factor) + unidades;
 
-            if (stockFisico === 0) {
+            if (cantidadLote === 0) {
                 showToast('Ingrese una cantidad mayor que cero.', 'error');
                 return;
             }
 
-            const diferencia = stockFisico - stockTeorico;
-
-            if (diferencia === 0) {
-                if (!confirm(`Stock teórico: ${stockTeorico}\nStock físico: ${stockFisico}\nLa diferencia es cero. ¿Deseas registrar de todas formas?`)) {
-                    return;
-                }
-            }
-
-            // Bug #3: antes se podía contar el mismo producto varias veces por error,
-            // duplicando su stock físico en los totales y en el Excel exportado.
-            const yaContado = inventarioFisico.some(d => d.codigo === codigo);
-            if (yaContado) {
-                if (!confirm(`El producto ${codigo} ya fue contado antes. ¿Deseas registrar otro conteo de todas formas? (se sumará como registro aparte)`)) {
-                    return;
-                }
-            }
-
             const ahora = new Date();
             const fechaStr = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
+            const vencimiento = obtenerVencimientoSeleccionado();
 
-            inventarioFisico.push({
-                codigo: codigo,
-                descripcion: descripcion,
-                linea: linea,
-                stockTeorico: stockTeorico,
-                stockFisico: stockFisico,
-                diferencia: diferencia,
-                fecha: fechaStr
+            // Busca si el producto ya tiene un registro (de otro lote/fecha) y
+            // acumula ahí en vez de crear una fila aparte.
+            let record = inventarioFisico.find(d => d.codigo === codigo);
+            if (!record) {
+                record = {
+                    codigo: codigo,
+                    descripcion: descripcion,
+                    linea: linea,
+                    stockTeorico: stockTeorico,
+                    stockFisico: 0,
+                    diferencia: 0,
+                    lotes: [],
+                    fecha: fechaStr,
+                    fechaISO: ahora.toISOString()
+                };
+                inventarioFisico.push(record);
+            }
+
+            record.lotes.push({
+                vencimiento: vencimiento,
+                cantidad: cantidadLote,
+                fecha: fechaStr,
+                fechaISO: ahora.toISOString()
             });
+            record.stockTeorico = stockTeorico;
+            record.stockFisico = record.lotes.reduce((sum, l) => sum + l.cantidad, 0);
+            record.diferencia = record.stockFisico - record.stockTeorico;
+            record.fecha = fechaStr;
+            record.fechaISO = ahora.toISOString();
 
             saveInventario();
             renderInventario();
             txtCajas.value = '0';
             txtUnidades.value = '0';
-            showToast(`✅ Conteo registrado. Diferencia: ${diferencia}`, 'success');
+            const totalLotes = record.lotes.length;
+            const msgLote = totalLotes > 1 ? ` (${totalLotes} lotes, total físico ${record.stockFisico})` : '';
+            showToast(`✅ Cantidad agregada (vence ${vencimiento}): ${cantidadLote}${msgLote}. Diferencia: ${record.diferencia}`, 'success');
             if (selectedIndex < filteredData.length) {
                 actualizarCantidades(filteredData[selectedIndex]);
             }
@@ -1604,7 +1906,22 @@
         function loadInventario() {
             try {
                 const raw = localStorage.getItem(INV_KEY);
-                if (raw) inventarioFisico = JSON.parse(raw);
+                if (raw) {
+                    inventarioFisico = JSON.parse(raw);
+                    // Migración: registros guardados antes de tener "lotes" (una
+                    // sola fecha de vencimiento por fila) se convierten al nuevo
+                    // formato de lista de lotes para que sigan funcionando igual.
+                    inventarioFisico.forEach(d => {
+                        if (!d.lotes) {
+                            d.lotes = [{
+                                vencimiento: d.vencimiento || null,
+                                cantidad: d.stockFisico,
+                                fecha: d.fecha,
+                                fechaISO: d.fechaISO || null
+                            }];
+                        }
+                    });
+                }
             } catch(e) { inventarioFisico = []; }
         }
 
@@ -1613,7 +1930,7 @@
         // ============================================================
         function renderInventario() {
             if (inventarioFisico.length === 0) {
-                diffBody.innerHTML = `<tr><td colspan="8" class="empty-message">No hay productos contados aún.</td></tr>`;
+                diffBody.innerHTML = `<tr><td colspan="9" class="empty-message">No hay productos contados aún.</td></tr>`;
                 diffFoot.style.display = 'none';
                 diffResumen.style.display = 'none';
                 diffCount.textContent = '0 registros';
@@ -1628,6 +1945,11 @@
                 totalFisico += d.stockFisico;
                 totalDiff += d.diferencia;
                 const claseDiff = d.diferencia >= 0 ? 'diff-positivo' : 'diff-negativo';
+                const lotes = d.lotes || [];
+                const vencTexto = lotes.length > 1
+                    ? `${lotes.length} lotes`
+                    : (lotes[0] ? lotes[0].vencimiento : (d.vencimiento || '-'));
+                const vencTitulo = lotes.map(l => `${l.vencimiento || 'S/F'}: ${l.cantidad}`).join(' | ');
                 html += `<tr>
                     <td>${idx + 1}</td>
                     <td class="codigo-cell">${d.codigo}</td>
@@ -1635,6 +1957,7 @@
                     <td style="color:var(--heading-color);">${d.stockTeorico}</td>
                     <td style="color:var(--heading-color);">${d.stockFisico}</td>
                     <td class="${claseDiff}">${d.diferencia}</td>
+                    <td style="color:var(--heading-color);" title="${vencTitulo}">${vencTexto}</td>
                     <td style="color:var(--text-muted);">${d.fecha}</td>
                     <td class="acciones-cell"><button class="eliminar-diff" data-index="${idx}">✕</button></td>
                 </tr>`;
@@ -1675,7 +1998,7 @@
 
             const grupos = agruparPorLinea(inventarioFisico, d => d.linea);
             const filas = [
-                ['#', 'Código', 'Descripción', 'Línea', 'Stock Teórico', 'Stock Físico', 'Diferencia', 'Fecha/Hora']
+                ['#', 'Código', 'Descripción', 'Línea', 'Stock Teórico', 'Stock Físico', 'Diferencia', 'Vencimiento', 'Fecha/Hora']
             ];
 
             grupos.forEach(grupo => {
@@ -1683,18 +2006,19 @@
                 let contador = 1;
                 let subTeorico = 0, subFisico = 0, subDiferencia = 0;
                 grupo.items.forEach(d => {
-                    filas.push([contador++, d.codigo, d.descripcion, d.linea || 'SIN LÍNEA', d.stockTeorico, d.stockFisico, d.diferencia, d.fecha]);
+                    const detalleLotes = (d.lotes || []).map(l => `${l.vencimiento || 'S/F'}: ${l.cantidad}`).join(' | ');
+                    filas.push([contador++, d.codigo, d.descripcion, d.linea || 'SIN LÍNEA', d.stockTeorico, d.stockFisico, d.diferencia, detalleLotes || (d.vencimiento || '-'), d.fecha]);
                     subTeorico += d.stockTeorico;
                     subFisico += d.stockFisico;
                     subDiferencia += d.diferencia;
                 });
-                filas.push(['', '', '', 'Subtotal línea', subTeorico, subFisico, subDiferencia, '']);
+                filas.push(['', '', '', 'Subtotal línea', subTeorico, subFisico, subDiferencia, '', '']);
                 filas.push([]);
             });
 
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.aoa_to_sheet(filas);
-            ws['!cols'] = [{wch:6},{wch:10},{wch:42},{wch:24},{wch:12},{wch:12},{wch:12},{wch:18}];
+            ws['!cols'] = [{wch:6},{wch:10},{wch:42},{wch:24},{wch:12},{wch:12},{wch:12},{wch:30},{wch:18}];
             XLSX.utils.book_append_sheet(wb, ws, 'InventarioFisico');
             const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
             const blob = new Blob([wbout], { type: 'application/octet-stream' });
@@ -1723,6 +2047,7 @@
                 'Stock Teórico': d.stockTeorico,
                 'Stock Físico': d.stockFisico,
                 'Diferencia': d.diferencia,
+                'Vencimiento': (d.lotes || []).map(l => `${l.vencimiento || 'S/F'}: ${l.cantidad}`).join(' | ') || (d.vencimiento || '-'),
                 'Fecha/Hora': d.fecha
             }));
 
@@ -1798,6 +2123,11 @@
         function init() {
             cargarTema();
             themeToggleBtn.addEventListener('click', alternarTema);
+
+            poblarSelectDia();
+            poblarSelectMes();
+            poblarYearTabs();
+            resetVencimientoAHoy();
 
             loadInventario();
             renderInventario();
