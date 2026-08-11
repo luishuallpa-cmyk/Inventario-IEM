@@ -1167,6 +1167,49 @@
         }
 
         // ============================================================
+        // RESPALDO AUTOMÁTICO DE DATOS (por si se cae el link de Sheets)
+        // ============================================================
+        // Cada vez que la carga desde Google Sheets funciona bien, se guarda
+        // una copia completa en este dispositivo. Si el link se desconecta
+        // (como al reemplazar la hoja de cálculo), la app usa este respaldo
+        // en vez de perder todo el inventario o mostrar datos de ejemplo.
+        const BACKUP_KEY = 'buscador_respaldo_datos';
+
+        function guardarRespaldo(data) {
+            try {
+                localStorage.setItem(BACKUP_KEY, JSON.stringify({
+                    data: data,
+                    fechaISO: new Date().toISOString()
+                }));
+            } catch (e) {
+                // Si no se puede guardar (almacenamiento lleno/bloqueado), no es
+                // crítico: simplemente no habrá respaldo la próxima vez.
+                console.warn('No se pudo guardar el respaldo de datos.', e);
+            }
+        }
+
+        function cargarRespaldo() {
+            try {
+                const raw = localStorage.getItem(BACKUP_KEY);
+                if (!raw) return null;
+                const parsed = JSON.parse(raw);
+                if (!parsed.data || !Array.isArray(parsed.data) || parsed.data.length === 0) return null;
+                return parsed;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function formatearFechaRespaldo(fechaISO) {
+            try {
+                const f = new Date(fechaISO);
+                return f.toLocaleDateString() + ' ' + f.toLocaleTimeString();
+            } catch (e) {
+                return '';
+            }
+        }
+
+        // ============================================================
         // CARGA DESDE GOOGLE SHEETS
         // ============================================================
         function loadFromGoogleSheets() {
@@ -1180,6 +1223,7 @@
                     const data = parseCSV(csvText);
                     if (data && data.length > 0) {
                         currentData = data;
+                        guardarRespaldo(data);
                         fileStatus.textContent = `✅ ${data.length} registros desde Google Sheets`;
                         // Bug #2: antes esto siempre borraba la búsqueda, los resultados y las
                         // cantidades del usuario, incluso en el auto-refresco cada 5 minutos.
@@ -1190,15 +1234,35 @@
                             limpiarCantidades();
                         }
                     } else {
-                        fileStatus.textContent = '⚠️ Google Sheets vacío, usando ejemplo';
-                        useLocalData();
+                        fileStatus.textContent = '⚠️ Google Sheets vacío, buscando respaldo...';
+                        useBackupOrLocalData();
                     }
                 })
                 .catch(err => {
-                    console.warn('Error al cargar Google Sheets, usando datos locales.', err);
-                    fileStatus.textContent = '⚠️ Sin conexión, usando local';
-                    useLocalData();
+                    console.warn('Error al cargar Google Sheets, buscando respaldo.', err);
+                    fileStatus.textContent = '⚠️ Sin conexión, buscando respaldo...';
+                    useBackupOrLocalData();
                 });
+        }
+
+        // Si Google Sheets falla o está vacío, primero intenta usar el último
+        // respaldo bueno guardado en este dispositivo. Solo si tampoco hay
+        // respaldo, cae a los datos de ejemplo.
+        function useBackupOrLocalData() {
+            const respaldo = cargarRespaldo();
+            if (respaldo) {
+                currentData = respaldo.data;
+                const fechaTexto = formatearFechaRespaldo(respaldo.fechaISO);
+                fileStatus.textContent = `💾 ${currentData.length} registros del último respaldo (${fechaTexto})`;
+            } else {
+                useLocalData();
+                return;
+            }
+            if (!searchInput.value.trim() && selectedIndex === -1) {
+                filteredData = [];
+                renderResults([]);
+                limpiarCantidades();
+            }
         }
 
         function useLocalData() {
