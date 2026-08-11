@@ -1157,8 +1157,8 @@
                 const unidad = getUnidadRef(item);
                 const cantidad = getCantidad(item);
                 const factor = getFactorFinal(item);
-                const cajasStock = Math.floor(cantidad / factor);
-                const unidadesStock = cantidad % factor;
+                const cajasStock = factor === 1 ? 0 : Math.floor(cantidad / factor);
+                const unidadesStock = factor === 1 ? cantidad : cantidad % factor;
                 const selectedClass = (idx === selectedIndex) ? ' selected' : '';
 
                 html += `<div class="result-item${selectedClass}" data-index="${idx}">
@@ -1228,8 +1228,8 @@
             txtUnidades.disabled = false;
 
             const cantidad = getCantidad(item);
-            const cajasStock = Math.floor(cantidad / factor);
-            const unidadesStock = cantidad % factor;
+            const cajasStock = factor === 1 ? 0 : Math.floor(cantidad / factor);
+            const unidadesStock = factor === 1 ? cantidad : cantidad % factor;
             cajasCount.textContent = cajasStock;
             unidadesCount.textContent = unidadesStock;
         }
@@ -1264,8 +1264,8 @@
             const esSuelta = factor === 1;
 
             const stockTotal = getCantidad(item);
-            const stockCajas = Math.floor(stockTotal / factor);
-            const stockUnidades = stockTotal % factor;
+            const stockCajas = esSuelta ? 0 : Math.floor(stockTotal / factor);
+            const stockUnidades = esSuelta ? stockTotal : stockTotal % factor;
 
             let cajasPedido = parseInt(txtCajas.value) || 0;
             let unidadesPedido = parseInt(txtUnidades.value) || 0;
