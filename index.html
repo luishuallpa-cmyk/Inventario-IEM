@@ -860,6 +860,13 @@
         // ============================================================
         // CONFIGURACIÓN
         // ============================================================
+        // NOTA DE SEGURIDAD: esta URL queda visible para cualquiera que vea el
+        // código fuente de la página (no hay forma de ocultarla en una app 100%
+        // cliente). Cualquiera con la URL puede hacer POST a este Apps Script.
+        // Esto NO se puede arreglar desde este archivo: la validación debe
+        // hacerse del lado del Apps Script, por ejemplo exigiendo un token
+        // secreto en el body/cabecera y rechazando la petición si no coincide,
+        // y/o limitando el rango de escritura de la hoja de cálculo.
         const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRKg3h0F7KMnRz2Fm2co7zlUFW1uZXeka4ljxSEbWLjDvDch3tglSqCDMn9uMVKiQ/pub?gid=683330974&single=true&output=csv';
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyhnv5rsC8MNNhzKJMakeSyC3yNm01qDe6fE6wmDdtlZCNEkww8f5V0-L51Akjrw8Y00w/exec';
 
@@ -877,6 +884,7 @@
         let pedido = [];
         let inventarioFisico = [];
         let currentFactor = 1;
+        let autoRefreshTimer = null;
 
         // DOM
         const searchInput = document.getElementById('searchInput');
@@ -1038,20 +1046,64 @@
             }
         }
 
-        function parseCSV(csvText) {
-            const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
-            if (lines.length < 2) return null;
+        // Parser CSV robusto: procesa carácter a carácter para respetar comillas
+        // ("..." puede contener el delimitador o saltos de línea) y no descarta
+        // filas con menos columnas (las rellena con '' en vez de perder datos).
+        function parseCSVRows(csvText) {
+            const rows = [];
+            let row = [];
+            let field = '';
+            let inQuotes = false;
+            let i = 0;
+            const len = csvText.length;
+
+            // Detectar delimitador a partir de la primera línea (fuera de comillas)
             let delimiter = ',';
-            if (lines[0].includes(';')) delimiter = ';';
-            if (lines[0].includes('\t')) delimiter = '\t';
-            const headers = lines[0].split(delimiter).map(h => h.trim());
+            let firstLineEnd = csvText.search(/\r?\n/);
+            const sample = firstLineEnd === -1 ? csvText : csvText.slice(0, firstLineEnd);
+            if (sample.includes(';') && !sample.includes(',')) delimiter = ';';
+            else if (sample.includes('\t') && !sample.includes(',')) delimiter = '\t';
+
+            while (i < len) {
+                const char = csvText[i];
+
+                if (inQuotes) {
+                    if (char === '"') {
+                        if (csvText[i + 1] === '"') { field += '"'; i += 2; continue; }
+                        inQuotes = false; i++; continue;
+                    }
+                    field += char; i++; continue;
+                }
+
+                if (char === '"') { inQuotes = true; i++; continue; }
+                if (char === delimiter) { row.push(field); field = ''; i++; continue; }
+                if (char === '\r') { i++; continue; }
+                if (char === '\n') {
+                    row.push(field); field = '';
+                    rows.push(row); row = [];
+                    i++; continue;
+                }
+                field += char; i++;
+            }
+            // Última celda/fila pendiente
+            if (field !== '' || row.length > 0) { row.push(field); rows.push(row); }
+
+            return rows.filter(r => r.some(v => v.trim() !== ''));
+        }
+
+        function parseCSV(csvText) {
+            const rows = parseCSVRows(csvText);
+            if (rows.length < 2) return null;
+            const headers = rows[0].map(h => h.trim());
             const result = [];
-            for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].split(delimiter).map(v => v.trim());
-                if (values.length < headers.length) continue;
+            for (let i = 1; i < rows.length; i++) {
+                const values = rows[i];
                 const obj = {};
                 headers.forEach((h, idx) => {
-                    obj[h] = values[idx] || '';
+                    // Si la fila tiene menos columnas que el encabezado, se rellena
+                    // con '' en vez de descartar el registro completo.
+                    const v = values[idx];
+                    obj[h] = v !== undefined ? v.trim() : '';
                 });
                 result.push(obj);
             }
@@ -1354,7 +1406,11 @@
         // PERSISTENCIA PEDIDO
         // ============================================================
         function savePedido() {
-            try { localStorage.setItem('pedido_actual', JSON.stringify(pedido)); } catch(e) {}
+            try {
+                localStorage.setItem('pedido_actual', JSON.stringify(pedido));
+            } catch(e) {
+                showToast('⚠️ No se pudo guardar el pedido en este dispositivo (almacenamiento lleno o bloqueado).', 'error');
+            }
         }
         function loadPedido() {
             try {
@@ -1539,7 +1595,11 @@
         const INV_KEY = 'buscador_inventario_fisico';
 
         function saveInventario() {
-            try { localStorage.setItem(INV_KEY, JSON.stringify(inventarioFisico)); } catch(e) {}
+            try {
+                localStorage.setItem(INV_KEY, JSON.stringify(inventarioFisico));
+            } catch(e) {
+                showToast('⚠️ No se pudo guardar el inventario físico en este dispositivo (almacenamiento lleno o bloqueado).', 'error');
+            }
         }
         function loadInventario() {
             try {
@@ -1750,7 +1810,15 @@
                 setTimeout(() => { this.textContent = '🔄 Actualizar'; }, 1500);
             });
 
-            setInterval(loadFromGoogleSheets, 300000);
+            if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+            autoRefreshTimer = setInterval(loadFromGoogleSheets, 300000);
+            // Al volver a la pestaña, refrescar de inmediato solo si el
+            // usuario no tiene una búsqueda/selección en curso.
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible' && !searchInput.value.trim() && selectedIndex === -1) {
+                    loadFromGoogleSheets();
+                }
+            });
 
             searchButton.addEventListener('click', performSearch);
             searchInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') performSearch(); });
