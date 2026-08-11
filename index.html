@@ -971,14 +971,24 @@
         function obtenerFactorEmpaque(textoEmpaque) {
             if (!textoEmpaque) return 1;
             let factor = 1;
+            // Bug #5: antes solo detectaba 'X' mayúscula; ahora es insensible a mayúsculas/minúsculas.
             let pos = textoEmpaque.indexOf('*');
-            if (pos === -1) pos = textoEmpaque.indexOf('X');
+            if (pos === -1) pos = textoEmpaque.toUpperCase().indexOf('X');
             if (pos !== -1) {
                 let extraido = textoEmpaque.substring(pos + 1).trim();
                 let numeros = extraido.replace(/\D/g, '');
                 if (parseInt(numeros) > 1) factor = parseInt(numeros);
             }
             return factor;
+        }
+
+        // Bug #1: única fuente de verdad para el factor de empaque de un producto.
+        // Antes renderResults() usaba solo getFactorEmpaque(item) y actualizarCantidades()
+        // usaba obtenerFactorEmpaque(unidad) || getFactorEmpaque(item), pudiendo dar
+        // resultados distintos para el mismo producto. Ahora ambos usan esta función.
+        function getFactorFinal(item) {
+            const unidad = getUnidadRef(item);
+            return obtenerFactorEmpaque(unidad) || getFactorEmpaque(item) || 1;
         }
 
         // ============================================================
@@ -996,11 +1006,14 @@
                     if (data && data.length > 0) {
                         currentData = data;
                         fileStatus.textContent = `✅ ${data.length} registros desde Google Sheets`;
-                        searchInput.value = '';
-                        selectedIndex = -1;
-                        filteredData = [];
-                        renderResults([]);
-                        limpiarCantidades();
+                        // Bug #2: antes esto siempre borraba la búsqueda, los resultados y las
+                        // cantidades del usuario, incluso en el auto-refresco cada 5 minutos.
+                        // Ahora solo se reinicia la vista si el usuario no tenía nada en curso.
+                        if (!searchInput.value.trim() && selectedIndex === -1) {
+                            filteredData = [];
+                            renderResults([]);
+                            limpiarCantidades();
+                        }
                     } else {
                         fileStatus.textContent = '⚠️ Google Sheets vacío, usando ejemplo';
                         useLocalData();
@@ -1016,11 +1029,13 @@
         function useLocalData() {
             currentData = [...sampleData];
             fileStatus.textContent = `📋 ${currentData.length} registros de ejemplo`;
-            searchInput.value = '';
-            selectedIndex = -1;
-            filteredData = [];
-            renderResults([]);
-            limpiarCantidades();
+            // Bug #2: mismo cuidado que en loadFromGoogleSheets, para no interrumpir
+            // una búsqueda o selección en curso si esto ocurre durante el auto-refresco.
+            if (!searchInput.value.trim() && selectedIndex === -1) {
+                filteredData = [];
+                renderResults([]);
+                limpiarCantidades();
+            }
         }
 
         function parseCSV(csvText) {
@@ -1089,7 +1104,7 @@
                 const desc = getDescripcion(item);
                 const unidad = getUnidadRef(item);
                 const cantidad = getCantidad(item);
-                const factor = getFactorEmpaque(item) || 1;
+                const factor = getFactorFinal(item);
                 const cajasStock = Math.floor(cantidad / factor);
                 const unidadesStock = cantidad % factor;
                 const selectedClass = (idx === selectedIndex) ? ' selected' : '';
@@ -1142,8 +1157,7 @@
         // ACTUALIZAR CANTIDADES
         // ============================================================
         function actualizarCantidades(item) {
-            const unidad = getUnidadRef(item);
-            let factor = obtenerFactorEmpaque(unidad) || getFactorEmpaque(item) || 1;
+            let factor = getFactorFinal(item);
             currentFactor = factor;
 
             infoFactor.textContent = `Factor: ${factor}`;
@@ -1436,12 +1450,13 @@
                 body: JSON.stringify(dataToExport)
             })
             .then(() => {
-                showToast('✅ Pedido guardado en Google Drive.', 'success');
+                // Bug #4: mismo caso que en guardarInventarioDrive (ver comentario allí).
+                showToast('☁️ Pedido enviado a Google Drive (no se puede confirmar si se guardó correctamente).', 'info');
                 guardarPedidoDriveBtn.textContent = '☁️ Drive';
                 guardarPedidoDriveBtn.disabled = false;
             })
             .catch(err => {
-                showToast('❌ Error al guardar en Drive: ' + err.message, 'error');
+                showToast('❌ Error de red al enviar a Drive: ' + err.message, 'error');
                 guardarPedidoDriveBtn.textContent = '☁️ Drive';
                 guardarPedidoDriveBtn.disabled = false;
             });
@@ -1482,6 +1497,15 @@
 
             if (diferencia === 0) {
                 if (!confirm(`Stock teórico: ${stockTeorico}\nStock físico: ${stockFisico}\nLa diferencia es cero. ¿Deseas registrar de todas formas?`)) {
+                    return;
+                }
+            }
+
+            // Bug #3: antes se podía contar el mismo producto varias veces por error,
+            // duplicando su stock físico en los totales y en el Excel exportado.
+            const yaContado = inventarioFisico.some(d => d.codigo === codigo);
+            if (yaContado) {
+                if (!confirm(`El producto ${codigo} ya fue contado antes. ¿Deseas registrar otro conteo de todas formas? (se sumará como registro aparte)`)) {
                     return;
                 }
             }
@@ -1652,12 +1676,15 @@
                 body: JSON.stringify(dataToExport)
             })
             .then(() => {
-                showToast('✅ Inventario guardado en Google Drive.', 'success');
+                // Bug #4: con mode:'no-cors' la respuesta es opaca y este .then() se
+                // ejecuta casi siempre, aunque el script de Google falle del lado del
+                // servidor. Ya no se afirma un "éxito" que no podemos confirmar.
+                showToast('☁️ Inventario enviado a Google Drive (no se puede confirmar si se guardó correctamente).', 'info');
                 guardarDriveBtn.textContent = '☁️ Drive';
                 guardarDriveBtn.disabled = false;
             })
             .catch(err => {
-                showToast('❌ Error al guardar en Drive: ' + err.message, 'error');
+                showToast('❌ Error de red al enviar a Drive: ' + err.message, 'error');
                 guardarDriveBtn.textContent = '☁️ Drive';
                 guardarDriveBtn.disabled = false;
             });
