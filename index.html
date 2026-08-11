@@ -576,6 +576,14 @@
             min-height: 52px;
         }
 
+        /* ============================================================
+           TARJETA DE PRODUCTO SELECCIONADO (solo se activa en móvil,
+           ver media query más abajo). En escritorio permanece oculta y
+           la lista de resultados sigue visible como siempre.
+           ============================================================ */
+        .producto-activo-card { display: none; }
+        .pa-total-box { display: none; }
+
         @media (max-width: 640px) {
             .venc-selects { gap: 0.5rem; }
             .venc-select { font-size: 0.8rem; padding: 0.5rem 0.6rem; }
@@ -831,6 +839,127 @@
             .diff-totales { font-size: 0.7rem; gap: 0.3rem 0.8rem; padding: 0.3rem 0.5rem; }
 
             .toast { font-size: 0.8rem; padding: 0.5rem 1rem; bottom: 10px; }
+
+            /* ========================================================
+               MODO SELECCIÓN (móvil): al elegir un producto se oculta
+               el buscador y la lista, y aparece una tarjeta grande con
+               los datos del producto, cantidades e info de vencimiento
+               fáciles de tocar con el dedo.
+               ======================================================== */
+            body.modo-seleccion #searchSection { display: none; }
+            body.modo-seleccion #resultsSection .results-header { display: none; }
+            body.modo-seleccion #resultList { display: none; }
+
+            body.modo-seleccion .producto-activo-card {
+                display: block;
+                background: linear-gradient(135deg, #1c3f8f 0%, #0d1f52 100%);
+                border-radius: 20px;
+                padding: 1rem 1.1rem;
+                margin-bottom: 0.9rem;
+                color: #fff;
+                box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+            }
+            body.modo-seleccion .pa-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 0.6rem;
+                margin-bottom: 0.7rem;
+            }
+            body.modo-seleccion .pa-descripcion {
+                font-size: 1.05rem;
+                font-weight: 700;
+                line-height: 1.3;
+            }
+            body.modo-seleccion .pa-codigo {
+                font-size: 0.75rem;
+                color: rgba(255,255,255,0.7);
+                margin-top: 0.2rem;
+                font-family: monospace;
+            }
+            body.modo-seleccion .pa-btn-cambiar {
+                background: rgba(255,255,255,0.15);
+                border: 1px solid rgba(255,255,255,0.35);
+                color: #fff;
+                flex-shrink: 0;
+            }
+            body.modo-seleccion .pa-meta {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.3rem 1.2rem;
+                font-size: 0.7rem;
+                color: rgba(255,255,255,0.85);
+                border-top: 1px solid rgba(255,255,255,0.18);
+                padding-top: 0.6rem;
+            }
+            body.modo-seleccion .pa-meta strong {
+                color: #fff;
+                font-size: 0.85rem;
+                margin-left: 0.2rem;
+            }
+
+            /* Cajas / Unidades como cajas grandes tipo calculadora */
+            body.modo-seleccion .cantidad-row {
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 0.6rem;
+                align-items: stretch;
+            }
+            body.modo-seleccion .cantidad-row .group {
+                flex: 1 1 0;
+                flex-direction: column;
+                align-items: stretch;
+                justify-content: flex-start;
+                background: var(--input-bg);
+                border: 1px solid var(--input-border);
+                border-radius: 16px;
+                padding: 0.6rem 0.4rem;
+                gap: 0.35rem;
+            }
+            body.modo-seleccion .cantidad-row .group label {
+                font-size: 0.62rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.4px;
+                color: var(--text-muted);
+                text-align: center;
+            }
+            body.modo-seleccion .cantidad-row .group input {
+                width: 100%;
+                font-size: 1.7rem;
+                font-weight: 700;
+                padding: 0.5rem 0.2rem;
+                border-radius: 12px;
+                text-align: center;
+            }
+            body.modo-seleccion .cantidad-row .info-text { display: none; }
+            body.modo-seleccion .cantidad-row .acciones {
+                flex: 1 1 100%;
+                margin-top: 0.2rem;
+                margin-left: 0;
+            }
+            body.modo-seleccion .cantidad-row .acciones .btn { width: 100%; }
+
+            body.modo-seleccion .pa-total-box {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                background: rgba(74, 138, 186, 0.12);
+                border: 1px solid var(--accent);
+                border-radius: 16px;
+                padding: 0.7rem 1rem;
+                margin: 0.7rem 0;
+            }
+            body.modo-seleccion .pa-total-label {
+                font-size: 0.75rem;
+                color: var(--text-secondary);
+                font-weight: 600;
+            }
+            body.modo-seleccion .pa-total-value {
+                font-size: 1.3rem;
+                font-weight: 800;
+                color: var(--heading-color);
+            }
         }
 
         @media (max-width: 400px) {
@@ -854,13 +983,13 @@
             <span class="laive">LAIVE</span>
         </div>
         <button class="theme-toggle" id="themeToggleBtn" type="button" title="Cambiar tema" aria-label="Cambiar tema día/noche">🌙</button>
-        <span class="version">v2.1</span>
+        <span class="version">v2.2</span>
     </header>
 
     <!-- ============================================================
     BUSCADOR
     ============================================================ -->
-    <section class="card">
+    <section class="card" id="searchSection">
         <div class="search-row">
             <input type="text" id="searchInput" placeholder="Buscar por código, descripción o marca..." autofocus>
             <button class="btn btn-primary" id="searchButton">🔍 Buscar</button>
@@ -872,7 +1001,7 @@
     <!-- ============================================================
     RESULTADOS + CANTIDADES
     ============================================================ -->
-    <section class="card">
+    <section class="card" id="resultsSection">
         <div class="results-header">
             <div class="count">📋 Resultados <span id="resultCount">0</span></div>
             <div class="stats">
@@ -882,6 +1011,21 @@
         </div>
         <div id="resultList" class="result-list">
             <div class="empty-message">🔎 Escribe algo para buscar.</div>
+        </div>
+
+        <!-- Tarjeta de producto seleccionado (visible solo en móvil) -->
+        <div class="producto-activo-card" id="productoActivoCard">
+            <div class="pa-header">
+                <div class="pa-info">
+                    <div class="pa-descripcion" id="paDescripcion"></div>
+                    <div class="pa-codigo" id="paCodigo"></div>
+                </div>
+                <button type="button" class="btn btn-outline btn-sm pa-btn-cambiar" id="btnCambiarProducto">✏️ Cambiar</button>
+            </div>
+            <div class="pa-meta">
+                <span>UM: <strong id="paUnidad">-</strong></span>
+                <span>Unidades x Caja: <strong id="paFactor">-</strong></span>
+            </div>
         </div>
 
         <!-- Cantidades -->
@@ -898,6 +1042,12 @@
             <div class="acciones">
                 <button class="btn btn-success" id="btnAgregar">➕ Pedido</button>
             </div>
+        </div>
+
+        <!-- Total calculado (visible solo en móvil, en modo selección) -->
+        <div class="pa-total-box" id="paTotalBox">
+            <span class="pa-total-label">TOTAL CALCULADO:</span>
+            <span class="pa-total-value"><span id="paTotalValor">0</span> <span id="paTotalUnidad"></span></span>
         </div>
 
         <!-- Vencimiento (control de fechas) -->
@@ -1027,7 +1177,7 @@
         // hacerse del lado del Apps Script, por ejemplo exigiendo un token
         // secreto en el body/cabecera y rechazando la petición si no coincide,
         // y/o limitando el rango de escritura de la hoja de cálculo.
-        const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSpSz5tyvMbPS3iOLzfXwV3AfS6sALkVcR-ndTQbL1Z5ubdmua-QfqZXqZNsoOZpt04ewwWDJi06vv2/pub?gid=1427329978&single=true&output=csv';
+        const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRKg3h0F7KMnRz2Fm2co7zlUFW1uZXeka4ljxSEbWLjDvDch3tglSqCDMn9uMVKiQ/pub?gid=2124077802&single=true&output=csv';
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyhnv5rsC8MNNhzKJMakeSyC3yNm01qDe6fE6wmDdtlZCNEkww8f5V0-L51Akjrw8Y00w/exec';
 
         const sampleData = [
@@ -1068,6 +1218,15 @@
         const pedidoCount = document.getElementById('pedidoCount');
         const fileStatus = document.getElementById('fileStatus');
         const refreshBtn = document.getElementById('refreshDriveBtn');
+
+        const productoActivoCard = document.getElementById('productoActivoCard');
+        const paDescripcion = document.getElementById('paDescripcion');
+        const paCodigo = document.getElementById('paCodigo');
+        const paUnidad = document.getElementById('paUnidad');
+        const paFactor = document.getElementById('paFactor');
+        const btnCambiarProducto = document.getElementById('btnCambiarProducto');
+        const paTotalValor = document.getElementById('paTotalValor');
+        const paTotalUnidad = document.getElementById('paTotalUnidad');
 
         const vencBlock = document.getElementById('vencBlock');
         const vencChips = document.getElementById('vencChips');
@@ -1588,6 +1747,15 @@
             vencBlock.classList.remove('hidden');
             resetVencimientoAHoy();
             renderFechasRegistradas(getCodigo(item), getUnidadRef(item));
+
+            // Datos de la tarjeta de producto seleccionado (modo móvil)
+            document.body.classList.add('modo-seleccion');
+            paDescripcion.textContent = getDescripcion(item);
+            paCodigo.textContent = getCodigo(item);
+            paUnidad.textContent = getUnidadRef(item) || '-';
+            paFactor.textContent = factor;
+            paTotalUnidad.textContent = getUnidadRef(item) || '';
+            actualizarTotalCalculado();
         }
 
         function limpiarCantidades() {
@@ -1601,6 +1769,17 @@
             cajasCount.textContent = '0';
             unidadesCount.textContent = '0';
             vencBlock.classList.add('hidden');
+            document.body.classList.remove('modo-seleccion');
+            paTotalValor.textContent = '0';
+        }
+
+        // Calcula en vivo cuánto se va a registrar (cajas*factor + unidades
+        // sueltas) para mostrarlo en la tarjeta de producto seleccionado.
+        function actualizarTotalCalculado() {
+            const cajas = parseInt(txtCajas.value) || 0;
+            const unidades = parseInt(txtUnidades.value) || 0;
+            const total = (cajas * currentFactor) + unidades;
+            paTotalValor.textContent = total;
         }
 
         // ============================================================
@@ -2225,6 +2404,15 @@
             btnAgregar.addEventListener('click', agregarProducto);
             txtCajas.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); txtUnidades.focus(); } });
             txtUnidades.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); agregarProducto(); } });
+            txtCajas.addEventListener('input', actualizarTotalCalculado);
+            txtUnidades.addEventListener('input', actualizarTotalCalculado);
+
+            btnCambiarProducto.addEventListener('click', () => {
+                selectedIndex = -1;
+                document.querySelectorAll('.result-item').forEach(e => e.classList.remove('selected'));
+                limpiarCantidades();
+                searchInput.focus();
+            });
 
             btnRegistrarFisico.addEventListener('click', registrarFisico);
 
