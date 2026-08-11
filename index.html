@@ -3,16 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
-    <title>IEM GROUP · Inventario Pro</title>
+    <title>IEM GROUP · Inventario</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* ============================================================
+           RESET Y VARIABLES
+           ============================================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         :root {
-            --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+            /* Colores base (tema oscuro) */
             --bg-gradient: linear-gradient(145deg, #0b1a2e 0%, #1a2d44 100%);
             --card-bg: rgba(255, 255, 255, 0.06);
             --card-border: rgba(255, 255, 255, 0.08);
@@ -28,262 +37,1717 @@
             --danger: #d45a5a;
             --input-bg: rgba(255, 255, 255, 0.08);
             --input-border: rgba(255, 255, 255, 0.12);
+            --input-focus: #4a8aba;
             --table-header-bg: rgba(20, 50, 80, 0.4);
             --table-row-alt: rgba(255, 255, 255, 0.02);
+            --badge-bg: rgba(74, 138, 186, 0.2);
+            --badge-text: #8aaccc;
             --divider: rgba(255, 255, 255, 0.06);
+            --shadow-color: rgba(0, 0, 0, 0.3);
         }
 
+        /* Tema claro */
         body.light-theme {
             --bg-gradient: linear-gradient(145deg, #eef2f7 0%, #dbe4ee 100%);
-            --card-bg: rgba(255, 255, 255, 0.85);
+            --card-bg: rgba(255, 255, 255, 0.75);
             --card-border: rgba(0, 0, 0, 0.06);
-            --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+            --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
             --text-primary: #1a2a44;
             --text-secondary: #3a5a7a;
             --text-muted: #6a8aaa;
             --heading-color: #1a4b7a;
             --accent: #2a6a9a;
             --accent-light: #4a8aba;
-            --input-bg: rgba(255, 255, 255, 0.9);
+            --input-bg: rgba(255, 255, 255, 0.6);
             --input-border: rgba(0, 0, 0, 0.1);
-            --table-header-bg: rgba(42, 106, 154, 0.1);
-            --table-row-alt: rgba(0, 0, 0, 0.01);
+            --table-header-bg: rgba(42, 106, 154, 0.08);
+            --table-row-alt: rgba(0, 0, 0, 0.02);
+            --badge-bg: rgba(42, 106, 154, 0.1);
+            --badge-text: #1a4b7a;
             --divider: rgba(0, 0, 0, 0.06);
+            --shadow-color: rgba(0, 0, 0, 0.1);
         }
 
         body {
             font-family: var(--font);
             background: var(--bg-gradient);
             min-height: 100vh;
-            padding: 1.5rem;
+            padding: 1rem;
             color: var(--text-primary);
-            transition: background 0.3s, color 0.3s;
+            transition: background 0.4s, color 0.3s;
             line-height: 1.5;
         }
 
-        .container { max-width: 1400px; margin: 0 auto; }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
 
+        /* ============================================================
+           TARJETAS Y ELEMENTOS COMUNES
+           ============================================================ */
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 1.2rem;
+            margin-bottom: 1.2rem;
+            box-shadow: var(--card-shadow);
+            transition: background 0.3s, border 0.3s, box-shadow 0.3s;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem 1rem;
+            margin-bottom: 0.8rem;
+            padding-bottom: 0.6rem;
+            border-bottom: 1px solid var(--divider);
+        }
+
+        .card-header h2 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--heading-color);
+            letter-spacing: -0.3px;
+        }
+
+        .badge {
+            background: var(--badge-bg);
+            color: var(--badge-text);
+            padding: 0.15rem 0.7rem;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            padding: 0.45rem 1rem;
+            border: none;
+            border-radius: 60px;
+            font-family: var(--font);
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            touch-action: manipulation;
+            min-height: 38px;
+            white-space: nowrap;
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-secondary);
+            border: 1px solid transparent;
+        }
+        .btn:active { transform: scale(0.94); }
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(74, 138, 186, 0.3);
+        }
+        .btn-primary:hover { background: var(--accent-light); transform: translateY(-1px); }
+        .btn-success {
+            background: var(--success);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(59, 170, 106, 0.3);
+        }
+        .btn-success:hover { filter: brightness(1.08); transform: translateY(-1px); }
+        .btn-warning {
+            background: var(--warning);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(212, 154, 58, 0.3);
+        }
+        .btn-warning:hover { filter: brightness(1.08); transform: translateY(-1px); }
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(212, 90, 90, 0.3);
+        }
+        .btn-danger:hover { filter: brightness(1.08); transform: translateY(-1px); }
+        .btn-outline {
+            background: transparent;
+            border: 1.5px solid var(--text-muted);
+            color: var(--text-secondary);
+        }
+        .btn-outline:hover { background: rgba(255, 255, 255, 0.05); }
+        .btn-sm {
+            padding: 0.2rem 0.7rem;
+            min-height: 28px;
+            font-size: 0.7rem;
+        }
+        .btn-drive {
+            background: #2a5a9a;
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(42, 90, 154, 0.3);
+        }
+        .btn-drive:hover { background: #3a7aba; transform: translateY(-1px); }
+
+        /* ============================================================
+           HEADER
+           ============================================================ */
         .header {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 1rem 1.5rem;
+            gap: 0.8rem;
+            padding: 0.5rem 1.2rem;
             background: var(--card-bg);
             backdrop-filter: blur(12px);
             border: 1px solid var(--card-border);
-            border-radius: 50px;
+            border-radius: 60px;
             box-shadow: var(--card-shadow);
             margin-bottom: 1.5rem;
             flex-wrap: wrap;
-            gap: 1rem;
         }
-
-        .logo { display: flex; align-items: center; gap: 0.5rem; }
-        .logo .iem { font-size: 1.6rem; font-weight: 800; color: var(--heading-color); }
-        .logo .laive { font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); background: rgba(74, 138, 186, 0.2); padding: 0.2rem 0.8rem; border-radius: 20px; }
-
-        .actions-nav { display: flex; gap: 0.75rem; align-items: center; }
-
-        .btn {
-            padding: 0.5rem 1.2rem;
-            border-radius: 50px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            cursor: pointer;
-            border: none;
-            transition: all 0.2s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
+        .header .logo {
+            display: flex;
+            align-items: baseline;
+            gap: 0.4rem;
         }
-        .btn:active { transform: scale(0.96); }
-        .btn-primary { background: var(--accent); color: white; }
-        .btn-primary:hover { background: var(--accent-light); }
-        .btn-success { background: var(--success); color: white; }
-        .btn-outline { background: transparent; border: 1px solid var(--text-muted); color: var(--text-secondary); }
-
-        .search-box {
-            width: 100%;
-            padding: 0.8rem 1.2rem;
-            border-radius: 12px;
-            background: var(--input-bg);
-            border: 1px solid var(--input-border);
-            color: var(--text-primary);
-            font-family: var(--font);
-            font-size: 0.95rem;
-            margin-bottom: 1.5rem;
-            outline: none;
-            transition: border 0.2s;
-        }
-        .search-box:focus { border-color: var(--accent); }
-
-        .table-container {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 16px;
-            overflow-x: auto;
-            box-shadow: var(--card-shadow);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-            font-size: 0.9rem;
-        }
-
-        th {
-            background: var(--table-header-bg);
+        .header .logo .iem {
+            font-size: 1.6rem;
+            font-weight: 800;
             color: var(--heading-color);
-            padding: 1rem;
-            font-weight: 600;
-            border-bottom: 1px solid var(--divider);
+            letter-spacing: -0.5px;
         }
-
-        td {
-            padding: 1rem;
-            border-bottom: 1px solid var(--divider);
+        .header .logo .laive {
+            font-size: 0.8rem;
+            font-weight: 500;
             color: var(--text-secondary);
+            background: var(--badge-bg);
+            padding: 0.05rem 0.8rem;
+            border-radius: 30px;
+            border: 1px solid var(--card-border);
+        }
+        .header .version {
+            font-size: 0.6rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            background: var(--badge-bg);
+            padding: 0.1rem 0.6rem;
+            border-radius: 30px;
+        }
+        .header .theme-toggle {
+            margin-left: auto;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--badge-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+            flex-shrink: 0;
+        }
+        .header .theme-toggle:hover { background: rgba(74, 138, 186, 0.2); transform: rotate(10deg); }
+
+        /* ============================================================
+           BUSCADOR
+           ============================================================ */
+        .search-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .search-row input {
+            flex: 1;
+            min-width: 150px;
+            padding: 0.6rem 1rem;
+            border: 1px solid var(--input-border);
+            border-radius: 60px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-family: var(--font);
+            outline: none;
+            transition: 0.2s;
+            backdrop-filter: blur(4px);
+        }
+        .search-row input::placeholder { color: var(--text-muted); }
+        .search-row input:focus {
+            border-color: var(--input-focus);
+            box-shadow: 0 0 0 3px rgba(74, 138, 186, 0.15);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .search-row .btn { flex-shrink: 0; }
+
+        #fileStatus {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-align: right;
+            margin-top: 0.3rem;
         }
 
-        tr:nth-child(even) { background: var(--table-row-alt); }
-
-        .status-badge {
-            padding: 0.25rem 0.6rem;
-            border-radius: 60px;
+        /* ============================================================
+           RESULTADOS DE BÚSQUEDA
+           ============================================================ */
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.2rem 0.8rem;
+            margin-bottom: 0.6rem;
+        }
+        .results-header .count {
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+        .results-header .count span {
+            background: var(--badge-bg);
+            color: var(--badge-text);
+            padding: 0.05rem 0.6rem;
+            border-radius: 30px;
             font-size: 0.75rem;
             font-weight: 600;
+            margin-left: 0.3rem;
         }
-        .status-ok { background: rgba(59, 170, 106, 0.2); color: #5cd68a; }
-        .status-low { background: rgba(214, 154, 58, 0.2); color: #f3b757; }
+        .results-header .stats {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            display: flex;
+            gap: 0.8rem;
+        }
+        .results-header .stats .label { color: var(--text-muted); }
 
-        @media (max-width: 768px) {
-            .header { border-radius: 20px; }
-            table, thead, tbody, th, td, tr { display: block; }
-            thead { display: none; }
-            tr { margin-bottom: 1rem; border: 1px solid var(--card-border); border-radius: 12px; padding: 0.5rem; }
-            td { text-align: right; padding-left: 50%; position: relative; border-bottom: none; }
-            td::before {
-                content: attr(data-label);
-                position: absolute; left: 1rem; width: 45%;
-                text-align: left; font-weight: 600; color: var(--heading-color);
+        .result-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            max-height: 420px;
+            overflow-y: auto;
+            padding-right: 0.2rem;
+        }
+        .result-list::-webkit-scrollbar { width: 4px; }
+        .result-list::-webkit-scrollbar-track { background: transparent; }
+        .result-list::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
+
+        .result-item {
+            display: grid;
+            grid-template-columns: 70px 90px 1fr 70px 60px 60px;
+            align-items: center;
+            gap: 0.3rem 0.6rem;
+            padding: 0.5rem 0.8rem;
+            background: var(--input-bg);
+            border-radius: 14px;
+            border: 1px solid var(--card-border);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            backdrop-filter: blur(4px);
+        }
+        .result-item:hover { background: rgba(255,255,255,0.08); border-color: var(--accent); }
+        .result-item.selected {
+            border-color: var(--accent);
+            background: rgba(74, 138, 186, 0.12);
+            box-shadow: 0 0 0 2px rgba(74, 138, 186, 0.2);
+        }
+        .result-item .codigo { font-weight: 700; color: var(--heading-color); font-family: monospace; }
+        .result-item .fabrica { color: var(--text-muted); font-family: monospace; font-size: 0.65rem; }
+        .result-item .descripcion {
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .result-item .unidad {
+            background: var(--badge-bg);
+            color: var(--badge-text);
+            padding: 0.05rem 0.4rem;
+            border-radius: 20px;
+            font-size: 0.6rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        .result-item .stock-cajas, .result-item .stock-unidades {
+            font-weight: 600;
+            color: var(--heading-color);
+            font-family: monospace;
+            text-align: right;
+            font-size: 0.8rem;
+        }
+        .result-item .stock-unidades { color: var(--text-secondary); }
+
+        /* Ocultar filas móviles en escritorio */
+        .result-item .row1, .result-item .row2 { display: none; }
+
+        /* ============================================================
+           CANTIDADES (cajas / unidades)
+           ============================================================ */
+        .cantidad-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.4rem 1rem;
+            margin-top: 0.8rem;
+            padding-top: 0.8rem;
+            border-top: 1px solid var(--divider);
+        }
+        .cantidad-row .group {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .cantidad-row .group label {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+        .cantidad-row .group input {
+            width: 60px;
+            padding: 0.3rem 0.4rem;
+            border: 1px solid var(--input-border);
+            border-radius: 12px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            text-align: center;
+            font-family: var(--font);
+            transition: 0.2s;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .cantidad-row .group input:focus {
+            border-color: var(--input-focus);
+            box-shadow: 0 0 0 3px rgba(74, 138, 186, 0.15);
+            outline: none;
+        }
+        .cantidad-row .group input:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .info-text {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            background: var(--badge-bg);
+            padding: 0.1rem 0.6rem;
+            border-radius: 30px;
+        }
+        .cantidad-row .acciones {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            margin-left: auto;
+        }
+        .cantidad-row .acciones .btn { min-height: 34px; font-size: 0.75rem; }
+
+        .cajas-group.hidden { display: none !important; }
+
+        /* ============================================================
+           TABLAS (Pedido e Inventario)
+           ============================================================ */
+        .table-wrap {
+            overflow-x: auto;
+            margin-top: 0.4rem;
+            border-radius: 16px;
+            border: 1px solid var(--card-border);
+        }
+        .diff-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            min-width: 500px;
+        }
+        .diff-table th {
+            background: var(--table-header-bg);
+            color: var(--heading-color);
+            font-weight: 600;
+            padding: 0.4rem 0.5rem;
+            text-align: left;
+            border-bottom: 2px solid var(--divider);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .diff-table td {
+            padding: 0.35rem 0.5rem;
+            border-bottom: 1px solid var(--divider);
+            vertical-align: middle;
+        }
+        .diff-table tbody tr:nth-child(even) { background: var(--table-row-alt); }
+        .diff-table .diff-positivo { color: var(--success); font-weight: 600; }
+        .diff-table .diff-negativo { color: var(--danger); font-weight: 600; }
+        .diff-table .codigo-cell { font-family: monospace; font-weight: 600; color: var(--heading-color); }
+        .diff-table .cantidad-cell { text-align: center; font-weight: 600; color: var(--heading-color); }
+        .diff-table .acciones-cell { text-align: center; }
+        .diff-table .acciones-cell button {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0.1rem 0.3rem;
+            transition: 0.2s;
+            border-radius: 8px;
+        }
+        .diff-table .acciones-cell button:hover { color: var(--danger); background: rgba(212, 90, 90, 0.1); }
+        .diff-table tfoot tr {
+            background: var(--table-header-bg);
+            font-weight: 600;
+            border-top: 2px solid var(--divider);
+        }
+        .diff-table tfoot td { color: var(--heading-color); padding: 0.4rem 0.5rem; }
+        .empty-message {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 1.5rem;
+            font-size: 0.85rem;
+        }
+
+        .diff-totales {
+            display: flex;
+            gap: 0.8rem 1.5rem;
+            flex-wrap: wrap;
+            margin-top: 0.6rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            padding: 0.4rem 0.6rem;
+            background: var(--table-header-bg);
+            border-radius: 16px;
+        }
+        .diff-totales strong { color: var(--heading-color); }
+
+        /* ============================================================
+           NOTIFICACIONES (reemplazo de alert)
+           ============================================================ */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            padding: 0.8rem 1.5rem;
+            border-radius: 60px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            z-index: 999;
+            animation: slideUp 0.3s ease;
+            max-width: 90%;
+            text-align: center;
+            transition: opacity 0.3s;
+        }
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--danger); }
+        .toast.info { border-left: 4px solid var(--accent); }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        /* ============================================================
+           RESPONSIVE MÓVIL (con descripción visible)
+           ============================================================ */
+        @media (max-width: 640px) {
+            body { padding: 0.5rem; }
+            .header {
+                padding: 0.4rem 0.8rem;
+                border-radius: 40px;
+                gap: 0.4rem;
             }
+            .header .logo .iem { font-size: 1.2rem; }
+            .header .logo .laive { font-size: 0.65rem; padding: 0.05rem 0.5rem; }
+            .header .version { font-size: 0.5rem; padding: 0.05rem 0.4rem; }
+            .header .theme-toggle { width: 32px; height: 32px; font-size: 0.9rem; }
+
+            .card { padding: 0.8rem; border-radius: 18px; margin-bottom: 0.8rem; }
+            .card-header h2 { font-size: 1rem; }
+            .btn { font-size: 0.7rem; padding: 0.35rem 0.8rem; min-height: 32px; }
+            .btn-sm { font-size: 0.6rem; padding: 0.15rem 0.5rem; min-height: 26px; }
+
+            .search-row input { font-size: 0.8rem; padding: 0.5rem 0.8rem; min-width: 100px; width: 100%; }
+            .search-row .btn { width: 100%; justify-content: center; }
+
+            .results-header { flex-direction: column; align-items: stretch; gap: 0.2rem; }
+            .results-header .stats { font-size: 0.7rem; gap: 0.5rem; }
+
+            .result-list { max-height: 55vh; min-height: 150px; }
+
+            /* --- Vista móvil: tarjetas con 3 filas --- */
+            .result-item {
+                display: flex;
+                flex-direction: column;
+                padding: 0.5rem 0.6rem;
+                border-radius: 12px;
+                gap: 0.15rem;
+                background: var(--input-bg);
+                border: 1px solid var(--card-border);
+                margin-bottom: 0.2rem;
+            }
+
+            /* Fila 1: código, fábrica, unidad */
+            .result-item .row1 {
+                display: flex !important;
+                align-items: center;
+                gap: 0.4rem;
+                width: 100%;
+                flex-wrap: nowrap;
+            }
+            .result-item .row1 .codigo {
+                font-size: 0.85rem;
+                font-weight: 700;
+                color: var(--heading-color);
+                flex-shrink: 0;
+            }
+            .result-item .row1 .fabrica {
+                font-size: 0.65rem;
+                color: var(--text-muted);
+                flex-shrink: 0;
+            }
+            .result-item .row1 .unidad {
+                font-size: 0.55rem;
+                padding: 0.02rem 0.5rem;
+                background: var(--badge-bg);
+                border-radius: 20px;
+                color: var(--badge-text);
+                margin-left: auto;
+                flex-shrink: 0;
+            }
+
+            /* Fila 2: descripción (visible, con wrap y hasta 2 líneas) */
+            .result-item .row2 {
+                display: flex !important;
+                flex-direction: column;  /* Cambiamos a columna para que la descripción ocupe su propio espacio */
+                align-items: stretch;
+                gap: 0.15rem;
+                width: 100%;
+            }
+            .result-item .row2 .descripcion {
+                font-size: 0.75rem;
+                line-height: 1.3;
+                color: var(--text-secondary);
+                /* Permitir wrap y limitar a 2 líneas */
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+                word-break: break-word;
+                white-space: normal;
+                flex: 1 1 auto;
+                min-width: 0;
+            }
+
+            /* Fila 3: stock (badge) */
+            .result-item .row2 .stock {
+                display: flex;
+                gap: 0.5rem;
+                font-size: 0.7rem;
+                font-weight: 600;
+                background: var(--badge-bg);
+                padding: 0.1rem 0.7rem;
+                border-radius: 30px;
+                flex-shrink: 0;
+                color: var(--heading-color);
+                align-self: flex-start; /* para que no ocupe todo el ancho */
+                margin-top: 0.1rem;
+            }
+            .result-item .row2 .stock .cajas { color: var(--heading-color); }
+            .result-item .row2 .stock .unidades { color: var(--text-secondary); }
+
+            /* Ocultar columnas de escritorio */
+            .result-item .codigo,
+            .result-item .fabrica,
+            .result-item .unidad,
+            .result-item .stock-cajas,
+            .result-item .stock-unidades,
+            .result-item .descripcion {
+                display: none !important;
+            }
+
+            /* Cantidades en móvil */
+            .cantidad-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.4rem;
+                padding-top: 0.6rem;
+                margin-top: 0.6rem;
+            }
+            .cantidad-row .group { justify-content: space-between; }
+            .cantidad-row .group input { width: 55px; }
+            .cantidad-row .acciones {
+                margin-left: 0;
+                justify-content: center;
+            }
+            .cantidad-row .acciones .btn { flex: 1; min-width: 0; padding: 0.3rem 0.5rem; font-size: 0.65rem; }
+
+            .diff-table { font-size: 0.65rem; min-width: 400px; }
+            .diff-table th, .diff-table td { padding: 0.2rem 0.3rem; font-size: 0.6rem; }
+            .diff-totales { font-size: 0.7rem; gap: 0.3rem 0.8rem; padding: 0.3rem 0.5rem; }
+
+            .toast { font-size: 0.8rem; padding: 0.5rem 1rem; bottom: 10px; }
+        }
+
+        @media (max-width: 400px) {
+            .header .logo .iem { font-size: 1rem; }
+            .btn { font-size: 0.6rem; padding: 0.25rem 0.6rem; min-height: 28px; }
+            .search-row input { font-size: 0.7rem; padding: 0.4rem 0.6rem; }
+            .result-item .row1 .codigo { font-size: 0.75rem; }
+            .result-item .row2 .descripcion { font-size: 0.7rem; }
         }
     </style>
 </head>
 <body>
-
 <div class="container">
+
+    <!-- ============================================================
+    HEADER
+    ============================================================ -->
     <header class="header">
         <div class="logo">
             <span class="iem">IEM GROUP</span>
-            <span class="laive">Inventario</span>
+            <span class="laive">LAIVE</span>
         </div>
-        <div class="actions-nav">
-            <button class="btn btn-outline" id="themeToggle" onclick="toggleTheme()">🌓 Tema</button>
-            <button class="btn btn-success" onclick="document.getElementById('excelFile').click()">📥 Importar</button>
-            <button class="btn btn-primary" onclick="exportToExcel()">📤 Exportar</button>
-            <input type="file" id="excelFile" style="display:none" accept=".xlsx, .xls" onchange="importFromExcel(event)">
-        </div>
+        <button class="theme-toggle" id="themeToggleBtn" type="button" title="Cambiar tema" aria-label="Cambiar tema día/noche">🌙</button>
+        <span class="version">v2.1</span>
     </header>
 
-    <input type="text" id="searchInput" class="search-box" placeholder="🔍 Buscar por código, descripción, familia o ubicación..." onkeyup="filterTable()">
+    <!-- ============================================================
+    BUSCADOR
+    ============================================================ -->
+    <section class="card">
+        <div class="search-row">
+            <input type="text" id="searchInput" placeholder="Buscar por código, descripción o marca..." autofocus>
+            <button class="btn btn-primary" id="searchButton">🔍 Buscar</button>
+            <button class="btn btn-outline" id="refreshDriveBtn">🔄 Actualizar</button>
+        </div>
+        <div id="fileStatus">(cargando desde Google Sheets...)</div>
+    </section>
 
-    <div class="table-container">
-        <table id="inventoryTable">
-            <thead>
-                <tr>
+    <!-- ============================================================
+    RESULTADOS + CANTIDADES
+    ============================================================ -->
+    <section class="card">
+        <div class="results-header">
+            <div class="count">📋 Resultados <span id="resultCount">0</span></div>
+            <div class="stats">
+                <span><span class="label">📦 Cajas:</span> <span id="cajasCount">0</span></span>
+                <span><span class="label">🧩 Unidades:</span> <span id="unidadesCount">0</span></span>
+            </div>
+        </div>
+        <div id="resultList" class="result-list">
+            <div class="empty-message">🔎 Escribe algo para buscar.</div>
+        </div>
+
+        <!-- Cantidades -->
+        <div class="cantidad-row">
+            <div class="group cajas-group" id="cajasGroup">
+                <label for="txtCajas">📦 Cajas</label>
+                <input type="number" id="txtCajas" value="0" min="0" disabled>
+            </div>
+            <div class="group">
+                <label for="txtUnidades">🧩 Unidades</label>
+                <input type="number" id="txtUnidades" value="0" min="0">
+            </div>
+            <span class="info-text" id="infoFactor">Factor: 1</span>
+            <div class="acciones">
+                <button class="btn btn-success" id="btnAgregar">➕ Pedido</button>
+                <button class="btn btn-warning" id="btnRegistrarFisico">📝 Contar</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+    PEDIDO ACTUAL
+    ============================================================ -->
+    <section class="card">
+        <div class="card-header">
+            <h2>📦 Pedido actual</h2>
+            <span class="badge" id="pedidoCount">0 productos</span>
+            <div style="margin-left:auto; display:flex; gap:0.3rem; flex-wrap:wrap;">
+                <span style="font-size:0.7rem; color:var(--text-muted);">Cajas <strong id="totalCajasPedido" style="color:var(--heading-color);">0</strong></span>
+                <span style="font-size:0.7rem; color:var(--text-muted);">Unid. <strong id="totalUnidadesPedido" style="color:var(--heading-color);">0</strong></span>
+                <button class="btn btn-success btn-sm" id="exportPedidoBtn">📥 Excel</button>
+                <button class="btn btn-drive btn-sm" id="guardarPedidoDriveBtn">☁️ Drive</button>
+                <button class="btn btn-danger btn-sm" id="limpiarPedidoBtn">🗑️</button>
+            </div>
+        </div>
+        <div class="table-wrap">
+            <table class="diff-table" id="pedidoTable">
+                <thead><tr>
+                    <th>#</th>
                     <th>Código</th>
-                    <th>Descripción del Artículo</th>
-                    <th>Familia</th>
-                    <th>Ubicación</th>
-                    <th>Stock Real</th>
-                    <th>Estado</th>
-                </tr>
-            </thead>
-            <tbody id="inventoryBody">
-                <tr>
-                    <td data-label="Código">IEM-001</td>
-                    <td data-label="Descripción del Artículo">Cable de Cobre de Alta Tensión 16mm</td>
-                    <td data-label="Familia">Conductores</td>
-                    <td data-label="Ubicación">Almacén A - Estante 2</td>
-                    <td data-label="Stock Real">45</td>
-                    <td data-label="Estado"><span class="status-badge status-ok">Óptimo</span></td>
-                </tr>
-                <tr>
-                    <td data-label="Código">IEM-002</td>
-                    <td data-label="Descripción del Artículo">Disyuntor Termomagnético 32A</td>
-                    <td data-label="Familia">Protecciones</td>
-                    <td data-label="Ubicación">Almacén B - Estante 1</td>
-                    <td data-label="Stock Real">3</td>
-                    <td data-label="Estado"><span class="status-badge status-low">Stock Bajo</span></td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
+                    <th>Cód. Fábrica</th>
+                    <th>Descripción</th>
+                    <th>Unidad</th>
+                    <th>Cajas</th>
+                    <th>Unidades</th>
+                    <th>Acción</th>
+                </tr></thead>
+                <tbody id="pedidoBody">
+                    <tr><td colspan="8" class="empty-message">No hay productos en el pedido.</td></tr>
+                </tbody>
+                <tfoot id="pedidoFoot" style="display:none;">
+                    <tr>
+                        <td colspan="5" style="text-align:right;">Totales</td>
+                        <td id="totalCajasFoot" style="color:var(--heading-color);">0</td>
+                        <td id="totalUnidadesFoot" style="color:var(--heading-color);">0</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </section>
+
+    <!-- ============================================================
+    INVENTARIO FÍSICO
+    ============================================================ -->
+    <section class="card">
+        <div class="card-header">
+            <h2>📊 Inventario Físico</h2>
+            <span class="badge" id="diffCount">0 registros</span>
+            <div style="margin-left:auto; display:flex; gap:0.3rem; flex-wrap:wrap;">
+                <button class="btn btn-success btn-sm" id="exportDiffBtn">📥 Excel</button>
+                <button class="btn btn-drive btn-sm" id="guardarDriveBtn">☁️ Drive</button>
+                <button class="btn btn-danger btn-sm" id="clearDiffBtn">🗑️ Limpiar</button>
+            </div>
+        </div>
+        <div class="table-wrap">
+            <table class="diff-table" id="diffTable">
+                <thead><tr>
+                    <th>#</th>
+                    <th>Código</th>
+                    <th>Descripción</th>
+                    <th>Teórico</th>
+                    <th>Físico</th>
+                    <th>Diferencia</th>
+                    <th>Fecha/Hora</th>
+                    <th>Acción</th>
+                </tr></thead>
+                <tbody id="diffBody">
+                    <tr><td colspan="8" class="empty-message">No hay productos contados aún.</td></tr>
+                </tbody>
+                <tfoot id="diffFoot" style="display:none;">
+                    <tr>
+                        <td colspan="3" style="text-align:right;">Totales</td>
+                        <td id="diffTotalTeorico" style="color:var(--heading-color);">0</td>
+                        <td id="diffTotalFisico" style="color:var(--heading-color);">0</td>
+                        <td id="diffTotalDiferencia" style="color:var(--heading-color);">0</td>
+                        <td></td><td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <div class="diff-totales" id="diffResumen" style="display:none;">
+            <span>📦 Teórico: <strong id="resTeorico">0</strong></span>
+            <span>🔎 Físico: <strong id="resFisico">0</strong></span>
+            <span>📊 Diferencia: <strong id="resDiferencia">0</strong></span>
+            <span>Contados: <strong id="resContados">0</strong></span>
+        </div>
+    </section>
 </div>
 
 <script>
-    if(localStorage.getItem('theme') === 'light') document.body.classList.add('light-theme');
-    
-    function toggleTheme() {
-        document.body.classList.toggle('light-theme');
-        localStorage.setItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
-    }
+    (function() {
+        // ============================================================
+        // CONFIGURACIÓN
+        // ============================================================
+        const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRKg3h0F7KMnRz2Fm2co7zlUFW1uZXeka4ljxSEbWLjDvDch3tglSqCDMn9uMVKiQ/pub?gid=683330974&single=true&output=csv';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyhnv5rsC8MNNhzKJMakeSyC3yNm01qDe6fE6wmDdtlZCNEkww8f5V0-L51Akjrw8Y00w/exec';
 
-    function filterTable() {
-        const query = document.getElementById('searchInput').value.toLowerCase();
-        const rows = document.querySelectorAll('#inventoryBody tr');
+        const sampleData = [
+            {"Producto":"MANJAR ESPECIAL BAZO VELARDE BALDE X 20 KG","Codigo":"9010","CodigoFabrica":"50000111","Unidad Ref":"BAL/BAL","Cantidad":"15","FactorEmpaque":"1","Linea":"MANJARES: ESPECIAL","Marca":"BAZO VELARDE"},
+            {"Producto":"LECHE UHT LAIVE ENTERA CAJA 946ML","Codigo":"2136","CodigoFabrica":"50001059","Unidad Ref":"CJ*12","Cantidad":"16459","FactorEmpaque":"12","Linea":"LECHES FRESCAS: ENTERO (A)","Marca":"LAIVE"}
+        ];
 
-        rows.forEach(row => {
-            const text = row.innerText.toLowerCase();
-            row.style.display = text.includes(query) ? '' : 'none';
-        });
-    }
+        // ============================================================
+        // ESTADO
+        // ============================================================
+        let currentData = [];
+        let filteredData = [];
+        let selectedIndex = -1;
+        let pedido = [];
+        let inventarioFisico = [];
+        let currentFactor = 1;
 
-    function importFromExcel(event) {
-        const file = event.target.files[0];
-        if (!file) return;
+        // DOM
+        const searchInput = document.getElementById('searchInput');
+        const searchButton = document.getElementById('searchButton');
+        const resultList = document.getElementById('resultList');
+        const resultCount = document.getElementById('resultCount');
+        const cajasCount = document.getElementById('cajasCount');
+        const unidadesCount = document.getElementById('unidadesCount');
+        const txtCajas = document.getElementById('txtCajas');
+        const txtUnidades = document.getElementById('txtUnidades');
+        const cajasGroup = document.getElementById('cajasGroup');
+        const infoFactor = document.getElementById('infoFactor');
+        const btnAgregar = document.getElementById('btnAgregar');
+        const btnRegistrarFisico = document.getElementById('btnRegistrarFisico');
+        const pedidoBody = document.getElementById('pedidoBody');
+        const pedidoFoot = document.getElementById('pedidoFoot');
+        const totalCajasFoot = document.getElementById('totalCajasFoot');
+        const totalUnidadesFoot = document.getElementById('totalUnidadesFoot');
+        const totalCajasPedido = document.getElementById('totalCajasPedido');
+        const totalUnidadesPedido = document.getElementById('totalUnidadesPedido');
+        const pedidoCount = document.getElementById('pedidoCount');
+        const fileStatus = document.getElementById('fileStatus');
+        const refreshBtn = document.getElementById('refreshDriveBtn');
 
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            
-            const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-            renderTableData(jsonData);
-        };
-        reader.readAsArrayBuffer(file);
-    }
+        const diffBody = document.getElementById('diffBody');
+        const diffFoot = document.getElementById('diffFoot');
+        const diffCount = document.getElementById('diffCount');
+        const diffTotalTeorico = document.getElementById('diffTotalTeorico');
+        const diffTotalFisico = document.getElementById('diffTotalFisico');
+        const diffTotalDiferencia = document.getElementById('diffTotalDiferencia');
+        const diffResumen = document.getElementById('diffResumen');
+        const resTeorico = document.getElementById('resTeorico');
+        const resFisico = document.getElementById('resFisico');
+        const resDiferencia = document.getElementById('resDiferencia');
+        const resContados = document.getElementById('resContados');
+        const exportDiffBtn = document.getElementById('exportDiffBtn');
+        const clearDiffBtn = document.getElementById('clearDiffBtn');
+        const guardarDriveBtn = document.getElementById('guardarDriveBtn');
 
-    function renderTableData(data) {
-        const body = document.getElementById('inventoryBody');
-        body.innerHTML = '';
+        const exportPedidoBtn = document.getElementById('exportPedidoBtn');
+        const guardarPedidoDriveBtn = document.getElementById('guardarPedidoDriveBtn');
+        const limpiarPedidoBtn = document.getElementById('limpiarPedidoBtn');
 
-        data.forEach(item => {
-            const stock = parseInt(item['Stock Real'] || item['Stock'] || 0);
-            const statusClass = stock > 5 ? 'status-ok' : 'status-low';
-            const statusText = stock > 5 ? 'Óptimo' : 'Stock Bajo';
+        // ============================================================
+        // TOAST
+        // ============================================================
+        function showToast(message, type = 'info') {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 400); }, 3500);
+        }
 
-            const row = `<tr>
-                <td data-label="Código">${item['Código'] || 'N/A'}</td>
-                <td data-label="Descripción del Artículo">${item['Descripción del Artículo'] || item['Descripción'] || 'N/A'}</td>
-                <td data-label="Familia">${item['Familia'] || 'Generales'}</td>
-                <td data-label="Ubicación">${item['Ubicación'] || 'Sin Asignar'}</td>
-                <td data-label="Stock Real">${stock}</td>
-                <td data-label="Estado"><span class="status-badge ${statusClass}">${statusText}</span></td>
-            </tr>`;
-            body.innerHTML += row;
-        });
-    }
+        // ============================================================
+        // MAPEO DE CAMPOS
+        // ============================================================
+        function getField(item, ...aliases) {
+            for (let alias of aliases) {
+                if (item.hasOwnProperty(alias) && item[alias] !== undefined && item[alias] !== '') return item[alias];
+            }
+            const keys = Object.keys(item);
+            for (let alias of aliases) {
+                const lowerAlias = alias.toLowerCase();
+                for (let key of keys) {
+                    if (key.toLowerCase() === lowerAlias) return item[key];
+                }
+            }
+            return '';
+        }
+        function getCodigo(item) { return getField(item, 'Codigo', 'Código', 'Cod. Producto', 'InventarioProductoCodigo', 'Cod'); }
+        function getCodigoFabrica(item) { return getField(item, 'CodigoFabrica', 'CódigoFábrica', 'Cod. Fabrica', 'CodigoFabrica', 'CodFabrica'); }
+        function getDescripcion(item) { return getField(item, 'Producto', 'Descripción', 'InventarioProductoDescripcion', 'Descripcion', 'Nombre'); }
+        function getUnidadRef(item) { return getField(item, 'Unidad Ref', 'Uni. Ref.', 'Unidad', 'InventarioProductoUnidadReferenciaAbreviacion', 'UnidadRef'); }
+        function getCantidad(item) {
+            const val = getField(item, 'InventarioProductoCantidad', 'Cantidad', 'Stock', 'Stock Fisico');
+            if (typeof val === 'string' && val.includes('/')) {
+                const partes = val.split('/');
+                if (partes.length > 0) return parseInt(partes[0]) || 0;
+            }
+            return parseFloat(val) || 0;
+        }
+        function getFactorEmpaque(item) {
+            const val = getField(item, 'InventarioProductoUnidadReferenciaFactor', 'FactorEmpaque', 'Factor', 'UnidadRefFactor');
+            return parseInt(val) || 1;
+        }
+        function getLinea(item) { return getField(item, 'Linea', 'Línea', 'InventarioProductoCategoriaDescripcion', 'Categoria'); }
+        function getMarca(item) { return getField(item, 'Marca', 'InventarioProductoProveedorNombre', 'Proveedor'); }
 
-    function exportToExcel() {
-        const table = document.getElementById('inventoryTable');
-        const wb = XLSX.utils.table_to_book(table, { sheet: "Inventario_Actual" });
-        XLSX.writeFile(wb, `Inventario_IEM_GROUP.xlsx`);
-    }
+        function obtenerFactorEmpaque(textoEmpaque) {
+            if (!textoEmpaque) return 1;
+            let factor = 1;
+            let pos = textoEmpaque.indexOf('*');
+            if (pos === -1) pos = textoEmpaque.indexOf('X');
+            if (pos !== -1) {
+                let extraido = textoEmpaque.substring(pos + 1).trim();
+                let numeros = extraido.replace(/\D/g, '');
+                if (parseInt(numeros) > 1) factor = parseInt(numeros);
+            }
+            return factor;
+        }
+
+        // ============================================================
+        // CARGA DESDE GOOGLE SHEETS
+        // ============================================================
+        function loadFromGoogleSheets() {
+            fileStatus.textContent = '⏳ Cargando desde Google Sheets...';
+            fetch(GOOGLE_SHEETS_CSV_URL)
+                .then(res => {
+                    if (!res.ok) throw new Error('No se pudo obtener el CSV');
+                    return res.text();
+                })
+                .then(csvText => {
+                    const data = parseCSV(csvText);
+                    if (data && data.length > 0) {
+                        currentData = data;
+                        fileStatus.textContent = `✅ ${data.length} registros desde Google Sheets`;
+                        searchInput.value = '';
+                        selectedIndex = -1;
+                        filteredData = [];
+                        renderResults([]);
+                        limpiarCantidades();
+                    } else {
+                        fileStatus.textContent = '⚠️ Google Sheets vacío, usando ejemplo';
+                        useLocalData();
+                    }
+                })
+                .catch(err => {
+                    console.warn('Error al cargar Google Sheets, usando datos locales.', err);
+                    fileStatus.textContent = '⚠️ Sin conexión, usando local';
+                    useLocalData();
+                });
+        }
+
+        function useLocalData() {
+            currentData = [...sampleData];
+            fileStatus.textContent = `📋 ${currentData.length} registros de ejemplo`;
+            searchInput.value = '';
+            selectedIndex = -1;
+            filteredData = [];
+            renderResults([]);
+            limpiarCantidades();
+        }
+
+        function parseCSV(csvText) {
+            const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
+            if (lines.length < 2) return null;
+            let delimiter = ',';
+            if (lines[0].includes(';')) delimiter = ';';
+            if (lines[0].includes('\t')) delimiter = '\t';
+            const headers = lines[0].split(delimiter).map(h => h.trim());
+            const result = [];
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(delimiter).map(v => v.trim());
+                if (values.length < headers.length) continue;
+                const obj = {};
+                headers.forEach((h, idx) => {
+                    obj[h] = values[idx] || '';
+                });
+                result.push(obj);
+            }
+            return result;
+        }
+
+        // ============================================================
+        // BÚSQUEDA Y RENDER
+        // ============================================================
+        function performSearch() {
+            const term = searchInput.value.trim();
+            if (!term) {
+                filteredData = [];
+                renderResults([]);
+                return;
+            }
+            const palabras = term.split(/\s+/).filter(p => p.length > 0);
+            const palabrasUpper = palabras.map(p => p.toUpperCase());
+
+            filteredData = currentData.filter(item => {
+                const campos = [
+                    getCodigo(item).toUpperCase(),
+                    getCodigoFabrica(item).toUpperCase(),
+                    getDescripcion(item).toUpperCase(),
+                    getUnidadRef(item).toUpperCase(),
+                    getLinea(item).toUpperCase(),
+                    getMarca(item).toUpperCase()
+                ];
+                return palabrasUpper.every(pal => campos.some(campo => campo.includes(pal)));
+            });
+
+            renderResults(filteredData);
+        }
+
+        function renderResults(items) {
+            if (!items || items.length === 0) {
+                resultList.innerHTML = `<div class="empty-message">🔎 No se encontraron productos</div>`;
+                resultCount.textContent = '0';
+                cajasCount.textContent = '0';
+                unidadesCount.textContent = '0';
+                selectedIndex = -1;
+                limpiarCantidades();
+                return;
+            }
+
+            let html = '';
+            items.forEach((item, idx) => {
+                const codigo = getCodigo(item);
+                const fabrica = getCodigoFabrica(item);
+                const desc = getDescripcion(item);
+                const unidad = getUnidadRef(item);
+                const cantidad = getCantidad(item);
+                const factor = getFactorEmpaque(item) || 1;
+                const cajasStock = Math.floor(cantidad / factor);
+                const unidadesStock = cantidad % factor;
+                const selectedClass = (idx === selectedIndex) ? ' selected' : '';
+
+                html += `<div class="result-item${selectedClass}" data-index="${idx}">
+                    <span class="codigo">${codigo}</span>
+                    <span class="fabrica">${fabrica}</span>
+                    <span class="descripcion">${desc}</span>
+                    <span class="unidad">${unidad}</span>
+                    <span class="stock-cajas">${cajasStock}</span>
+                    <span class="stock-unidades">${unidadesStock}</span>
+                    <div class="row1">
+                        <span class="codigo">${codigo}</span>
+                        <span class="fabrica">${fabrica}</span>
+                        <span class="unidad">${unidad}</span>
+                    </div>
+                    <div class="row2">
+                        <span class="descripcion">${desc}</span>
+                        <span class="stock">
+                            <span class="cajas">${cajasStock} cj</span>
+                            <span class="unidades">${unidadesStock} und</span>
+                        </span>
+                    </div>
+                </div>`;
+            });
+            resultList.innerHTML = html;
+            resultCount.textContent = items.length;
+
+            if (selectedIndex !== -1 && selectedIndex < items.length) {
+                actualizarCantidades(items[selectedIndex]);
+            } else {
+                limpiarCantidades();
+            }
+
+            document.querySelectorAll('.result-item').forEach(el => {
+                el.addEventListener('click', function() {
+                    const idx = parseInt(this.dataset.index);
+                    if (idx === selectedIndex) return;
+                    document.querySelectorAll('.result-item').forEach(e => e.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedIndex = idx;
+                    if (selectedIndex < filteredData.length) {
+                        actualizarCantidades(filteredData[selectedIndex]);
+                    }
+                });
+            });
+        }
+
+        // ============================================================
+        // ACTUALIZAR CANTIDADES
+        // ============================================================
+        function actualizarCantidades(item) {
+            const unidad = getUnidadRef(item);
+            let factor = obtenerFactorEmpaque(unidad) || getFactorEmpaque(item) || 1;
+            currentFactor = factor;
+
+            infoFactor.textContent = `Factor: ${factor}`;
+
+            if (factor === 1) {
+                cajasGroup.classList.add('hidden');
+                txtCajas.disabled = true;
+                txtCajas.value = '0';
+            } else {
+                cajasGroup.classList.remove('hidden');
+                txtCajas.disabled = false;
+                txtCajas.value = '0';
+            }
+
+            txtUnidades.value = '0';
+            txtUnidades.disabled = false;
+
+            const cantidad = getCantidad(item);
+            const cajasStock = Math.floor(cantidad / factor);
+            const unidadesStock = cantidad % factor;
+            cajasCount.textContent = cajasStock;
+            unidadesCount.textContent = unidadesStock;
+        }
+
+        function limpiarCantidades() {
+            cajasGroup.classList.remove('hidden');
+            txtCajas.value = '0';
+            txtUnidades.value = '0';
+            currentFactor = 1;
+            infoFactor.textContent = 'Factor: 1';
+            txtCajas.disabled = true;
+            txtUnidades.disabled = false;
+            cajasCount.textContent = '0';
+            unidadesCount.textContent = '0';
+        }
+
+        // ============================================================
+        // PEDIDO
+        // ============================================================
+        function agregarProducto() {
+            if (selectedIndex === -1 || selectedIndex >= filteredData.length) {
+                showToast('Seleccione un producto de la lista.', 'error');
+                return;
+            }
+            const item = filteredData[selectedIndex];
+            const codigo = getCodigo(item);
+            const codigoFabrica = getCodigoFabrica(item);
+            const descripcion = getDescripcion(item);
+            const unidad = getUnidadRef(item);
+            const linea = getLinea(item) || 'SIN LÍNEA';
+            const factor = currentFactor;
+            const esSuelta = factor === 1;
+
+            const stockTotal = getCantidad(item);
+            const stockCajas = Math.floor(stockTotal / factor);
+            const stockUnidades = stockTotal % factor;
+
+            let cajasPedido = parseInt(txtCajas.value) || 0;
+            let unidadesPedido = parseInt(txtUnidades.value) || 0;
+            if (cajasPedido === 0 && unidadesPedido === 0) {
+                showToast('Ingrese una cantidad (cajas o unidades).', 'error');
+                return;
+            }
+
+            let totalPedido = 0;
+            if (esSuelta) {
+                totalPedido = cajasPedido + unidadesPedido;
+            } else {
+                totalPedido = (cajasPedido * factor) + unidadesPedido;
+            }
+
+            if (totalPedido === 0) {
+                showToast('Cantidad cero, no se agregará.', 'error');
+                return;
+            }
+
+            if (totalPedido > stockTotal) {
+                showToast(`Stock insuficiente. Disponible: ${stockCajas} cajas y ${stockUnidades} unidades sueltas.`, 'error');
+                return;
+            }
+
+            let existing = pedido.find(p => p.codigo === codigo);
+            if (existing) {
+                let nuevasCajas = existing.cajas;
+                let nuevasUnidades = existing.unidades;
+                if (esSuelta) {
+                    let total = (nuevasCajas + nuevasUnidades) + (cajasPedido + unidadesPedido);
+                    nuevasCajas = 0;
+                    nuevasUnidades = total;
+                } else {
+                    let total = (nuevasCajas * factor) + nuevasUnidades + (cajasPedido * factor) + unidadesPedido;
+                    nuevasCajas = Math.floor(total / factor);
+                    nuevasUnidades = total % factor;
+                }
+                let totalActualizado = (nuevasCajas * factor) + nuevasUnidades;
+                if (totalActualizado > stockTotal) {
+                    showToast(`No puedes agregar más de lo disponible. Stock: ${stockCajas} cajas y ${stockUnidades} unidades.`, 'error');
+                    return;
+                }
+                existing.cajas = nuevasCajas;
+                existing.unidades = nuevasUnidades;
+            } else {
+                let newCajas = 0, newUnidades = 0;
+                if (esSuelta) {
+                    newCajas = 0;
+                    newUnidades = totalPedido;
+                } else {
+                    newCajas = Math.floor(totalPedido / factor);
+                    newUnidades = totalPedido % factor;
+                }
+                pedido.push({
+                    codigo: codigo,
+                    codigoFabrica: codigoFabrica,
+                    descripcion: descripcion,
+                    unidad: unidad,
+                    linea: linea,
+                    cajas: newCajas,
+                    unidades: newUnidades,
+                    factor: factor,
+                    esSuelta: esSuelta
+                });
+            }
+
+            txtCajas.value = '0';
+            txtUnidades.value = '0';
+            renderPedido();
+            savePedido();
+            if (selectedIndex < filteredData.length) {
+                actualizarCantidades(filteredData[selectedIndex]);
+            }
+            showToast(`✅ ${totalPedido} unidades agregadas al pedido.`, 'success');
+        }
+
+        function eliminarDelPedido(codigo) {
+            pedido = pedido.filter(p => p.codigo !== codigo);
+            renderPedido();
+            savePedido();
+        }
+
+        function limpiarPedido() {
+            if (pedido.length === 0) return;
+            if (confirm('¿Eliminar todos los productos del pedido?')) {
+                pedido = [];
+                renderPedido();
+                savePedido();
+                showToast('Pedido vaciado.', 'info');
+            }
+        }
+
+        function renderPedido() {
+            if (pedido.length === 0) {
+                pedidoBody.innerHTML = `<tr><td colspan="8" class="empty-message">No hay productos en el pedido.</td></tr>`;
+                pedidoFoot.style.display = 'none';
+                totalCajasPedido.textContent = '0';
+                totalUnidadesPedido.textContent = '0';
+                pedidoCount.textContent = '0 productos';
+                return;
+            }
+
+            let html = '';
+            let totalCajas = 0, totalUnidades = 0;
+            pedido.forEach((p, idx) => {
+                totalCajas += p.cajas;
+                totalUnidades += p.unidades;
+                html += `<tr>
+                    <td>${idx + 1}</td>
+                    <td class="codigo-cell">${p.codigo}</td>
+                    <td style="color:var(--text-muted);">${p.codigoFabrica}</td>
+                    <td style="color:var(--text-secondary);">${p.descripcion}</td>
+                    <td style="color:var(--text-muted);">${p.unidad}</td>
+                    <td class="cantidad-cell">${p.cajas}</td>
+                    <td class="cantidad-cell">${p.unidades}</td>
+                    <td class="acciones-cell"><button class="eliminar-fila" data-codigo="${p.codigo}">✕</button></td>
+                </tr>`;
+            });
+
+            pedidoBody.innerHTML = html;
+            pedidoFoot.style.display = 'table-row-group';
+            totalCajasFoot.textContent = totalCajas;
+            totalUnidadesFoot.textContent = totalUnidades;
+            totalCajasPedido.textContent = totalCajas;
+            totalUnidadesPedido.textContent = totalUnidades;
+            pedidoCount.textContent = `${pedido.length} productos`;
+
+            document.querySelectorAll('.eliminar-fila').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const codigo = this.dataset.codigo;
+                    eliminarDelPedido(codigo);
+                });
+            });
+        }
+
+        // ============================================================
+        // PERSISTENCIA PEDIDO
+        // ============================================================
+        function savePedido() {
+            try { localStorage.setItem('pedido_actual', JSON.stringify(pedido)); } catch(e) {}
+        }
+        function loadPedido() {
+            try {
+                const raw = localStorage.getItem('pedido_actual');
+                if (raw) { pedido = JSON.parse(raw); renderPedido(); }
+            } catch(e) { pedido = []; }
+        }
+
+        // ============================================================
+        // EXPORTAR PEDIDO
+        // ============================================================
+        function agruparPorLinea(items, getLineaItem) {
+            const grupos = {};
+            items.forEach(item => {
+                const linea = getLineaItem(item) || 'SIN LÍNEA';
+                if (!grupos[linea]) grupos[linea] = [];
+                grupos[linea].push(item);
+            });
+            return Object.keys(grupos).sort((a, b) => a.localeCompare(b)).map(linea => ({
+                linea: linea,
+                items: grupos[linea]
+            }));
+        }
+
+        function exportarPedido() {
+            if (pedido.length === 0) {
+                showToast('No hay productos en el pedido.', 'error');
+                return;
+            }
+
+            const grupos = agruparPorLinea(pedido, p => p.linea);
+            const filas = [
+                ['#', 'Código', 'Cód. Fábrica', 'Descripción', 'Unidad', 'Línea', 'Cajas', 'Unidades', 'Factor', 'Total (und)']
+            ];
+
+            grupos.forEach(grupo => {
+                filas.push([`LÍNEA: ${grupo.linea}`]);
+                let contador = 1;
+                let subCajas = 0, subUnidades = 0;
+                grupo.items.forEach(p => {
+                    const total = (p.cajas * p.factor) + p.unidades;
+                    filas.push([contador++, p.codigo, p.codigoFabrica, p.descripcion, p.unidad, p.linea, p.cajas, p.unidades, p.factor, total]);
+                    subCajas += p.cajas;
+                    subUnidades += p.unidades;
+                });
+                filas.push(['', '', '', '', '', 'Subtotal línea', subCajas, subUnidades, '', '']);
+                filas.push([]);
+            });
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(filas);
+            ws['!cols'] = [{wch:6},{wch:10},{wch:14},{wch:42},{wch:10},{wch:24},{wch:8},{wch:10},{wch:8},{wch:12}];
+            XLSX.utils.book_append_sheet(wb, ws, 'Pedido');
+            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            const blob = new Blob([wbout], { type: 'application/octet-stream' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `pedido_${new Date().toISOString().slice(0,10)}.xlsx`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+            showToast('📥 Pedido exportado a Excel.', 'success');
+        }
+
+        // ============================================================
+        // GUARDAR PEDIDO EN DRIVE
+        // ============================================================
+        function guardarPedidoEnDrive() {
+            if (pedido.length === 0) {
+                showToast('No hay productos en el pedido.', 'error');
+                return;
+            }
+
+            const dataToExport = pedido.map((p, idx) => ({
+                '#': idx + 1,
+                'Código': p.codigo,
+                'Código Fábrica': p.codigoFabrica,
+                'Descripción': p.descripcion,
+                'Unidad': p.unidad,
+                'Línea': p.linea || 'SIN LÍNEA',
+                'Cajas': p.cajas,
+                'Unidades': p.unidades,
+                'Factor': p.factor,
+                'Total (und)': (p.cajas * p.factor) + p.unidades
+            }));
+
+            guardarPedidoDriveBtn.textContent = '⏳ Subiendo...';
+            guardarPedidoDriveBtn.disabled = true;
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dataToExport)
+            })
+            .then(() => {
+                showToast('✅ Pedido guardado en Google Drive.', 'success');
+                guardarPedidoDriveBtn.textContent = '☁️ Drive';
+                guardarPedidoDriveBtn.disabled = false;
+            })
+            .catch(err => {
+                showToast('❌ Error al guardar en Drive: ' + err.message, 'error');
+                guardarPedidoDriveBtn.textContent = '☁️ Drive';
+                guardarPedidoDriveBtn.disabled = false;
+            });
+        }
+
+        // ============================================================
+        // REGISTRAR INVENTARIO FÍSICO
+        // ============================================================
+        function registrarFisico() {
+            if (selectedIndex === -1 || selectedIndex >= filteredData.length) {
+                showToast('Seleccione un producto de la lista.', 'error');
+                return;
+            }
+            const item = filteredData[selectedIndex];
+            const codigo = getCodigo(item);
+            const descripcion = getDescripcion(item);
+            const linea = getLinea(item) || 'SIN LÍNEA';
+            const stockTeorico = getCantidad(item);
+            const factor = currentFactor;
+            const esSuelta = factor === 1;
+
+            let cajas = parseInt(txtCajas.value) || 0;
+            let unidades = parseInt(txtUnidades.value) || 0;
+
+            if (esSuelta) {
+                unidades += cajas;
+                cajas = 0;
+            }
+
+            const stockFisico = (cajas * factor) + unidades;
+
+            if (stockFisico === 0) {
+                showToast('Ingrese una cantidad mayor que cero.', 'error');
+                return;
+            }
+
+            const diferencia = stockFisico - stockTeorico;
+
+            if (diferencia === 0) {
+                if (!confirm(`Stock teórico: ${stockTeorico}\nStock físico: ${stockFisico}\nLa diferencia es cero. ¿Deseas registrar de todas formas?`)) {
+                    return;
+                }
+            }
+
+            const ahora = new Date();
+            const fechaStr = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
+
+            inventarioFisico.push({
+                codigo: codigo,
+                descripcion: descripcion,
+                linea: linea,
+                stockTeorico: stockTeorico,
+                stockFisico: stockFisico,
+                diferencia: diferencia,
+                fecha: fechaStr
+            });
+
+            saveInventario();
+            renderInventario();
+            txtCajas.value = '0';
+            txtUnidades.value = '0';
+            showToast(`✅ Conteo registrado. Diferencia: ${diferencia}`, 'success');
+            if (selectedIndex < filteredData.length) {
+                actualizarCantidades(filteredData[selectedIndex]);
+            }
+        }
+
+        // ============================================================
+        // PERSISTENCIA INVENTARIO
+        // ============================================================
+        const INV_KEY = 'buscador_inventario_fisico';
+
+        function saveInventario() {
+            try { localStorage.setItem(INV_KEY, JSON.stringify(inventarioFisico)); } catch(e) {}
+        }
+        function loadInventario() {
+            try {
+                const raw = localStorage.getItem(INV_KEY);
+                if (raw) inventarioFisico = JSON.parse(raw);
+            } catch(e) { inventarioFisico = []; }
+        }
+
+        // ============================================================
+        // RENDER INVENTARIO
+        // ============================================================
+        function renderInventario() {
+            if (inventarioFisico.length === 0) {
+                diffBody.innerHTML = `<tr><td colspan="8" class="empty-message">No hay productos contados aún.</td></tr>`;
+                diffFoot.style.display = 'none';
+                diffResumen.style.display = 'none';
+                diffCount.textContent = '0 registros';
+                resContados.textContent = '0';
+                return;
+            }
+
+            let html = '';
+            let totalTeorico = 0, totalFisico = 0, totalDiff = 0;
+            inventarioFisico.forEach((d, idx) => {
+                totalTeorico += d.stockTeorico;
+                totalFisico += d.stockFisico;
+                totalDiff += d.diferencia;
+                const claseDiff = d.diferencia >= 0 ? 'diff-positivo' : 'diff-negativo';
+                html += `<tr>
+                    <td>${idx + 1}</td>
+                    <td class="codigo-cell">${d.codigo}</td>
+                    <td style="color:var(--text-secondary);">${d.descripcion}</td>
+                    <td style="color:var(--heading-color);">${d.stockTeorico}</td>
+                    <td style="color:var(--heading-color);">${d.stockFisico}</td>
+                    <td class="${claseDiff}">${d.diferencia}</td>
+                    <td style="color:var(--text-muted);">${d.fecha}</td>
+                    <td class="acciones-cell"><button class="eliminar-diff" data-index="${idx}">✕</button></td>
+                </tr>`;
+            });
+
+            diffBody.innerHTML = html;
+            diffFoot.style.display = 'table-row-group';
+            diffTotalTeorico.textContent = totalTeorico;
+            diffTotalFisico.textContent = totalFisico;
+            diffTotalDiferencia.textContent = totalDiff;
+
+            diffResumen.style.display = 'flex';
+            resTeorico.textContent = totalTeorico;
+            resFisico.textContent = totalFisico;
+            resDiferencia.textContent = totalDiff;
+            resContados.textContent = inventarioFisico.length;
+
+            diffCount.textContent = `${inventarioFisico.length} registros`;
+
+            document.querySelectorAll('.eliminar-diff').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const idx = parseInt(this.dataset.index);
+                    inventarioFisico.splice(idx, 1);
+                    saveInventario();
+                    renderInventario();
+                });
+            });
+        }
+
+        // ============================================================
+        // EXPORTAR INVENTARIO
+        // ============================================================
+        function exportarInventario() {
+            if (inventarioFisico.length === 0) {
+                showToast('No hay datos para exportar.', 'error');
+                return;
+            }
+
+            const grupos = agruparPorLinea(inventarioFisico, d => d.linea);
+            const filas = [
+                ['#', 'Código', 'Descripción', 'Línea', 'Stock Teórico', 'Stock Físico', 'Diferencia', 'Fecha/Hora']
+            ];
+
+            grupos.forEach(grupo => {
+                filas.push([`LÍNEA: ${grupo.linea}`]);
+                let contador = 1;
+                let subTeorico = 0, subFisico = 0, subDiferencia = 0;
+                grupo.items.forEach(d => {
+                    filas.push([contador++, d.codigo, d.descripcion, d.linea || 'SIN LÍNEA', d.stockTeorico, d.stockFisico, d.diferencia, d.fecha]);
+                    subTeorico += d.stockTeorico;
+                    subFisico += d.stockFisico;
+                    subDiferencia += d.diferencia;
+                });
+                filas.push(['', '', '', 'Subtotal línea', subTeorico, subFisico, subDiferencia, '']);
+                filas.push([]);
+            });
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(filas);
+            ws['!cols'] = [{wch:6},{wch:10},{wch:42},{wch:24},{wch:12},{wch:12},{wch:12},{wch:18}];
+            XLSX.utils.book_append_sheet(wb, ws, 'InventarioFisico');
+            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            const blob = new Blob([wbout], { type: 'application/octet-stream' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `inventario_fisico_${new Date().toISOString().slice(0,10)}.xlsx`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+            showToast('📥 Inventario exportado a Excel.', 'success');
+        }
+
+        // ============================================================
+        // GUARDAR INVENTARIO EN DRIVE
+        // ============================================================
+        function guardarInventarioDrive() {
+            if (inventarioFisico.length === 0) {
+                showToast('No hay datos para guardar.', 'error');
+                return;
+            }
+
+            const dataToExport = inventarioFisico.map((d, idx) => ({
+                '#': idx + 1,
+                'Código': d.codigo,
+                'Descripción': d.descripcion,
+                'Línea': d.linea || 'SIN LÍNEA',
+                'Stock Teórico': d.stockTeorico,
+                'Stock Físico': d.stockFisico,
+                'Diferencia': d.diferencia,
+                'Fecha/Hora': d.fecha
+            }));
+
+            guardarDriveBtn.textContent = '⏳ Subiendo...';
+            guardarDriveBtn.disabled = true;
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dataToExport)
+            })
+            .then(() => {
+                showToast('✅ Inventario guardado en Google Drive.', 'success');
+                guardarDriveBtn.textContent = '☁️ Drive';
+                guardarDriveBtn.disabled = false;
+            })
+            .catch(err => {
+                showToast('❌ Error al guardar en Drive: ' + err.message, 'error');
+                guardarDriveBtn.textContent = '☁️ Drive';
+                guardarDriveBtn.disabled = false;
+            });
+        }
+
+        // ============================================================
+        // LIMPIAR INVENTARIO
+        // ============================================================
+        function limpiarInventario() {
+            if (inventarioFisico.length === 0) return;
+            if (confirm('¿Eliminar todos los registros del inventario físico?')) {
+                inventarioFisico = [];
+                saveInventario();
+                renderInventario();
+                showToast('Inventario limpiado.', 'info');
+            }
+        }
+
+        // ============================================================
+        // TEMA DÍA / NOCHE
+        // ============================================================
+        const THEME_KEY = 'buscador_tema';
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+
+        function aplicarTema(tema) {
+            if (tema === 'light') {
+                document.body.classList.add('light-theme');
+                themeToggleBtn.textContent = '☀️';
+            } else {
+                document.body.classList.remove('light-theme');
+                themeToggleBtn.textContent = '🌙';
+            }
+        }
+
+        function cargarTema() {
+            let tema = 'dark';
+            try { tema = localStorage.getItem(THEME_KEY) || 'dark'; } catch(e) {}
+            aplicarTema(tema);
+        }
+
+        function alternarTema() {
+            const esClaro = document.body.classList.contains('light-theme');
+            const nuevo = esClaro ? 'dark' : 'light';
+            aplicarTema(nuevo);
+            try { localStorage.setItem(THEME_KEY, nuevo); } catch(e) {}
+        }
+
+        // ============================================================
+        // INICIALIZACIÓN
+        // ============================================================
+        function init() {
+            cargarTema();
+            themeToggleBtn.addEventListener('click', alternarTema);
+
+            loadInventario();
+            renderInventario();
+            loadPedido();
+            loadFromGoogleSheets();
+
+            refreshBtn.addEventListener('click', function() {
+                this.textContent = '⏳';
+                loadFromGoogleSheets();
+                setTimeout(() => { this.textContent = '🔄 Actualizar'; }, 1500);
+            });
+
+            setInterval(loadFromGoogleSheets, 300000);
+
+            searchButton.addEventListener('click', performSearch);
+            searchInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') performSearch(); });
+            let debounceTimer;
+            searchInput.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(performSearch, 300);
+            });
+
+            btnAgregar.addEventListener('click', agregarProducto);
+            txtCajas.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); txtUnidades.focus(); } });
+            txtUnidades.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); agregarProducto(); } });
+
+            btnRegistrarFisico.addEventListener('click', registrarFisico);
+
+            exportPedidoBtn.addEventListener('click', exportarPedido);
+            guardarPedidoDriveBtn.addEventListener('click', guardarPedidoEnDrive);
+            limpiarPedidoBtn.addEventListener('click', limpiarPedido);
+
+            exportDiffBtn.addEventListener('click', exportarInventario);
+            clearDiffBtn.addEventListener('click', limpiarInventario);
+            guardarDriveBtn.addEventListener('click', guardarInventarioDrive);
+        }
+
+        init();
+    })();
 </script>
-
 </body>
 </html>
