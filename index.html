@@ -2205,16 +2205,19 @@
         // Elimina un lote puntual (una cantidad con su fecha) de un producto
         // ya contado, y recalcula el total físico y la diferencia. Si era el
         // único lote, se elimina la fila completa del inventario físico.
+        // También avisa al servidor para que el borrado se refleje en los
+        // demás celulares/PC.
         function eliminarLote(codigo, idx) {
             const record = inventarioFisico.find(d => d.codigo === codigo);
             if (!record || !record.lotes) return;
-            record.lotes.splice(idx, 1);
+            const [loteEliminado] = record.lotes.splice(idx, 1);
             if (record.lotes.length === 0) {
                 inventarioFisico = inventarioFisico.filter(d => d.codigo !== codigo);
             } else {
                 record.stockFisico = record.lotes.reduce((sum, l) => sum + l.cantidad, 0);
                 record.diferencia = record.stockFisico - record.stockTeorico;
             }
+            if (loteEliminado) eliminarLoteDelServidor(loteEliminado.id);
             saveInventario();
             renderInventario();
             if (selectedIndex !== -1 && selectedIndex < filteredData.length) {
@@ -2640,6 +2643,21 @@
             });
         }
 
+        // Avisa al servidor que un lote puntual (por su id) fue eliminado,
+        // para que desaparezca también de la hoja "ConteoVivo" y, con eso,
+        // de los demás celulares/PC en su próxima sincronización. Antes el
+        // borrado solo pasaba en localStorage de este dispositivo, así que
+        // el registro "eliminado" seguía existiendo en el servidor y
+        // reaparecía en los demás.
+        function eliminarLoteDelServidor(id) {
+            if (!id) return;
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ accion: 'eliminar_lote', id: id })
+            }).catch(() => { /* sin red: se reintentará en la próxima sincronización */ });
+        }
+
         // ============================================================
         // CONTEO EN VIVO COMPARTIDO (varios celulares al mismo tiempo)
         // ============================================================
@@ -2992,9 +3010,15 @@
             document.querySelectorAll('.eliminar-diff, .eliminar-diff-movil').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const idx = parseInt(this.dataset.index);
-                    inventarioFisico.splice(idx, 1);
-                    saveInventario();
-                    renderInventario();
+                    const registro = inventarioFisico[idx];
+                    if (!registro) return;
+                    confirmarAccion(`¿Eliminar el registro de "${registro.descripcion}"? Esto borra todos sus lotes contados.`).then(ok => {
+                        if (!ok) return;
+                        (registro.lotes || []).forEach(l => eliminarLoteDelServidor(l.id));
+                        inventarioFisico.splice(idx, 1);
+                        saveInventario();
+                        renderInventario();
+                    });
                 });
             });
         }
