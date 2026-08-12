@@ -259,6 +259,8 @@
             flex-shrink: 0;
         }
         .header .theme-toggle:hover { background: rgba(108, 92, 231, 0.25); transform: rotate(10deg); }
+        .header #logoutBtn:hover { background: rgba(255, 84, 112, 0.2); color: var(--danger); transform: none; }
+        .header #logoutBtn { margin-left: 0; }
 
         /* ============================================================
            BUSCADOR
@@ -1346,6 +1348,7 @@
             <span class="laive">LAIVE</span>
         </div>
         <button class="theme-toggle" id="themeToggleBtn" type="button" title="Cambiar tema" aria-label="Cambiar tema día/noche">🌙</button>
+        <button class="theme-toggle" id="logoutBtn" type="button" title="Cerrar sesión" aria-label="Cerrar sesión">🚪</button>
         <span class="version">v2.2</span>
     </header>
 
@@ -3206,6 +3209,17 @@
             loginUsuario.focus();
         }
 
+        // Cierra la sesión activa: borra la marca de tiempo guardada (para
+        // que sesionValida() vuelva a dar false) y regresa a la pantalla
+        // de login. Pide confirmación para evitar salidas accidentales.
+        function cerrarSesion() {
+            confirmarAccion('¿Cerrar sesión?').then(ok => {
+                if (!ok) return;
+                try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+                mostrarLogin();
+            });
+        }
+
         // No se guarda qué usuario inició sesión: solo se registra la hora,
         // para saber si ya pasó el día y hay que volver a pedir la clave.
         function intentarLogin() {
@@ -3226,6 +3240,7 @@
         loginBtn.addEventListener('click', intentarLogin);
         loginClave.addEventListener('keyup', (e) => { if (e.key === 'Enter') intentarLogin(); });
         loginUsuario.addEventListener('keyup', (e) => { if (e.key === 'Enter') loginClave.focus(); });
+        document.getElementById('logoutBtn').addEventListener('click', cerrarSesion);
 
         if (sesionValida()) {
             mostrarApp();
