@@ -926,6 +926,17 @@
             .diff-table th, .diff-table td { padding: 0.2rem 0.3rem; font-size: 0.6rem; }
             .diff-totales { font-size: 0.7rem; gap: 0.3rem 0.8rem; padding: 0.3rem 0.5rem; }
 
+            /* En Inventario Físico y Sugerencia de Pedido: tabla oculta,
+               tarjetas por producto visibles. */
+            #diffCardBody .table-wrap,
+            #pedidoCardBody .table-wrap { display: none; }
+            #diffMobileList,
+            #pedidoMobileList {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
             .toast { font-size: 0.8rem; padding: 0.5rem 1rem; bottom: 10px; }
 
             /* ========================================================
@@ -934,6 +945,11 @@
                los datos del producto, cantidades e info de vencimiento
                fáciles de tocar con el dedo.
                ======================================================== */
+            /* Al tener un producto seleccionado en móvil, se oculta también
+               el buscador completo (input + botones + estado del archivo):
+               ya no hace falta, y la tarjeta del producto aprovecha toda
+               la pantalla, igual que en la referencia. */
+            body.modo-seleccion #searchSection { display: none; }
             body.modo-seleccion #resultsSection .results-header { display: none; }
             body.modo-seleccion #resultList { display: none; }
 
@@ -964,6 +980,22 @@
                 margin-top: 0.2rem;
                 font-family: monospace;
             }
+            body.modo-seleccion .pa-cambiar-btn {
+                background: rgba(255,255,255,0.15);
+                border: 1px solid rgba(255,255,255,0.28);
+                color: #fff;
+                font-size: 0.68rem;
+                font-weight: 600;
+                padding: 0.4rem 0.8rem;
+                border-radius: 30px;
+                cursor: pointer;
+                white-space: nowrap;
+                flex-shrink: 0;
+                font-family: var(--font);
+                transition: 0.15s;
+            }
+            body.modo-seleccion .pa-cambiar-btn:hover { background: rgba(255,255,255,0.25); }
+            body.modo-seleccion .pa-cambiar-btn:active { transform: scale(0.94); }
             body.modo-seleccion .pa-meta {
                 display: flex;
                 flex-wrap: wrap;
@@ -1039,6 +1071,145 @@
                 font-weight: 800;
                 color: var(--heading-color);
             }
+        }
+
+        /* ============================================================
+           TARJETAS PLEGABLES (Inventario Físico / Sugerencia de Pedido)
+           En escritorio se comportan como tarjetas normales, siempre
+           abiertas. En móvil arrancan cerradas (solo título + contador)
+           para no ocupar tanto espacio, y se abren al tocarlas o solas
+           cuando hay algo nuevo que mostrar.
+           ============================================================ */
+        .card-header.collapsible {
+            cursor: pointer;
+            user-select: none;
+        }
+        .card-toggle {
+            margin-left: auto;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            flex-shrink: 0;
+            transition: transform 0.25s ease, background 0.2s;
+        }
+        .card-header.collapsible:hover .card-toggle { background: var(--badge-bg); }
+        .card-header.collapsible[aria-expanded="true"] .card-toggle { transform: rotate(180deg); }
+        .card-body-collapsible {
+            display: grid;
+            grid-template-rows: 1fr;
+            transition: grid-template-rows 0.28s ease;
+        }
+        .card-body-collapsible > .card-body-inner { overflow: hidden; }
+        .card-body-collapsible.is-collapsed {
+            grid-template-rows: 0fr;
+        }
+        .card-body-collapsible.is-collapsed > .card-body-inner {
+            padding-top: 0 !important;
+        }
+        .card-actions-row {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.3rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.6rem;
+        }
+        .card-actions-row .totales-mini {
+            margin-right: auto;
+            display: flex;
+            gap: 0.6rem;
+        }
+
+        /* ============================================================
+           TARJETAS POR PRODUCTO EN MÓVIL
+           En pantallas angostas, las tablas de Inventario Físico y
+           Sugerencia de Pedido se reemplazan por una lista de tarjetas
+           (una por producto), mucho más fácil de leer con el dedo que
+           una tabla con scroll horizontal. En escritorio se sigue
+           usando la tabla de siempre.
+           ============================================================ */
+        .mobile-item-list { display: none; }
+        .mi-card {
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 14px;
+            padding: 0.65rem 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .mi-card-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--divider);
+            padding-bottom: 0.45rem;
+        }
+        .mi-card-idcol { overflow: hidden; min-width: 0; }
+        .mi-card-idrow {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+        .mi-card-num { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); }
+        .mi-card-codigo { font-family: monospace; font-weight: 700; color: var(--heading-color); font-size: 0.85rem; }
+        .mi-card-fabrica { font-family: monospace; font-size: 0.6rem; color: var(--text-muted); }
+        .mi-card-desc {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-top: 0.2rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .mi-card-del {
+            background: rgba(212, 90, 90, 0.15);
+            color: var(--danger);
+            border: none;
+            border-radius: 10px;
+            width: 34px;
+            height: 34px;
+            flex-shrink: 0;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+        .mi-card-del:hover { background: rgba(212, 90, 90, 0.28); }
+        .mi-card-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+            gap: 0.4rem;
+            text-align: center;
+            padding: 0.4rem 0.2rem;
+            background: var(--badge-bg);
+            border-radius: 10px;
+        }
+        .mi-stat-label {
+            display: block;
+            font-size: 0.55rem;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        .mi-stat-value { font-weight: 700; color: var(--heading-color); font-size: 0.85rem; }
+        .mi-stat-value.diff-positivo { color: var(--success); }
+        .mi-stat-value.diff-negativo { color: var(--danger); }
+        .mi-card-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem 0.8rem;
+            font-size: 0.65rem;
+            color: var(--text-muted);
         }
 
         @media (max-width: 400px) {
@@ -1118,6 +1289,7 @@
                     <div class="pa-descripcion" id="paDescripcion"></div>
                     <div class="pa-codigo" id="paCodigo"></div>
                 </div>
+                <button type="button" class="pa-cambiar-btn" id="btnCambiarProducto">← Cambiar producto</button>
             </div>
             <div class="pa-meta">
                 <span>UM: <strong id="paUnidad">-</strong></span>
@@ -1176,14 +1348,17 @@
     INVENTARIO FÍSICO
     ============================================================ -->
     <section class="card">
-        <div class="card-header">
+        <div class="card-header collapsible" id="diffCardHeader" role="button" tabindex="0" aria-expanded="true" aria-controls="diffCardBody">
             <h2>📊 Inventario Físico</h2>
             <span class="badge" id="diffCount">0 registros</span>
-            <div style="margin-left:auto; display:flex; gap:0.3rem; flex-wrap:wrap;">
+            <span class="card-toggle" aria-hidden="true">▾</span>
+        </div>
+        <div class="card-body-collapsible" id="diffCardBody">
+        <div class="card-body-inner">
+        <div class="card-actions-row">
                 <button class="btn btn-success btn-sm" id="exportDiffBtn">📥 Excel</button>
                 <button class="btn btn-drive btn-sm" id="guardarDriveBtn">☁️ Drive</button>
                 <button class="btn btn-danger btn-sm" id="clearDiffBtn">🗑️ Limpiar</button>
-            </div>
         </div>
         <div class="table-wrap">
             <table class="diff-table" id="diffTable">
@@ -1212,11 +1387,14 @@
                 </tfoot>
             </table>
         </div>
+        <div class="mobile-item-list" id="diffMobileList"></div>
         <div class="diff-totales" id="diffResumen" style="display:none;">
             <span>📦 Teórico: <strong id="resTeorico">0</strong></span>
             <span>🔎 Físico: <strong id="resFisico">0</strong></span>
             <span>📊 Diferencia: <strong id="resDiferencia">0</strong></span>
             <span>Contados: <strong id="resContados">0</strong></span>
+        </div>
+        </div>
         </div>
     </section>
 
@@ -1224,16 +1402,21 @@
     PEDIDO ACTUAL (sugerencia de pedido al proveedor)
     ============================================================ -->
     <section class="card">
-        <div class="card-header">
+        <div class="card-header collapsible" id="pedidoCardHeader" role="button" tabindex="0" aria-expanded="true" aria-controls="pedidoCardBody">
             <h2>📦 Sugerencia de Pedido</h2>
             <span class="badge" id="pedidoCount">0 productos</span>
-            <div style="margin-left:auto; display:flex; gap:0.3rem; flex-wrap:wrap;">
-                <span style="font-size:0.7rem; color:var(--text-muted);">Cajas <strong id="totalCajasPedido" style="color:var(--heading-color);">0</strong></span>
-                <span style="font-size:0.7rem; color:var(--text-muted);">Unid. <strong id="totalUnidadesPedido" style="color:var(--heading-color);">0</strong></span>
+            <span class="card-toggle" aria-hidden="true">▾</span>
+        </div>
+        <div class="card-body-collapsible" id="pedidoCardBody">
+        <div class="card-body-inner">
+        <div class="card-actions-row">
+                <span class="totales-mini">
+                    <span style="font-size:0.7rem; color:var(--text-muted);">Cajas <strong id="totalCajasPedido" style="color:var(--heading-color);">0</strong></span>
+                    <span style="font-size:0.7rem; color:var(--text-muted);">Unid. <strong id="totalUnidadesPedido" style="color:var(--heading-color);">0</strong></span>
+                </span>
                 <button class="btn btn-success btn-sm" id="exportPedidoBtn">📥 Excel</button>
                 <button class="btn btn-drive btn-sm" id="guardarPedidoDriveBtn">☁️ Drive</button>
                 <button class="btn btn-danger btn-sm" id="limpiarPedidoBtn">🗑️</button>
-            </div>
         </div>
         <div class="table-wrap">
             <table class="diff-table" id="pedidoTable">
@@ -1259,6 +1442,9 @@
                     </tr>
                 </tfoot>
             </table>
+        </div>
+        <div class="mobile-item-list" id="pedidoMobileList"></div>
+        </div>
         </div>
     </section>
 </div>
@@ -1326,6 +1512,7 @@
         const btnRegistrarFisico = document.getElementById('btnRegistrarFisico');
         const pedidoBody = document.getElementById('pedidoBody');
         const pedidoFoot = document.getElementById('pedidoFoot');
+        const pedidoMobileList = document.getElementById('pedidoMobileList');
         const totalCajasFoot = document.getElementById('totalCajasFoot');
         const totalUnidadesFoot = document.getElementById('totalUnidadesFoot');
         const totalCajasPedido = document.getElementById('totalCajasPedido');
@@ -1342,6 +1529,7 @@
         const paStock = document.getElementById('paStock');
         const paTotalValor = document.getElementById('paTotalValor');
         const paTotalUnidad = document.getElementById('paTotalUnidad');
+        const btnCambiarProducto = document.getElementById('btnCambiarProducto');
 
         const vencBlock = document.getElementById('vencBlock');
         const vencChips = document.getElementById('vencChips');
@@ -1352,6 +1540,7 @@
 
         const diffBody = document.getElementById('diffBody');
         const diffFoot = document.getElementById('diffFoot');
+        const diffMobileList = document.getElementById('diffMobileList');
         const diffCount = document.getElementById('diffCount');
         const diffTotalTeorico = document.getElementById('diffTotalTeorico');
         const diffTotalFisico = document.getElementById('diffTotalFisico');
@@ -1866,7 +2055,8 @@
             // Datos de la tarjeta de producto seleccionado (modo móvil)
             document.body.classList.add('modo-seleccion');
             paDescripcion.textContent = getDescripcion(item);
-            paCodigo.textContent = getCodigo(item);
+            const codFab = getCodigoFabrica(item);
+            paCodigo.textContent = codFab ? `Cód: ${getCodigo(item)} | Cód. Fábrica: ${codFab}` : `Cód: ${getCodigo(item)}`;
             paUnidad.textContent = getUnidadRef(item) || '-';
             paFactor.textContent = factor === 1 ? 'Unidad suelta' : `${factor} und/caja`;
             paStock.textContent = factor === 1
@@ -1889,6 +2079,15 @@
             vencBlock.classList.add('hidden');
             document.body.classList.remove('modo-seleccion');
             paTotalValor.textContent = '0';
+        }
+
+        // Regresa de la tarjeta de producto seleccionado a la lista de
+        // resultados, sin perder el término de búsqueda ni la lista ya
+        // cargada, para poder elegir el siguiente producto rápido.
+        function volverABuscar() {
+            selectedIndex = -1;
+            document.querySelectorAll('.result-item').forEach(e => e.classList.remove('selected'));
+            limpiarCantidades();
         }
 
         // Calcula en vivo cuánto se va a registrar (cajas*factor + unidades
@@ -2016,14 +2215,17 @@
         function renderPedido() {
             if (pedido.length === 0) {
                 pedidoBody.innerHTML = `<tr><td colspan="8" class="empty-message">No hay productos en el pedido.</td></tr>`;
+                pedidoMobileList.innerHTML = `<div class="empty-message">No hay productos en el pedido.</div>`;
                 pedidoFoot.style.display = 'none';
                 totalCajasPedido.textContent = '0';
                 totalUnidadesPedido.textContent = '0';
                 pedidoCount.textContent = '0 productos';
+                collapseCardEnMovil('pedido');
                 return;
             }
 
             let html = '';
+            let mobileHtml = '';
             let totalCajas = 0, totalUnidades = 0;
             pedido.forEach((p, idx) => {
                 totalCajas += p.cajas;
@@ -2038,17 +2240,37 @@
                     <td class="cantidad-cell">${p.unidades}</td>
                     <td class="acciones-cell"><button class="eliminar-fila" data-codigo="${p.codigo}">✕</button></td>
                 </tr>`;
+                mobileHtml += `<div class="mi-card">
+                    <div class="mi-card-head">
+                        <div class="mi-card-idcol">
+                            <div class="mi-card-idrow">
+                                <span class="mi-card-num">#${idx + 1}</span>
+                                <span class="mi-card-codigo">${p.codigo}</span>
+                                ${p.codigoFabrica ? `<span class="mi-card-fabrica">(${p.codigoFabrica})</span>` : ''}
+                            </div>
+                            <div class="mi-card-desc">${p.descripcion}</div>
+                        </div>
+                        <button class="mi-card-del eliminar-fila-movil" data-codigo="${p.codigo}" title="Eliminar del pedido">🗑️</button>
+                    </div>
+                    <div class="mi-card-stats">
+                        <div><span class="mi-stat-label">Unidad</span><span class="mi-stat-value">${p.unidad}</span></div>
+                        <div><span class="mi-stat-label">Cajas</span><span class="mi-stat-value">${p.cajas}</span></div>
+                        <div><span class="mi-stat-label">Unidades</span><span class="mi-stat-value">${p.unidades}</span></div>
+                    </div>
+                </div>`;
             });
 
             pedidoBody.innerHTML = html;
+            pedidoMobileList.innerHTML = mobileHtml;
             pedidoFoot.style.display = 'table-row-group';
             totalCajasFoot.textContent = totalCajas;
             totalUnidadesFoot.textContent = totalUnidades;
             totalCajasPedido.textContent = totalCajas;
             totalUnidadesPedido.textContent = totalUnidades;
             pedidoCount.textContent = `${pedido.length} productos`;
+            expandCardSiHaceFalta('pedido');
 
-            document.querySelectorAll('.eliminar-fila').forEach(btn => {
+            document.querySelectorAll('.eliminar-fila, .eliminar-fila-movil').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const codigo = this.dataset.codigo;
                     eliminarDelPedido(codigo);
@@ -2329,9 +2551,9 @@
             const totalLotes = record.lotes.length;
             const msgLote = totalLotes > 1 ? ` (${totalLotes} lotes, total físico ${record.stockFisico})` : '';
             showToast(`✅ Cantidad agregada (vence ${vencimiento}): ${cantidadLote}${msgLote}. Diferencia: ${record.diferencia}`, 'success');
-            if (selectedIndex < filteredData.length) {
-                actualizarCantidades(filteredData[selectedIndex]);
-            }
+            // Vuelve a la lista de resultados para seguir contando el
+            // siguiente producto, en vez de quedarse en el mismo.
+            volverABuscar();
         }
 
         // ============================================================
@@ -2374,14 +2596,17 @@
         function renderInventario() {
             if (inventarioFisico.length === 0) {
                 diffBody.innerHTML = `<tr><td colspan="9" class="empty-message">No hay productos contados aún.</td></tr>`;
+                diffMobileList.innerHTML = `<div class="empty-message">No hay productos contados aún.</div>`;
                 diffFoot.style.display = 'none';
                 diffResumen.style.display = 'none';
                 diffCount.textContent = '0 registros';
                 resContados.textContent = '0';
+                collapseCardEnMovil('diff');
                 return;
             }
 
             let html = '';
+            let mobileHtml = '';
             let totalTeorico = 0, totalFisico = 0, totalDiff = 0;
             inventarioFisico.forEach((d, idx) => {
                 totalTeorico += d.stockTeorico;
@@ -2404,9 +2629,31 @@
                     <td style="color:var(--text-muted);">${d.fecha}</td>
                     <td class="acciones-cell"><button class="eliminar-diff" data-index="${idx}">✕</button></td>
                 </tr>`;
+                mobileHtml += `<div class="mi-card">
+                    <div class="mi-card-head">
+                        <div class="mi-card-idcol">
+                            <div class="mi-card-idrow">
+                                <span class="mi-card-num">#${idx + 1}</span>
+                                <span class="mi-card-codigo">${d.codigo}</span>
+                            </div>
+                            <div class="mi-card-desc">${d.descripcion}</div>
+                        </div>
+                        <button class="mi-card-del eliminar-diff-movil" data-index="${idx}" title="Eliminar registro">🗑️</button>
+                    </div>
+                    <div class="mi-card-stats">
+                        <div><span class="mi-stat-label">Teórico</span><span class="mi-stat-value">${d.stockTeorico}</span></div>
+                        <div><span class="mi-stat-label">Físico</span><span class="mi-stat-value">${d.stockFisico}</span></div>
+                        <div><span class="mi-stat-label">Diferencia</span><span class="mi-stat-value ${claseDiff}">${d.diferencia}</span></div>
+                    </div>
+                    <div class="mi-card-meta">
+                        <span title="${vencTitulo}">📅 ${vencTexto}</span>
+                        <span>🕒 ${d.fecha}</span>
+                    </div>
+                </div>`;
             });
 
             diffBody.innerHTML = html;
+            diffMobileList.innerHTML = mobileHtml;
             diffFoot.style.display = 'table-row-group';
             diffTotalTeorico.textContent = totalTeorico;
             diffTotalFisico.textContent = totalFisico;
@@ -2419,8 +2666,9 @@
             resContados.textContent = inventarioFisico.length;
 
             diffCount.textContent = `${inventarioFisico.length} registros`;
+            expandCardSiHaceFalta('diff');
 
-            document.querySelectorAll('.eliminar-diff').forEach(btn => {
+            document.querySelectorAll('.eliminar-diff, .eliminar-diff-movil').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const idx = parseInt(this.dataset.index);
                     inventarioFisico.splice(idx, 1);
@@ -2568,9 +2816,68 @@
         // ============================================================
         // INICIALIZACIÓN
         // ============================================================
+        // TARJETAS PLEGABLES (Inventario Físico / Sugerencia de Pedido)
+        // ============================================================
+        // En escritorio quedan siempre abiertas. En móvil arrancan
+        // cerradas para no saturar la pantalla, y se abren solas en
+        // cuanto hay algo que mostrar (o al tocar el título).
+        const CARDS_PLEGABLES = {
+            diff: { header: 'diffCardHeader', body: 'diffCardBody' },
+            pedido: { header: 'pedidoCardHeader', body: 'pedidoCardBody' }
+        };
+        function esMovil() {
+            return window.matchMedia('(max-width: 640px)').matches;
+        }
+        function setCardExpandida(nombre, expandida) {
+            const cfg = CARDS_PLEGABLES[nombre];
+            if (!cfg) return;
+            const header = document.getElementById(cfg.header);
+            const body = document.getElementById(cfg.body);
+            if (!header || !body) return;
+            body.classList.toggle('is-collapsed', !expandida);
+            header.setAttribute('aria-expanded', expandida ? 'true' : 'false');
+        }
+        function toggleCard(nombre) {
+            const cfg = CARDS_PLEGABLES[nombre];
+            if (!cfg) return;
+            const header = document.getElementById(cfg.header);
+            const expandidaAhora = header.getAttribute('aria-expanded') === 'true';
+            setCardExpandida(nombre, !expandidaAhora);
+        }
+        // Colapsa la tarjeta solo si estamos en móvil (en PC se deja abierta siempre).
+        function collapseCardEnMovil(nombre) {
+            if (esMovil()) setCardExpandida(nombre, false);
+        }
+        // Expande la tarjeta cuando aparece contenido nuevo, solo si estaba cerrada.
+        function expandCardSiHaceFalta(nombre) {
+            const cfg = CARDS_PLEGABLES[nombre];
+            if (!cfg) return;
+            const header = document.getElementById(cfg.header);
+            if (header && header.getAttribute('aria-expanded') !== 'true') {
+                setCardExpandida(nombre, true);
+            }
+        }
+        function initCardsPlegables() {
+            Object.keys(CARDS_PLEGABLES).forEach(nombre => {
+                const cfg = CARDS_PLEGABLES[nombre];
+                const header = document.getElementById(cfg.header);
+                if (!header) return;
+                header.addEventListener('click', () => toggleCard(nombre));
+                header.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggleCard(nombre);
+                    }
+                });
+                // Estado inicial: cerradas en móvil, abiertas en escritorio.
+                setCardExpandida(nombre, !esMovil());
+            });
+        }
+
         function init() {
             cargarTema();
             themeToggleBtn.addEventListener('click', alternarTema);
+            initCardsPlegables();
 
             poblarSelectDia();
             poblarSelectMes();
@@ -2646,6 +2953,7 @@
             });
 
             btnRegistrarFisico.addEventListener('click', registrarFisico);
+            btnCambiarProducto.addEventListener('click', volverABuscar);
 
             exportPedidoBtn.addEventListener('click', exportarPedido);
             guardarPedidoDriveBtn.addEventListener('click', guardarPedidoEnDrive);
