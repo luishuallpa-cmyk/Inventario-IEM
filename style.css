@@ -1,0 +1,1363 @@
+/* ============================================================
+           RESET Y VARIABLES
+           ============================================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+            /* Le dice al navegador que estamos en tema oscuro para que los
+               controles nativos (el desplegable de Día/Mes al abrirlo,
+               scrollbars, etc.) se pinten oscuros también. Sin esto, en
+               escritorio el <select> se ve con el fondo del tema pero, al
+               desplegarlo, la lista de opciones la dibuja el sistema
+               operativo siempre en blanco, sin importar el tema de la app. */
+            color-scheme: dark;
+
+            /* Colores base (tema oscuro, un poco menos saturado que el morado
+               intenso original, para que canse menos la vista en sesiones
+               largas de conteo, sin perder la identidad azul/morado) */
+            --bg-gradient: linear-gradient(160deg, #1a233e 0%, #2a2653 45%, #372656 100%);
+            --card-bg: rgba(255, 255, 255, 0.07);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            --text-primary: #eef1fb;
+            --text-secondary: #aab4e8;
+            --text-muted: #7d87c2;
+            --heading-color: #c9d6ff;
+            --accent: #6c5ce7;
+            --accent-2: #00c2ff;
+            --accent-light: #8f7bff;
+            --accent-gradient: linear-gradient(135deg, #00c2ff 0%, #6c5ce7 55%, #d152e0 100%);
+            --success: #22c98a;
+            --warning: #ffab2e;
+            --danger: #ff5470;
+            --input-bg: rgba(255, 255, 255, 0.08);
+            --input-border: rgba(255, 255, 255, 0.14);
+            --input-focus: #6c5ce7;
+            --table-header-bg: rgba(108, 92, 231, 0.18);
+            --table-row-alt: rgba(255, 255, 255, 0.03);
+            --badge-bg: rgba(108, 92, 231, 0.22);
+            --badge-text: #b9c1ff;
+            --divider: rgba(255, 255, 255, 0.08);
+            --shadow-color: rgba(0, 0, 0, 0.3);
+        }
+
+        /* Tema claro */
+        body.light-theme {
+            color-scheme: light;
+            --bg-gradient: linear-gradient(160deg, #eef2ff 0%, #e6ecff 40%, #f3e8ff 100%);
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --card-border: rgba(108, 92, 231, 0.12);
+            --card-shadow: 0 8px 32px rgba(84, 60, 180, 0.1);
+            --text-primary: #201b45;
+            --text-secondary: #4a437e;
+            --text-muted: #6b6499;
+            --heading-color: #4b2ea3;
+            --accent: #6c48d6;
+            --accent-2: #0090d9;
+            --accent-light: #8a63e8;
+            --accent-gradient: linear-gradient(135deg, #0090d9 0%, #6c48d6 55%, #c23ed0 100%);
+            --success: #17a878;
+            --warning: #e08a1a;
+            --danger: #e0405f;
+            --input-bg: rgba(255, 255, 255, 0.7);
+            --input-border: rgba(108, 92, 231, 0.18);
+            --table-header-bg: rgba(108, 92, 231, 0.08);
+            --table-row-alt: rgba(108, 92, 231, 0.03);
+            --badge-bg: rgba(108, 92, 231, 0.12);
+            --badge-text: #5a3ec2;
+            --divider: rgba(108, 92, 231, 0.1);
+            --shadow-color: rgba(84, 60, 180, 0.1);
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            padding: 0.7rem;
+            color: var(--text-primary);
+            transition: background 0.4s, color 0.3s;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* ============================================================
+           TARJETAS Y ELEMENTOS COMUNES
+           ============================================================ */
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 0.9rem 1rem;
+            margin-bottom: 0.8rem;
+            box-shadow: var(--card-shadow);
+            transition: background 0.3s, border 0.3s, box-shadow 0.3s;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem 1rem;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.4rem;
+            border-bottom: 1px solid var(--divider);
+        }
+
+        .card-header h2 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--heading-color);
+            letter-spacing: -0.3px;
+        }
+
+        .badge {
+            background: var(--badge-bg);
+            color: var(--badge-text);
+            padding: 0.15rem 0.7rem;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        /* Indicador de usuario conectado: se ve como una lucecita verde de
+           "activo" (punto que late) junto al nombre, en vez del ícono. */
+        .badge-usuario {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(34, 201, 138, 0.14);
+            color: var(--success);
+            border: 1px solid rgba(34, 201, 138, 0.35);
+        }
+        .badge-usuario .dot-activo {
+            width: 8px;
+            height: 8px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 6px var(--success);
+            animation: pulso-activo 1.8s ease-in-out infinite;
+        }
+        @keyframes pulso-activo {
+            0%, 100% { opacity: 1; box-shadow: 0 0 4px var(--success); }
+            50% { opacity: 0.5; box-shadow: 0 0 11px var(--success); }
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            padding: 0.45rem 1rem;
+            border: none;
+            border-radius: 60px;
+            font-family: var(--font);
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            touch-action: manipulation;
+            min-height: 38px;
+            white-space: nowrap;
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-secondary);
+            border: 1px solid transparent;
+        }
+        .btn:active { transform: scale(0.94); }
+        .btn-primary {
+            background: var(--accent-gradient);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(108, 92, 231, 0.4);
+        }
+        .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+        .btn-success {
+            background: linear-gradient(135deg, #22c98a 0%, #17a878 100%);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(34, 201, 138, 0.35);
+        }
+        .btn-success:hover { filter: brightness(1.08); transform: translateY(-1px); }
+        .btn-warning {
+            background: linear-gradient(135deg, #ffab2e 0%, #ff7a3c 100%);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(255, 138, 46, 0.35);
+        }
+        .btn-warning:hover { filter: brightness(1.08); transform: translateY(-1px); }
+        .btn-danger {
+            background: linear-gradient(135deg, #ff5470 0%, #e0405f 100%);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(255, 84, 112, 0.35);
+        }
+        .btn-danger:hover { filter: brightness(1.08); transform: translateY(-1px); }
+        .btn-outline {
+            background: transparent;
+            border: 1.5px solid var(--text-muted);
+            color: var(--text-secondary);
+        }
+        .btn-outline:hover { background: rgba(108, 92, 231, 0.08); }
+        /* El botón de Actualizar usa el color de acento en vez del gris
+           neutro de btn-outline, para que se note que es un botón activo
+           y no un botón secundario apagado. */
+        #refreshDriveBtn {
+            border-color: var(--accent-light);
+            color: var(--accent-light);
+            background: rgba(108, 92, 231, 0.1);
+        }
+        #refreshDriveBtn:hover { background: rgba(108, 92, 231, 0.18); }
+        .btn-sm {
+            padding: 0.2rem 0.7rem;
+            min-height: 28px;
+            font-size: 0.7rem;
+        }
+        .btn-drive {
+            background: linear-gradient(135deg, #00c2ff 0%, #2a6ee0 100%);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(0, 194, 255, 0.35);
+        }
+        .btn-drive:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+        /* ============================================================
+           HEADER
+           ============================================================ */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.4rem 1rem;
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 60px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 0.8rem;
+            flex-wrap: wrap;
+        }
+        .header .logo {
+            display: flex;
+            align-items: center;
+            background: #ffffff;
+            padding: 0.3rem 0.6rem;
+            border-radius: 14px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        .header .logo img {
+            height: 42px;
+            width: auto;
+            display: block;
+        }
+        .header .version {
+            font-size: 0.6rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            background: var(--badge-bg);
+            padding: 0.1rem 0.6rem;
+            border-radius: 30px;
+        }
+        .header .theme-toggle {
+            margin-left: auto;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--badge-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+            flex-shrink: 0;
+        }
+        .header .theme-toggle:hover { background: rgba(108, 92, 231, 0.25); transform: rotate(10deg); }
+        .header #logoutBtn:hover { background: rgba(255, 84, 112, 0.2); color: var(--danger); transform: none; }
+        .header #logoutBtn { margin-left: 0; }
+
+        /* ============================================================
+           BUSCADOR
+           ============================================================ */
+        .search-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .search-row input {
+            flex: 1;
+            min-width: 150px;
+            padding: 0.6rem 1rem;
+            border: 1px solid var(--input-border);
+            border-radius: 60px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-family: var(--font);
+            outline: none;
+            transition: 0.2s;
+            backdrop-filter: blur(4px);
+        }
+        .search-row input::placeholder { color: var(--text-muted); }
+        .search-row input:focus {
+            border-color: var(--input-focus);
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.18);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .search-row .btn { flex-shrink: 0; }
+
+        #fileStatus {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-align: right;
+            margin-top: 0.3rem;
+        }
+
+        /* ============================================================
+           RESULTADOS DE BÚSQUEDA
+           ============================================================ */
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.2rem 0.8rem;
+            margin-bottom: 0.6rem;
+        }
+        .results-header .count {
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+        .results-header .count span {
+            background: var(--badge-bg);
+            color: var(--badge-text);
+            padding: 0.05rem 0.6rem;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.3rem;
+        }
+        .results-header .stats {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            display: flex;
+            gap: 0.8rem;
+        }
+        .results-header .stats .label { color: var(--text-muted); }
+
+        .result-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            max-height: 420px;
+            overflow-y: auto;
+            padding-right: 0.2rem;
+        }
+        .result-list::-webkit-scrollbar { width: 4px; }
+        .result-list::-webkit-scrollbar-track { background: transparent; }
+        .result-list::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
+
+        .result-item {
+            display: grid;
+            grid-template-columns: 70px 90px 1fr 70px 60px 60px;
+            align-items: center;
+            gap: 0.3rem 0.6rem;
+            padding: 0.5rem 0.8rem;
+            background: var(--input-bg);
+            border-radius: 14px;
+            border: 1px solid var(--card-border);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            backdrop-filter: blur(4px);
+        }
+        .result-item:hover { background: rgba(255,255,255,0.08); border-color: var(--accent); }
+        .result-item.selected {
+            border-color: var(--accent);
+            background: rgba(108, 92, 231, 0.15);
+            box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.25);
+        }
+        .result-item .codigo { font-weight: 700; color: var(--heading-color); font-family: monospace; }
+        .result-item .fabrica { color: var(--text-muted); font-family: monospace; font-size: 0.65rem; }
+        .result-item .descripcion {
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .result-item .unidad {
+            background: var(--badge-bg);
+            color: var(--badge-text);
+            padding: 0.05rem 0.4rem;
+            border-radius: 20px;
+            font-size: 0.6rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        .result-item .stock-cajas, .result-item .stock-unidades {
+            font-weight: 600;
+            color: var(--heading-color);
+            font-family: monospace;
+            text-align: right;
+            font-size: 0.8rem;
+        }
+        .result-item .stock-unidades { color: var(--text-secondary); }
+
+        /* Ocultar filas móviles en escritorio */
+        .result-item .row1, .result-item .row2 { display: none; }
+
+        /* ============================================================
+           CANTIDADES (cajas / unidades)
+           ============================================================ */
+        .cantidad-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.4rem 1rem;
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--divider);
+        }
+        .cantidad-row .group {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .cantidad-row .group label {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+        .cantidad-row .group input {
+            width: 60px;
+            padding: 0.3rem 0.4rem;
+            border: 1px solid var(--input-border);
+            border-radius: 12px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            font-size: 16px;
+            text-align: center;
+            font-family: var(--font);
+            transition: 0.2s;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .cantidad-row .group input:focus {
+            border-color: var(--input-focus);
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.18);
+            outline: none;
+        }
+        .cantidad-row .group input:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .info-text {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            background: var(--badge-bg);
+            padding: 0.1rem 0.6rem;
+            border-radius: 30px;
+        }
+        .cantidad-row .acciones {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            margin-left: auto;
+        }
+        .cantidad-row .acciones .btn { min-height: 34px; font-size: 0.75rem; }
+
+        .cajas-group.hidden { display: none !important; }
+
+        /* Aviso de conversión automática unidades → cajas + unidades */
+        .conversion-hint {
+            display: none;
+            align-items: center;
+            gap: 0.4rem;
+            margin-top: 0.6rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 12px;
+            background: rgba(0, 194, 255, 0.12);
+            border: 1px solid rgba(0, 194, 255, 0.3);
+            color: var(--accent-2);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .conversion-hint.visible { display: flex; }
+
+        /* ============================================================
+           VENCIMIENTO (control de fechas)
+           ============================================================ */
+        .venc-block {
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--divider);
+        }
+        .venc-block.hidden { display: none !important; }
+        .venc-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 0.6rem;
+        }
+        .venc-history {
+            border: 1px solid var(--input-border);
+            border-radius: 16px;
+            padding: 0.5rem 0.6rem;
+            margin-bottom: 0.5rem;
+            background: var(--input-bg);
+            /* Si se acumulan muchas fechas registradas, que hagan scroll
+               interno en vez de seguir empujando el resto de la tarjeta
+               hacia abajo. */
+            max-height: 6.5rem;
+            overflow-y: auto;
+        }
+        .venc-history-title {
+            font-size: 0.7rem;
+            color: var(--accent-light);
+            font-weight: 700;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .venc-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+        }
+        .venc-chip {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--card-border);
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.35rem 0.5rem 0.35rem 0.8rem;
+            border-radius: 30px;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .venc-chip-del {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.7rem;
+            line-height: 1;
+            padding: 0.2rem;
+            border-radius: 50%;
+            transition: 0.15s;
+        }
+        .venc-chip-del:hover { color: var(--danger); background: rgba(212, 90, 90, 0.15); }
+        .venc-chip-empty {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        .venc-selects {
+            display: flex;
+            gap: 0.6rem;
+            margin-bottom: 0.5rem;
+        }
+        .venc-select-group { flex: 1; min-width: 0; }
+        .venc-select-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: var(--accent-light);
+            margin-bottom: 0.3rem;
+            letter-spacing: 0.5px;
+        }
+        .venc-select {
+            width: 100%;
+            padding: 0.55rem 0.8rem;
+            border-radius: 14px;
+            border: 1.5px solid var(--input-focus);
+            background: var(--input-bg);
+            color: var(--heading-color);
+            font-family: var(--font);
+            font-weight: 700;
+            font-size: 0.9rem;
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+        .year-tabs {
+            display: flex;
+            gap: 0.4rem;
+            overflow-x: auto;
+            padding-bottom: 0.3rem;
+            margin-bottom: 0.6rem;
+        }
+        .year-tabs::-webkit-scrollbar { height: 3px; }
+        .year-tabs::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
+        .year-tab {
+            flex-shrink: 0;
+            padding: 0.5rem 0.9rem;
+            border-radius: 14px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text-muted);
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.15s;
+            font-family: var(--font);
+        }
+        .year-tab:hover { border-color: var(--accent); }
+        .year-tab.active {
+            background: var(--accent-gradient);
+            border-color: transparent;
+            color: #fff;
+        }
+        .btn-guardar-grande {
+            width: 100%;
+            padding: 0.65rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            min-height: 44px;
+        }
+
+        /* ============================================================
+           PANTALLA DE INICIO DE SESIÓN
+           ============================================================ */
+        .login-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 1rem;
+        }
+        .login-overlay.hidden { display: none; }
+        .login-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 2rem 1.5rem;
+            width: 100%;
+            max-width: 360px;
+            box-shadow: var(--card-shadow);
+            text-align: center;
+        }
+        .login-logo {
+            margin-bottom: 1.2rem;
+            display: flex;
+            justify-content: center;
+        }
+        .login-logo img {
+            height: 64px;
+            width: auto;
+            display: block;
+            background: #ffffff;
+            padding: 0.4rem 0.8rem;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        .login-card h2 {
+            color: var(--heading-color);
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-bottom: 1.3rem;
+        }
+        .login-field { text-align: left; margin-bottom: 0.9rem; }
+        .login-field label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.35rem;
+        }
+        .login-field input {
+            width: 100%;
+            padding: 0.6rem 0.9rem;
+            border-radius: 14px;
+            border: 1px solid var(--input-border);
+            background: var(--input-bg);
+            color: var(--text-primary);
+            font-family: var(--font);
+            font-size: 16px;
+            outline: none;
+            transition: 0.2s;
+        }
+        .login-field input:focus {
+            border-color: var(--input-focus);
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.18);
+        }
+        .login-error {
+            color: var(--danger);
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 0.8rem;
+        }
+        .login-error.hidden { display: none; }
+        .login-btn { width: 100%; min-height: 46px; margin-top: 0.3rem; }
+
+        #appContainer.oculto { display: none; }
+
+        /* ============================================================
+           TARJETA DE PRODUCTO SELECCIONADO (solo se activa en móvil,
+           ver media query más abajo). En escritorio permanece oculta y
+           la lista de resultados sigue visible como siempre.
+           ============================================================ */
+        .producto-activo-card { display: none; }
+        .pa-total-box { display: none; }
+
+        @media (max-width: 640px) {
+            .venc-selects { gap: 0.5rem; }
+            .venc-select { font-size: 0.8rem; padding: 0.5rem 0.6rem; }
+            .year-tab { padding: 0.4rem 0.7rem; font-size: 0.7rem; }
+        }
+
+        /* ============================================================
+           TABLAS (Pedido e Inventario)
+           ============================================================ */
+        .table-wrap {
+            overflow-x: auto;
+            /* Antes esta tabla crecía sin límite hacia abajo con cada
+               registro nuevo, obligando a bajar cada vez más en la página.
+               Con una altura máxima, la tabla misma hace scroll interno y
+               el resto de la app (buscador, cantidades, vencimiento) se
+               mantiene siempre visible sin moverse. */
+            max-height: 46vh;
+            overflow-y: auto;
+            margin-top: 0.4rem;
+            border-radius: 16px;
+            border: 1px solid var(--card-border);
+        }
+        .diff-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            min-width: 500px;
+        }
+        .diff-table th {
+            background: var(--table-header-bg);
+            color: var(--heading-color);
+            font-weight: 600;
+            padding: 0.4rem 0.5rem;
+            text-align: left;
+            border-bottom: 2px solid var(--divider);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            /* Con el scroll interno del .table-wrap, el encabezado se queda
+               fijo arriba para seguir viendo qué es cada columna. */
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        .diff-table td {
+            padding: 0.35rem 0.5rem;
+            border-bottom: 1px solid var(--divider);
+            vertical-align: middle;
+        }
+        .diff-table tbody tr:nth-child(even) { background: var(--table-row-alt); }
+        .diff-table .diff-positivo { color: var(--success); font-weight: 600; }
+        .diff-table .diff-negativo { color: var(--danger); font-weight: 600; }
+        .diff-table .codigo-cell { font-family: monospace; font-weight: 600; color: var(--heading-color); }
+        .diff-table .cantidad-cell { text-align: center; font-weight: 600; color: var(--heading-color); }
+        .diff-table .acciones-cell { text-align: center; }
+        .diff-table .acciones-cell button {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0.1rem 0.3rem;
+            transition: 0.2s;
+            border-radius: 8px;
+        }
+        .diff-table .acciones-cell button:hover { color: var(--danger); background: rgba(212, 90, 90, 0.1); }
+        .diff-table tfoot tr {
+            background: var(--table-header-bg);
+            font-weight: 600;
+            border-top: 2px solid var(--divider);
+        }
+        .diff-table tfoot td { color: var(--heading-color); padding: 0.4rem 0.5rem; }
+        .empty-message {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 1.5rem;
+            font-size: 0.85rem;
+        }
+
+        .diff-totales {
+            display: flex;
+            gap: 0.8rem 1.5rem;
+            flex-wrap: wrap;
+            margin-top: 0.6rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            padding: 0.4rem 0.6rem;
+            background: var(--table-header-bg);
+            border-radius: 16px;
+        }
+        .diff-totales strong { color: var(--heading-color); }
+
+        /* ============================================================
+           NOTIFICACIONES (reemplazo de alert)
+           ============================================================ */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            padding: 0.8rem 1.5rem;
+            border-radius: 60px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            z-index: 999;
+            animation: slideUp 0.3s ease;
+            max-width: 90%;
+            text-align: center;
+            transition: opacity 0.3s;
+        }
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--danger); }
+        .toast.info { border-left: 4px solid var(--accent); }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        /* ============================================================
+           RESPONSIVE MÓVIL (con descripción visible y código)
+           ============================================================ */
+        @media (max-width: 640px) {
+            body { padding: 0.5rem; }
+            .header {
+                padding: 0.4rem 0.8rem;
+                border-radius: 40px;
+                gap: 0.4rem;
+            }
+            .header .logo img { height: 30px; }
+            .header .version { font-size: 0.5rem; padding: 0.05rem 0.4rem; }
+            .header .theme-toggle { width: 32px; height: 32px; font-size: 0.9rem; }
+            .header .badge-usuario {
+                font-size: 0.62rem;
+                padding: 0.15rem 0.55rem;
+                max-width: 34vw;
+            }
+            .header .badge-usuario #usuarioBadgeTexto {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                max-width: 26vw;
+                display: inline-block;
+                vertical-align: middle;
+            }
+
+            .card { padding: 0.8rem; border-radius: 18px; margin-bottom: 0.8rem; }
+            .card-header h2 { font-size: 1rem; }
+            .btn { font-size: 0.7rem; padding: 0.35rem 0.8rem; min-height: 32px; }
+            .btn-sm { font-size: 0.6rem; padding: 0.15rem 0.5rem; min-height: 26px; }
+
+            /* Buscador en móvil: input, "Buscar" y el ícono de
+               "Actualizar" comparten la misma fila, con buen tamaño de
+               toque. Actualizar queda como botón cuadrado solo con
+               ícono para no ocupar tanto espacio con la palabra. */
+            .search-row input {
+                flex: 1 1 auto;
+                width: auto;
+                min-width: 0;
+                font-size: 16px;
+                padding: 0.65rem 1rem;
+            }
+            .search-row #searchButton {
+                flex: 0 0 auto;
+                width: auto;
+                justify-content: center;
+                padding: 0.65rem 0.9rem;
+                white-space: nowrap;
+                min-height: 44px;
+            }
+            .search-row #refreshDriveBtn {
+                flex: 0 0 auto;
+                width: 44px;
+                min-height: 44px;
+                padding: 0;
+                justify-content: center;
+            }
+            .search-row #refreshDriveBtn .btn-label { display: none; }
+            .search-row #refreshDriveBtn .btn-icon { font-size: 1.05rem; }
+
+            .results-header { flex-direction: column; align-items: stretch; gap: 0.2rem; }
+            .results-header .stats { font-size: 0.7rem; gap: 0.5rem; }
+
+            .result-list { max-height: 55vh; min-height: 150px; }
+
+            /* --- Vista móvil: tarjetas con 3 filas --- */
+            .result-item {
+                display: flex;
+                flex-direction: column;
+                padding: 0.5rem 0.6rem;
+                border-radius: 12px;
+                gap: 0.15rem;
+                background: var(--input-bg);
+                border: 1px solid var(--card-border);
+                margin-bottom: 0.2rem;
+            }
+
+            /* Ocultar SOLO los hijos directos de .result-item (los de escritorio) */
+            .result-item > .codigo,
+            .result-item > .fabrica,
+            .result-item > .unidad,
+            .result-item > .stock-cajas,
+            .result-item > .stock-unidades,
+            .result-item > .descripcion {
+                display: none !important;
+            }
+
+            /* Fila 1: código, fábrica, unidad */
+            .result-item .row1 {
+                display: flex !important;
+                align-items: center;
+                gap: 0.4rem;
+                width: 100%;
+                flex-wrap: nowrap;
+            }
+            .result-item .row1 .codigo {
+                display: inline !important;  /* Aseguramos visibilidad */
+                font-size: 0.85rem;
+                font-weight: 700;
+                color: var(--heading-color);
+                flex-shrink: 0;
+            }
+            .result-item .row1 .fabrica {
+                display: inline !important;
+                font-size: 0.65rem;
+                color: var(--text-muted);
+                flex-shrink: 0;
+            }
+            .result-item .row1 .unidad {
+                display: inline !important;
+                font-size: 0.55rem;
+                padding: 0.02rem 0.5rem;
+                background: var(--badge-bg);
+                border-radius: 20px;
+                color: var(--badge-text);
+                margin-left: auto;
+                flex-shrink: 0;
+            }
+
+            /* Fila 2: descripción (visible, con wrap y hasta 2 líneas) */
+            .result-item .row2 {
+                display: flex !important;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.15rem;
+                width: 100%;
+            }
+            .result-item .row2 .descripcion {
+                display: -webkit-box !important;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+                word-break: break-word;
+                white-space: normal;
+                flex: 1 1 auto;
+                min-width: 0;
+                font-size: 0.75rem;
+                line-height: 1.3;
+                color: var(--text-secondary);
+            }
+
+            /* Fila 3: stock (badge) */
+            .result-item .row2 .stock {
+                display: flex !important;
+                gap: 0.5rem;
+                font-size: 0.7rem;
+                font-weight: 600;
+                background: var(--badge-bg);
+                padding: 0.1rem 0.7rem;
+                border-radius: 30px;
+                flex-shrink: 0;
+                color: var(--heading-color);
+                align-self: flex-start;
+                margin-top: 0.1rem;
+            }
+            .result-item .row2 .stock .cajas { color: var(--heading-color); }
+            .result-item .row2 .stock .unidades { color: var(--text-secondary); }
+
+            /* Cantidades en móvil */
+            .cantidad-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.4rem;
+                padding-top: 0.6rem;
+                margin-top: 0.6rem;
+            }
+            .cantidad-row .group { justify-content: space-between; }
+            .cantidad-row .group input { width: 55px; }
+            .cantidad-row .acciones {
+                margin-left: 0;
+                justify-content: center;
+            }
+            .cantidad-row .acciones .btn { flex: 1; min-width: 0; padding: 0.3rem 0.5rem; font-size: 0.65rem; }
+
+            .diff-table { font-size: 0.65rem; min-width: 400px; }
+            .diff-table th, .diff-table td { padding: 0.2rem 0.3rem; font-size: 0.6rem; }
+            .diff-totales { font-size: 0.7rem; gap: 0.3rem 0.8rem; padding: 0.3rem 0.5rem; }
+
+            /* En Inventario Físico y Sugerencia de Pedido: tabla oculta,
+               tarjetas por producto visibles. */
+            #diffCardBody .table-wrap,
+            #pedidoCardBody .table-wrap { display: none; }
+            #diffMobileList,
+            #pedidoMobileList {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .toast { font-size: 0.8rem; padding: 0.5rem 1rem; bottom: 10px; }
+
+            /* ========================================================
+               MODO SELECCIÓN (móvil): al elegir un producto se oculta
+               el buscador y la lista, y aparece una tarjeta grande con
+               los datos del producto, cantidades e info de vencimiento
+               fáciles de tocar con el dedo.
+               ======================================================== */
+            /* Al tener un producto seleccionado en móvil, se oculta también
+               el buscador completo (input + botones + estado del archivo):
+               ya no hace falta, y la tarjeta del producto aprovecha toda
+               la pantalla, igual que en la referencia. */
+            body.modo-seleccion #searchSection { display: none; }
+            body.modo-seleccion #resultsSection .results-header { display: none; }
+            body.modo-seleccion #resultList { display: none; }
+
+            body.modo-seleccion .producto-activo-card {
+                display: block;
+                background: linear-gradient(135deg, #00c2ff 0%, #6c5ce7 55%, #b23ede 100%);
+                border-radius: 20px;
+                padding: 1rem 1.1rem;
+                margin-bottom: 0.9rem;
+                color: #fff;
+                box-shadow: 0 8px 24px rgba(108, 92, 231, 0.4);
+            }
+            body.modo-seleccion .pa-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 0.6rem;
+                margin-bottom: 0.7rem;
+            }
+            body.modo-seleccion .pa-descripcion {
+                font-size: 1.05rem;
+                font-weight: 700;
+                line-height: 1.3;
+            }
+            body.modo-seleccion .pa-codigo {
+                font-size: 0.75rem;
+                color: rgba(255,255,255,0.7);
+                margin-top: 0.2rem;
+                font-family: monospace;
+            }
+            body.modo-seleccion .pa-cambiar-btn {
+                background: rgba(255,255,255,0.15);
+                border: 1px solid rgba(255,255,255,0.28);
+                color: #fff;
+                font-size: 0.68rem;
+                font-weight: 600;
+                padding: 0.4rem 0.8rem;
+                border-radius: 30px;
+                cursor: pointer;
+                white-space: nowrap;
+                flex-shrink: 0;
+                font-family: var(--font);
+                transition: 0.15s;
+            }
+            body.modo-seleccion .pa-cambiar-btn:hover { background: rgba(255,255,255,0.25); }
+            body.modo-seleccion .pa-cambiar-btn:active { transform: scale(0.94); }
+            body.modo-seleccion .pa-meta {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.3rem 1.2rem;
+                font-size: 0.7rem;
+                color: rgba(255,255,255,0.85);
+                border-top: 1px solid rgba(255,255,255,0.18);
+                padding-top: 0.6rem;
+            }
+            body.modo-seleccion .pa-meta strong {
+                color: #fff;
+                font-size: 0.85rem;
+                margin-left: 0.2rem;
+            }
+
+            /* Cajas / Unidades como cajas grandes tipo calculadora */
+            body.modo-seleccion .cantidad-row {
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 0.6rem;
+                align-items: stretch;
+            }
+            body.modo-seleccion .cantidad-row .group {
+                flex: 1 1 0;
+                flex-direction: column;
+                align-items: stretch;
+                justify-content: flex-start;
+                background: var(--input-bg);
+                border: 1px solid var(--input-border);
+                border-radius: 16px;
+                padding: 0.6rem 0.4rem;
+                gap: 0.35rem;
+            }
+            body.modo-seleccion .cantidad-row .group label {
+                font-size: 0.62rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.4px;
+                color: var(--text-muted);
+                text-align: center;
+            }
+            body.modo-seleccion .cantidad-row .group input {
+                width: 100%;
+                font-size: 1.7rem;
+                font-weight: 700;
+                padding: 0.5rem 0.2rem;
+                border-radius: 12px;
+                text-align: center;
+            }
+            body.modo-seleccion .cantidad-row .info-text { display: none; }
+            body.modo-seleccion .conversion-hint {
+                font-size: 0.85rem;
+                padding: 0.5rem 0.9rem;
+                justify-content: center;
+                text-align: center;
+            }
+            /* El botón de "Pedido" es para otra función (sugerencia de pedido
+               al proveedor); en la toma de inventario física solo se usa el
+               botón GUARDAR de más abajo, así que aquí se oculta. */
+            body.modo-seleccion .cantidad-row .acciones { display: none; }
+
+            body.modo-seleccion .pa-total-box {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                background: rgba(108, 92, 231, 0.15);
+                border: 1px solid var(--accent);
+                border-radius: 16px;
+                padding: 0.7rem 1rem;
+                margin: 0.7rem 0;
+            }
+            body.modo-seleccion .pa-total-label {
+                font-size: 0.75rem;
+                color: var(--text-secondary);
+                font-weight: 600;
+            }
+            body.modo-seleccion .pa-total-value {
+                font-size: 1.3rem;
+                font-weight: 800;
+                color: var(--heading-color);
+            }
+        }
+
+        /* ============================================================
+           TARJETAS PLEGABLES (Inventario Físico / Sugerencia de Pedido)
+           En escritorio se comportan como tarjetas normales, siempre
+           abiertas. En móvil arrancan cerradas (solo título + contador)
+           para no ocupar tanto espacio, y se abren al tocarlas o solas
+           cuando hay algo nuevo que mostrar.
+           ============================================================ */
+        .card-header.collapsible {
+            cursor: pointer;
+            user-select: none;
+        }
+        .card-toggle {
+            margin-left: auto;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            flex-shrink: 0;
+            transition: transform 0.25s ease, background 0.2s;
+        }
+        .card-header.collapsible:hover .card-toggle { background: var(--badge-bg); }
+        .card-header.collapsible[aria-expanded="true"] .card-toggle { transform: rotate(180deg); }
+        .card-body-collapsible {
+            display: grid;
+            grid-template-rows: 1fr;
+            transition: grid-template-rows 0.28s ease;
+        }
+        .card-body-collapsible > .card-body-inner { overflow: hidden; }
+        .card-body-collapsible.is-collapsed {
+            grid-template-rows: 0fr;
+        }
+        .card-body-collapsible.is-collapsed > .card-body-inner {
+            padding-top: 0 !important;
+        }
+        .card-actions-row {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.3rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.6rem;
+        }
+        .card-actions-row .totales-mini {
+            margin-right: auto;
+            display: flex;
+            gap: 0.6rem;
+        }
+
+        /* ============================================================
+           TARJETAS POR PRODUCTO EN MÓVIL
+           En pantallas angostas, las tablas de Inventario Físico y
+           Sugerencia de Pedido se reemplazan por una lista de tarjetas
+           (una por producto), mucho más fácil de leer con el dedo que
+           una tabla con scroll horizontal. En escritorio se sigue
+           usando la tabla de siempre.
+           ============================================================ */
+        .mobile-item-list { display: none; }
+        .mi-card {
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 14px;
+            padding: 0.65rem 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .mi-card-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--divider);
+            padding-bottom: 0.45rem;
+        }
+        .mi-card-idcol { overflow: hidden; min-width: 0; }
+        .mi-card-idrow {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+        .mi-card-num { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); }
+        .mi-card-codigo { font-family: monospace; font-weight: 700; color: var(--heading-color); font-size: 0.85rem; }
+        .mi-card-fabrica { font-family: monospace; font-size: 0.6rem; color: var(--text-muted); }
+        .mi-card-desc {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-top: 0.2rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .mi-card-del {
+            background: rgba(212, 90, 90, 0.15);
+            color: var(--danger);
+            border: none;
+            border-radius: 10px;
+            width: 34px;
+            height: 34px;
+            flex-shrink: 0;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+        .mi-card-del:hover { background: rgba(212, 90, 90, 0.28); }
+        .mi-card-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+            gap: 0.4rem;
+            text-align: center;
+            padding: 0.4rem 0.2rem;
+            background: var(--badge-bg);
+            border-radius: 10px;
+        }
+        .mi-stat-label {
+            display: block;
+            font-size: 0.55rem;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        .mi-stat-value { font-weight: 700; color: var(--heading-color); font-size: 0.85rem; }
+        .mi-stat-value.diff-positivo { color: var(--success); }
+        .mi-stat-value.diff-negativo { color: var(--danger); }
+        .mi-card-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem 0.8rem;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+
+        /* ============================================================
+           MODAL DE CONFIRMACIÓN PROPIO
+           ============================================================ */
+        .confirm-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(2px);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .confirm-overlay.visible { display: flex; }
+        .confirm-box {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.2rem 1.3rem;
+            max-width: 340px;
+            width: 100%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+        }
+        .confirm-box p {
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            line-height: 1.4;
+            margin-bottom: 1rem;
+        }
+        .confirm-actions {
+            display: flex;
+            gap: 0.6rem;
+            justify-content: flex-end;
+        }
+        .confirm-actions .btn { min-height: 38px; }
+
+        @media (max-width: 400px) {
+            .header .logo img { height: 26px; }
+            .btn { font-size: 0.6rem; padding: 0.25rem 0.6rem; min-height: 28px; }
+            .search-row input { font-size: 16px; padding: 0.4rem 0.6rem; }
+            .result-item .row1 .codigo { font-size: 0.75rem; }
+            .result-item .row2 .descripcion { font-size: 0.7rem; }
+        }
