@@ -56,7 +56,7 @@
             --card-shadow: 0 8px 32px rgba(84, 60, 180, 0.1);
             --text-primary: #201b45;
             --text-secondary: #4a437e;
-            --text-muted: #7c76a8;
+            --text-muted: #6b6499;
             --heading-color: #4b2ea3;
             --accent: #6c48d6;
             --accent-2: #0090d9;
@@ -454,6 +454,22 @@
         .cantidad-row .acciones .btn { min-height: 34px; font-size: 0.75rem; }
 
         .cajas-group.hidden { display: none !important; }
+
+        /* Aviso de conversión automática unidades → cajas + unidades */
+        .conversion-hint {
+            display: none;
+            align-items: center;
+            gap: 0.4rem;
+            margin-top: 0.6rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 12px;
+            background: rgba(0, 194, 255, 0.12);
+            border: 1px solid rgba(0, 194, 255, 0.3);
+            color: var(--accent-2);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .conversion-hint.visible { display: flex; }
 
         /* ============================================================
            VENCIMIENTO (control de fechas)
@@ -1081,6 +1097,12 @@
                 text-align: center;
             }
             body.modo-seleccion .cantidad-row .info-text { display: none; }
+            body.modo-seleccion .conversion-hint {
+                font-size: 0.85rem;
+                padding: 0.5rem 0.9rem;
+                justify-content: center;
+                text-align: center;
+            }
             /* El botón de "Pedido" es para otra función (sugerencia de pedido
                al proveedor); en la toma de inventario física solo se usa el
                botón GUARDAR de más abajo, así que aquí se oculta. */
@@ -1386,6 +1408,11 @@
             </div>
         </div>
 
+        <!-- Aviso de conversión automática: aparece cuando se escriben más
+             unidades sueltas que el factor de empaque, indicando en qué se
+             va a convertir (cajas + unidades) al salir del campo. -->
+        <div class="conversion-hint" id="conversionHint"></div>
+
         <!-- Total calculado (visible solo en móvil, en modo selección) -->
         <div class="pa-total-box" id="paTotalBox">
             <span class="pa-total-label">TOTAL CALCULADO:</span>
@@ -1613,6 +1640,7 @@
         const paStock = document.getElementById('paStock');
         const paTotalValor = document.getElementById('paTotalValor');
         const paTotalUnidad = document.getElementById('paTotalUnidad');
+        const conversionHint = document.getElementById('conversionHint');
         const btnCambiarProducto = document.getElementById('btnCambiarProducto');
 
         const vencBlock = document.getElementById('vencBlock');
@@ -2209,6 +2237,44 @@
             const unidades = parseInt(txtUnidades.value) || 0;
             const total = (cajas * currentFactor) + unidades;
             paTotalValor.textContent = total;
+            actualizarAvisoConversion(cajas, unidades);
+        }
+
+        // Si el producto tiene factor de empaque (viene en cajas) y el
+        // usuario está escribiendo la cantidad como unidades sueltas (por
+        // ejemplo, contó 50 unidades sueltas de un producto que se
+        // empaca de a 12), se muestra un aviso en vivo de a cuántas cajas
+        // + unidades sueltas equivale, sin tocar todavía lo que el
+        // usuario está escribiendo (para no mover el cursor mientras
+        // tipea). La conversión real se aplica al salir del campo, con
+        // normalizarUnidadesACajas().
+        function actualizarAvisoConversion(cajas, unidades) {
+            if (currentFactor > 1 && unidades >= currentFactor) {
+                const cajasEquivalentes = cajas + Math.floor(unidades / currentFactor);
+                const unidadesRestantes = unidades % currentFactor;
+                conversionHint.textContent = `🔄 Equivale a ${cajasEquivalentes} caja${cajasEquivalentes === 1 ? '' : 's'} + ${unidadesRestantes} unidad${unidadesRestantes === 1 ? '' : 'es'} suelta${unidadesRestantes === 1 ? '' : 's'}`;
+                conversionHint.classList.add('visible');
+            } else {
+                conversionHint.classList.remove('visible');
+            }
+        }
+
+        // Aplica de verdad la conversión: mueve el sobrante de "Unidades"
+        // hacia "Cajas" según el factor de empaque del producto. Se llama
+        // al salir del campo de unidades y también justo antes de
+        // guardar/agregar, así el usuario puede escribir todo en
+        // unidades sueltas (como ya venía contando) y la app lo reparte
+        // sola en cajas + unidades cuando corresponde.
+        function normalizarUnidadesACajas() {
+            if (currentFactor <= 1) return;
+            const cajas = parseInt(txtCajas.value) || 0;
+            const unidades = parseInt(txtUnidades.value) || 0;
+            if (unidades >= currentFactor) {
+                txtCajas.value = cajas + Math.floor(unidades / currentFactor);
+                txtUnidades.value = unidades % currentFactor;
+            }
+            conversionHint.classList.remove('visible');
+            actualizarTotalCalculado();
         }
 
         // ============================================================
@@ -2219,6 +2285,7 @@
                 showToast('Seleccione un producto de la lista.', 'error');
                 return;
             }
+            normalizarUnidadesACajas();
             const item = filteredData[selectedIndex];
             const codigo = getCodigo(item);
             const codigoFabrica = getCodigoFabrica(item);
@@ -2591,6 +2658,7 @@
                 showToast('Seleccione un producto de la lista.', 'error');
                 return;
             }
+            normalizarUnidadesACajas();
             const item = filteredData[selectedIndex];
             const codigo = getCodigo(item);
             const descripcion = getDescripcion(item);
@@ -3044,6 +3112,9 @@
             txtUnidades.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); agregarProducto(); } });
             txtCajas.addEventListener('input', actualizarTotalCalculado);
             txtUnidades.addEventListener('input', actualizarTotalCalculado);
+            // Al salir del campo de unidades sueltas, si escribió más de lo
+            // que entra en una caja, se reparte solo en cajas + unidades.
+            txtUnidades.addEventListener('blur', normalizarUnidadesACajas);
 
             // Al tocar/enfocar la casilla de Cajas o Unidades, si tiene "0"
             // se borra por completo para que quede vacía y lista para
@@ -3088,7 +3159,7 @@
         // aquí los usuarios autorizados (usuario y clave, en minúsculas):
         const USUARIOS_VALIDOS = [
             { usuario: 'luis', clave: '123' },
-            { usuario: 'almacen1', clave: 'almacen1' }
+            { usuario: 'almacen1', clave: 'almacen1' },
             { usuario: 'almacen2', clave: 'almacen2' }
             // { usuario: 'nombre3', clave: 'clave3' },
         ];
