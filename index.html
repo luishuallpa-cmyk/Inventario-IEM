@@ -863,24 +863,38 @@
             .header .logo .laive { font-size: 0.65rem; padding: 0.05rem 0.5rem; }
             .header .version { font-size: 0.5rem; padding: 0.05rem 0.4rem; }
             .header .theme-toggle { width: 32px; height: 32px; font-size: 0.9rem; }
+            .header .badge-usuario {
+                font-size: 0.62rem;
+                padding: 0.15rem 0.55rem;
+                max-width: 34vw;
+            }
+            .header .badge-usuario #usuarioBadgeTexto {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                max-width: 26vw;
+                display: inline-block;
+                vertical-align: middle;
+            }
 
             .card { padding: 0.8rem; border-radius: 18px; margin-bottom: 0.8rem; }
             .card-header h2 { font-size: 1rem; }
             .btn { font-size: 0.7rem; padding: 0.35rem 0.8rem; min-height: 32px; }
             .btn-sm { font-size: 0.6rem; padding: 0.15rem 0.5rem; min-height: 26px; }
 
-            /* Buscador en móvil: el input y el botón "Buscar" comparten
-               la misma fila (como en la referencia), con buen tamaño de
-               toque. "Actualizar" queda en su propia fila, debajo. */
+            /* Buscador en móvil: input, "Buscar" y el ícono de
+               "Actualizar" comparten la misma fila, con buen tamaño de
+               toque. Actualizar queda como botón cuadrado solo con
+               ícono para no ocupar tanto espacio con la palabra. */
             .search-row input {
-                flex: 1 1 55%;
+                flex: 1 1 auto;
                 width: auto;
                 min-width: 0;
                 font-size: 16px;
                 padding: 0.65rem 1rem;
             }
             .search-row #searchButton {
-                flex: 1 1 35%;
+                flex: 0 0 auto;
                 width: auto;
                 justify-content: center;
                 padding: 0.65rem 0.9rem;
@@ -888,11 +902,14 @@
                 min-height: 44px;
             }
             .search-row #refreshDriveBtn {
-                flex: 1 1 100%;
-                width: 100%;
+                flex: 0 0 auto;
+                width: 44px;
+                min-height: 44px;
+                padding: 0;
                 justify-content: center;
-                min-height: 40px;
             }
+            .search-row #refreshDriveBtn .btn-label { display: none; }
+            .search-row #refreshDriveBtn .btn-icon { font-size: 1.05rem; }
 
             .results-header { flex-direction: column; align-items: stretch; gap: 0.2rem; }
             .results-header .stats { font-size: 0.7rem; gap: 0.5rem; }
@@ -1393,7 +1410,7 @@
         <div class="search-row">
             <input type="text" id="searchInput" placeholder="Buscar por código, descripción o marca..." autofocus>
             <button class="btn btn-primary" id="searchButton">🔍 Buscar</button>
-            <button class="btn btn-outline" id="refreshDriveBtn">🔄 Actualizar</button>
+            <button class="btn btn-outline" id="refreshDriveBtn" title="Actualizar" aria-label="Actualizar"><span class="btn-icon">🔄</span><span class="btn-label"> Actualizar</span></button>
         </div>
         <div id="fileStatus">(cargando desde Google Sheets...)</div>
     </section>
@@ -3183,9 +3200,10 @@
             syncTimer = setInterval(sincronizarDesdeServidor, 10000);
 
             refreshBtn.addEventListener('click', function() {
-                this.textContent = '⏳';
+                const icon = this.querySelector('.btn-icon');
+                if (icon) icon.textContent = '⏳';
                 loadFromGoogleSheets();
-                setTimeout(() => { this.textContent = '🔄 Actualizar'; }, 1500);
+                setTimeout(() => { if (icon) icon.textContent = '🔄'; }, 1500);
             });
 
             if (autoRefreshTimer) clearInterval(autoRefreshTimer);
