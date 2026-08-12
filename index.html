@@ -21,6 +21,14 @@
         :root {
             --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
+            /* Le dice al navegador que estamos en tema oscuro para que los
+               controles nativos (el desplegable de Día/Mes al abrirlo,
+               scrollbars, etc.) se pinten oscuros también. Sin esto, en
+               escritorio el <select> se ve con el fondo del tema pero, al
+               desplegarlo, la lista de opciones la dibuja el sistema
+               operativo siempre en blanco, sin importar el tema de la app. */
+            color-scheme: dark;
+
             /* Colores base (tema oscuro, versión más colorida) */
             --bg-gradient: linear-gradient(160deg, #0c1638 0%, #1a1450 45%, #2a1454 100%);
             --card-bg: rgba(255, 255, 255, 0.07);
@@ -50,6 +58,7 @@
 
         /* Tema claro */
         body.light-theme {
+            color-scheme: light;
             --bg-gradient: linear-gradient(160deg, #eef2ff 0%, #e6ecff 40%, #f3e8ff 100%);
             --card-bg: rgba(255, 255, 255, 0.8);
             --card-border: rgba(108, 92, 231, 0.12);
@@ -130,6 +139,30 @@
             font-size: 0.7rem;
             font-weight: 600;
             white-space: nowrap;
+        }
+
+        /* Indicador de usuario conectado: se ve como una lucecita verde de
+           "activo" (punto que late) junto al nombre, en vez del ícono. */
+        .badge-usuario {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(34, 201, 138, 0.14);
+            color: var(--success);
+            border: 1px solid rgba(34, 201, 138, 0.35);
+        }
+        .badge-usuario .dot-activo {
+            width: 8px;
+            height: 8px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 6px var(--success);
+            animation: pulso-activo 1.8s ease-in-out infinite;
+        }
+        @keyframes pulso-activo {
+            0%, 100% { opacity: 1; box-shadow: 0 0 4px var(--success); }
+            50% { opacity: 0.5; box-shadow: 0 0 11px var(--success); }
         }
 
         .btn {
@@ -1347,6 +1380,7 @@
             <span class="iem">IEM GROUP</span>
             <span class="laive">LAIVE</span>
         </div>
+        <span class="badge badge-usuario" id="usuarioBadge" title="Usuario con sesión activa en este dispositivo"><span class="dot-activo"></span><span id="usuarioBadgeTexto">-</span></span>
         <button class="theme-toggle" id="themeToggleBtn" type="button" title="Cambiar tema" aria-label="Cambiar tema día/noche">🌙</button>
         <button class="theme-toggle" id="logoutBtn" type="button" title="Cerrar sesión" aria-label="Cerrar sesión">🚪</button>
         <span class="version">v2.2</span>
@@ -1473,10 +1507,11 @@
                     <th>Diferencia</th>
                     <th>Vencimiento</th>
                     <th>Fecha/Hora</th>
+                    <th>Usuario</th>
                     <th>Acción</th>
                 </tr></thead>
                 <tbody id="diffBody">
-                    <tr><td colspan="9" class="empty-message">No hay productos contados aún.</td></tr>
+                    <tr><td colspan="10" class="empty-message">No hay productos contados aún.</td></tr>
                 </tbody>
                 <tfoot id="diffFoot" style="display:none;">
                     <tr>
@@ -1484,7 +1519,7 @@
                         <td id="diffTotalTeorico" style="color:var(--heading-color);">0</td>
                         <td id="diffTotalFisico" style="color:var(--heading-color);">0</td>
                         <td id="diffTotalDiferencia" style="color:var(--heading-color);">0</td>
-                        <td></td><td></td><td></td>
+                        <td></td><td></td><td></td><td></td>
                     </tr>
                 </tfoot>
             </table>
@@ -2596,7 +2631,8 @@
                     linea: record.linea,
                     cantidad: lote.cantidad,
                     vencimiento: lote.vencimiento,
-                    fecha: lote.fecha
+                    fecha: lote.fecha,
+                    usuario: lote.usuario || ''
                 })
             }).catch(() => { /* sin red: se reintentará en la próxima sincronización */ });
         }
@@ -2618,7 +2654,10 @@
                     fechaISO: new Date().toISOString()
                 };
                 const item = currentData.find(it => getCodigo(it) === r.codigo);
-                if (item) record.stockTeorico = getCantidad(item);
+                if (item) {
+                    record.stockTeorico = getCantidad(item);
+                    record.factor = getFactorFinal(item);
+                }
                 inventarioFisico.push(record);
             }
             const yaExiste = record.lotes.some(l => l.id === r.id);
@@ -2628,7 +2667,8 @@
                     vencimiento: r.vencimiento,
                     cantidad: Number(r.cantidad) || 0,
                     fecha: r.fecha,
-                    fechaISO: new Date().toISOString()
+                    fechaISO: new Date().toISOString(),
+                    usuario: r.usuario || ''
                 });
             }
             record.stockFisico = record.lotes.reduce((sum, l) => sum + l.cantidad, 0);
@@ -2656,6 +2696,41 @@
         // ============================================================
         // REGISTRAR INVENTARIO FÍSICO
         // ============================================================
+        // Muestra una cantidad total (siempre guardada en unidades sueltas,
+        // aunque el usuario haya escrito todo en el campo "Unidades") como
+        // "cajas + unidades sueltas", usando el factor de empaque del
+        // producto. Así, aunque se conteo todo suelto, la tabla de
+        // Inventario Físico lo agrupa igual que si se hubiera ingresado en
+        // cajas.
+        function formatCajasUnidades(cantidad, factor) {
+            const total = Number(cantidad) || 0;
+            if (!factor || factor <= 1) return `${total} und`;
+            const cajas = Math.floor(total / factor);
+            const unidades = total % factor;
+            if (cajas === 0) return `${unidades} und`;
+            if (unidades === 0) return `${cajas} cj`;
+            return `${cajas} cj + ${unidades} und`;
+        }
+
+        // Devuelve el factor de empaque a usar para un registro de
+        // inventario físico: el que se guardó al registrarlo, o si no
+        // existe (registros antiguos o sincronizados de otro celular),
+        // lo busca en los datos del producto.
+        function factorDeRegistro(d) {
+            if (typeof d.factor === 'number' && d.factor > 0) return d.factor;
+            const item = currentData.find(it => getCodigo(it) === d.codigo);
+            return item ? getFactorFinal(item) : 1;
+        }
+
+        // Lista de usuarios distintos que contaron este producto (puede
+        // venir de más de un celular). Sirve para detectar en la tabla si
+        // el mismo producto fue contado dos veces por error, desde
+        // dispositivos con usuarios distintos.
+        function usuariosDeRegistro(d) {
+            const lotes = d.lotes || [];
+            return [...new Set(lotes.map(l => l.usuario).filter(u => u))];
+        }
+
         function registrarFisico() {
             if (selectedIndex === -1 || selectedIndex >= filteredData.length) {
                 showToast('Seleccione un producto de la lista.', 'error');
@@ -2703,19 +2778,22 @@
                     stockTeorico: stockTeorico,
                     stockFisico: 0,
                     diferencia: 0,
+                    factor: factor,
                     lotes: [],
                     fecha: fechaStr,
                     fechaISO: ahora.toISOString()
                 };
                 inventarioFisico.push(record);
             }
+            record.factor = factor;
 
             const nuevoLote = {
                 id: deviceId + '_' + ahora.getTime(),
                 vencimiento: vencimiento,
                 cantidad: cantidadLote,
                 fecha: fechaStr,
-                fechaISO: ahora.toISOString()
+                fechaISO: ahora.toISOString(),
+                usuario: usuarioActual || ''
             };
             record.lotes.push(nuevoLote);
             record.stockTeorico = stockTeorico;
@@ -2779,7 +2857,7 @@
         // ============================================================
         function renderInventario() {
             if (inventarioFisico.length === 0) {
-                diffBody.innerHTML = `<tr><td colspan="9" class="empty-message">No hay productos contados aún.</td></tr>`;
+                diffBody.innerHTML = `<tr><td colspan="10" class="empty-message">No hay productos contados aún.</td></tr>`;
                 diffMobileList.innerHTML = `<div class="empty-message">No hay productos contados aún.</div>`;
                 diffFoot.style.display = 'none';
                 diffResumen.style.display = 'none';
@@ -2802,15 +2880,33 @@
                     ? `${lotes.length} lotes`
                     : (lotes[0] ? lotes[0].vencimiento : (d.vencimiento || '-'));
                 const vencTitulo = lotes.map(l => `${l.vencimiento || 'S/F'}: ${l.cantidad}`).join(' | ');
+                // Aunque el conteo se haya ingresado todo en el campo de
+                // unidades sueltas, aquí se agrupa en cajas + unidades
+                // sueltas según el factor de empaque del producto.
+                const factorReg = factorDeRegistro(d);
+                const teoricoTexto = formatCajasUnidades(d.stockTeorico, factorReg);
+                const fisicoTexto = formatCajasUnidades(d.stockFisico, factorReg);
+                // Si el mismo producto tiene lotes de más de un usuario, es
+                // probable que dos celulares lo hayan contado por separado
+                // (duplicado). Se marca con ⚠️ para que se note a simple
+                // vista, con el detalle de cada lote y su usuario al pasar
+                // el cursor (o al mantener presionado en el celular).
+                const usuarios = usuariosDeRegistro(d);
+                const usuarioTexto = usuarios.length ? usuarios.join(', ') : '-';
+                const usuarioDuplicado = usuarios.length > 1;
+                const usuarioTitulo = lotes.map(l => `${l.usuario || 'S/U'}: ${l.cantidad} (${l.fecha || ''})`).join(' | ');
+                const usuarioColor = usuarioDuplicado ? 'var(--danger)' : 'var(--text-muted)';
+                const usuarioCelda = `${usuarioDuplicado ? '⚠️ ' : ''}${usuarioTexto}`;
                 html += `<tr>
                     <td>${idx + 1}</td>
                     <td class="codigo-cell">${d.codigo}</td>
                     <td style="color:var(--text-secondary);">${d.descripcion}</td>
-                    <td style="color:var(--heading-color);">${d.stockTeorico}</td>
-                    <td style="color:var(--heading-color);">${d.stockFisico}</td>
+                    <td style="color:var(--heading-color);" title="${d.stockTeorico} und">${teoricoTexto}</td>
+                    <td style="color:var(--heading-color);" title="${d.stockFisico} und">${fisicoTexto}</td>
                     <td class="${claseDiff}">${d.diferencia}</td>
                     <td style="color:var(--heading-color);" title="${vencTitulo}">${vencTexto}</td>
                     <td style="color:var(--text-muted);">${d.fecha}</td>
+                    <td style="color:${usuarioColor}; font-weight:${usuarioDuplicado ? '700' : '400'};" title="${usuarioTitulo}">${usuarioCelda}</td>
                     <td class="acciones-cell"><button class="eliminar-diff" data-index="${idx}">✕</button></td>
                 </tr>`;
                 mobileHtml += `<div class="mi-card">
@@ -2825,13 +2921,14 @@
                         <button class="mi-card-del eliminar-diff-movil" data-index="${idx}" title="Eliminar registro">🗑️</button>
                     </div>
                     <div class="mi-card-stats">
-                        <div><span class="mi-stat-label">Teórico</span><span class="mi-stat-value">${d.stockTeorico}</span></div>
-                        <div><span class="mi-stat-label">Físico</span><span class="mi-stat-value">${d.stockFisico}</span></div>
+                        <div><span class="mi-stat-label">Teórico</span><span class="mi-stat-value">${teoricoTexto}</span></div>
+                        <div><span class="mi-stat-label">Físico</span><span class="mi-stat-value">${fisicoTexto}</span></div>
                         <div><span class="mi-stat-label">Diferencia</span><span class="mi-stat-value ${claseDiff}">${d.diferencia}</span></div>
                     </div>
                     <div class="mi-card-meta">
                         <span title="${vencTitulo}">📅 ${vencTexto}</span>
                         <span>🕒 ${d.fecha}</span>
+                        <span style="color:${usuarioColor}; font-weight:${usuarioDuplicado ? '700' : '400'};" title="${usuarioTitulo}">👤 ${usuarioCelda}</span>
                     </div>
                 </div>`;
             });
@@ -2873,7 +2970,7 @@
 
             const grupos = agruparPorLinea(inventarioFisico, d => d.linea);
             const filas = [
-                ['#', 'Código', 'Descripción', 'Línea', 'Stock Teórico', 'Stock Físico', 'Diferencia', 'Vencimiento', 'Fecha/Hora']
+                ['#', 'Código', 'Descripción', 'Línea', 'Stock Teórico', 'Stock Físico', 'Diferencia', 'Vencimiento', 'Fecha/Hora', 'Usuario(s)']
             ];
 
             grupos.forEach(grupo => {
@@ -2882,18 +2979,20 @@
                 let subTeorico = 0, subFisico = 0, subDiferencia = 0;
                 grupo.items.forEach(d => {
                     const detalleLotes = (d.lotes || []).map(l => `${l.vencimiento || 'S/F'}: ${l.cantidad}`).join(' | ');
-                    filas.push([contador++, d.codigo, d.descripcion, d.linea || 'SIN LÍNEA', d.stockTeorico, d.stockFisico, d.diferencia, detalleLotes || (d.vencimiento || '-'), d.fecha]);
+                    const usuarios = usuariosDeRegistro(d);
+                    const usuariosTexto = usuarios.length > 1 ? `⚠️ ${usuarios.join(', ')}` : (usuarios.join(', ') || '-');
+                    filas.push([contador++, d.codigo, d.descripcion, d.linea || 'SIN LÍNEA', d.stockTeorico, d.stockFisico, d.diferencia, detalleLotes || (d.vencimiento || '-'), d.fecha, usuariosTexto]);
                     subTeorico += d.stockTeorico;
                     subFisico += d.stockFisico;
                     subDiferencia += d.diferencia;
                 });
-                filas.push(['', '', '', 'Subtotal línea', subTeorico, subFisico, subDiferencia, '', '']);
+                filas.push(['', '', '', 'Subtotal línea', subTeorico, subFisico, subDiferencia, '', '', '']);
                 filas.push([]);
             });
 
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.aoa_to_sheet(filas);
-            ws['!cols'] = [{wch:6},{wch:10},{wch:42},{wch:24},{wch:12},{wch:12},{wch:12},{wch:30},{wch:18}];
+            ws['!cols'] = [{wch:6},{wch:10},{wch:42},{wch:24},{wch:12},{wch:12},{wch:12},{wch:30},{wch:18},{wch:24}];
             XLSX.utils.book_append_sheet(wb, ws, 'InventarioFisico');
             const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
             const blob = new Blob([wbout], { type: 'application/octet-stream' });
@@ -2914,17 +3013,21 @@
                 return;
             }
 
-            const dataToExport = inventarioFisico.map((d, idx) => ({
-                '#': idx + 1,
-                'Código': d.codigo,
-                'Descripción': d.descripcion,
-                'Línea': d.linea || 'SIN LÍNEA',
-                'Stock Teórico': d.stockTeorico,
-                'Stock Físico': d.stockFisico,
-                'Diferencia': d.diferencia,
-                'Vencimiento': (d.lotes || []).map(l => `${l.vencimiento || 'S/F'}: ${l.cantidad}`).join(' | ') || (d.vencimiento || '-'),
-                'Fecha/Hora': d.fecha
-            }));
+            const dataToExport = inventarioFisico.map((d, idx) => {
+                const usuarios = usuariosDeRegistro(d);
+                return {
+                    '#': idx + 1,
+                    'Código': d.codigo,
+                    'Descripción': d.descripcion,
+                    'Línea': d.linea || 'SIN LÍNEA',
+                    'Stock Teórico': d.stockTeorico,
+                    'Stock Físico': d.stockFisico,
+                    'Diferencia': d.diferencia,
+                    'Vencimiento': (d.lotes || []).map(l => `${l.vencimiento || 'S/F'}: ${l.cantidad}`).join(' | ') || (d.vencimiento || '-'),
+                    'Fecha/Hora': d.fecha,
+                    'Usuario(s)': usuarios.length > 1 ? `⚠️ ${usuarios.join(', ')}` : (usuarios.join(', ') || '-')
+                };
+            });
 
             guardarDriveBtn.textContent = '⏳ Subiendo...';
             guardarDriveBtn.disabled = true;
@@ -3176,7 +3279,15 @@
         const loginError = document.getElementById('loginError');
         const loginBtn = document.getElementById('loginBtn');
         const appContainer = document.getElementById('appContainer');
+        const usuarioBadge = document.getElementById('usuarioBadge');
+        const usuarioBadgeTexto = document.getElementById('usuarioBadgeTexto');
         let appIniciado = false;
+
+        // Usuario que inició sesión en este dispositivo. Se guarda junto con
+        // el conteo de cada producto para poder ver, en Inventario Físico,
+        // quién contó cada cosa y detectar si dos celulares (dos usuarios)
+        // contaron el mismo producto por error.
+        let usuarioActual = '';
 
         function sesionValida() {
             try {
@@ -3185,7 +3296,9 @@
                 const data = JSON.parse(raw);
                 if (!data || !data.ts) return false;
                 const horas = (Date.now() - data.ts) / 3600000;
-                return horas < SESSION_HORAS;
+                if (horas >= SESSION_HORAS) return false;
+                usuarioActual = data.usuario || '';
+                return true;
             } catch (e) {
                 return false;
             }
@@ -3194,6 +3307,7 @@
         function mostrarApp() {
             loginOverlay.classList.add('hidden');
             appContainer.classList.remove('oculto');
+            if (usuarioBadgeTexto) usuarioBadgeTexto.textContent = usuarioActual || '-';
             if (!appIniciado) {
                 appIniciado = true;
                 init();
@@ -3216,18 +3330,22 @@
             confirmarAccion('¿Cerrar sesión?').then(ok => {
                 if (!ok) return;
                 try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+                usuarioActual = '';
                 mostrarLogin();
             });
         }
 
-        // No se guarda qué usuario inició sesión: solo se registra la hora,
-        // para saber si ya pasó el día y hay que volver a pedir la clave.
+        // Se guarda qué usuario inició sesión (además de la hora), para
+        // saber si ya pasó el día y hay que volver a pedir la clave, y
+        // también para poder marcar con qué usuario se registra cada
+        // conteo de Inventario Físico.
         function intentarLogin() {
             const usuario = loginUsuario.value.trim().toLowerCase();
             const clave = loginClave.value;
             const valido = USUARIOS_VALIDOS.some(u => u.usuario.toLowerCase() === usuario && u.clave === clave);
             if (valido) {
-                try { localStorage.setItem(SESSION_KEY, JSON.stringify({ ts: Date.now() })); } catch (e) {}
+                usuarioActual = usuario;
+                try { localStorage.setItem(SESSION_KEY, JSON.stringify({ ts: Date.now(), usuario: usuario })); } catch (e) {}
                 mostrarApp();
             } else {
                 loginError.textContent = 'Usuario o clave incorrectos.';
