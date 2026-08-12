@@ -21,51 +21,58 @@
         :root {
             --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-            /* Colores base (tema oscuro) */
-            --bg-gradient: linear-gradient(145deg, #0b1a2e 0%, #1a2d44 100%);
-            --card-bg: rgba(255, 255, 255, 0.06);
-            --card-border: rgba(255, 255, 255, 0.08);
+            /* Colores base (tema oscuro, versión más colorida) */
+            --bg-gradient: linear-gradient(160deg, #0c1638 0%, #1a1450 45%, #2a1454 100%);
+            --card-bg: rgba(255, 255, 255, 0.07);
+            --card-border: rgba(255, 255, 255, 0.1);
             --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-            --text-primary: #e8edf4;
-            --text-secondary: #a0b8d0;
-            --text-muted: #6a8aaa;
-            --heading-color: #b8d4f0;
-            --accent: #4a8aba;
-            --accent-light: #6aaee0;
-            --success: #3baa6a;
-            --warning: #d49a3a;
-            --danger: #d45a5a;
+            --text-primary: #eef1fb;
+            --text-secondary: #aab4e8;
+            --text-muted: #7d87c2;
+            --heading-color: #c9d6ff;
+            --accent: #6c5ce7;
+            --accent-2: #00c2ff;
+            --accent-light: #8f7bff;
+            --accent-gradient: linear-gradient(135deg, #00c2ff 0%, #6c5ce7 55%, #d152e0 100%);
+            --success: #22c98a;
+            --warning: #ffab2e;
+            --danger: #ff5470;
             --input-bg: rgba(255, 255, 255, 0.08);
-            --input-border: rgba(255, 255, 255, 0.12);
-            --input-focus: #4a8aba;
-            --table-header-bg: rgba(20, 50, 80, 0.4);
-            --table-row-alt: rgba(255, 255, 255, 0.02);
-            --badge-bg: rgba(74, 138, 186, 0.2);
-            --badge-text: #8aaccc;
-            --divider: rgba(255, 255, 255, 0.06);
+            --input-border: rgba(255, 255, 255, 0.14);
+            --input-focus: #6c5ce7;
+            --table-header-bg: rgba(108, 92, 231, 0.18);
+            --table-row-alt: rgba(255, 255, 255, 0.03);
+            --badge-bg: rgba(108, 92, 231, 0.22);
+            --badge-text: #b9c1ff;
+            --divider: rgba(255, 255, 255, 0.08);
             --shadow-color: rgba(0, 0, 0, 0.3);
         }
 
         /* Tema claro */
         body.light-theme {
-            --bg-gradient: linear-gradient(145deg, #eef2f7 0%, #dbe4ee 100%);
-            --card-bg: rgba(255, 255, 255, 0.75);
-            --card-border: rgba(0, 0, 0, 0.06);
-            --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-            --text-primary: #1a2a44;
-            --text-secondary: #3a5a7a;
-            --text-muted: #6a8aaa;
-            --heading-color: #1a4b7a;
-            --accent: #2a6a9a;
-            --accent-light: #4a8aba;
-            --input-bg: rgba(255, 255, 255, 0.6);
-            --input-border: rgba(0, 0, 0, 0.1);
-            --table-header-bg: rgba(42, 106, 154, 0.08);
-            --table-row-alt: rgba(0, 0, 0, 0.02);
-            --badge-bg: rgba(42, 106, 154, 0.1);
-            --badge-text: #1a4b7a;
-            --divider: rgba(0, 0, 0, 0.06);
-            --shadow-color: rgba(0, 0, 0, 0.1);
+            --bg-gradient: linear-gradient(160deg, #eef2ff 0%, #e6ecff 40%, #f3e8ff 100%);
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --card-border: rgba(108, 92, 231, 0.12);
+            --card-shadow: 0 8px 32px rgba(84, 60, 180, 0.1);
+            --text-primary: #201b45;
+            --text-secondary: #4a437e;
+            --text-muted: #7c76a8;
+            --heading-color: #4b2ea3;
+            --accent: #6c48d6;
+            --accent-2: #0090d9;
+            --accent-light: #8a63e8;
+            --accent-gradient: linear-gradient(135deg, #0090d9 0%, #6c48d6 55%, #c23ed0 100%);
+            --success: #17a878;
+            --warning: #e08a1a;
+            --danger: #e0405f;
+            --input-bg: rgba(255, 255, 255, 0.7);
+            --input-border: rgba(108, 92, 231, 0.18);
+            --table-header-bg: rgba(108, 92, 231, 0.08);
+            --table-row-alt: rgba(108, 92, 231, 0.03);
+            --badge-bg: rgba(108, 92, 231, 0.12);
+            --badge-text: #5a3ec2;
+            --divider: rgba(108, 92, 231, 0.1);
+            --shadow-color: rgba(84, 60, 180, 0.1);
         }
 
         body {
@@ -147,27 +154,27 @@
         }
         .btn:active { transform: scale(0.94); }
         .btn-primary {
-            background: var(--accent);
+            background: var(--accent-gradient);
             color: #fff;
-            box-shadow: 0 4px 12px rgba(74, 138, 186, 0.3);
+            box-shadow: 0 4px 14px rgba(108, 92, 231, 0.4);
         }
-        .btn-primary:hover { background: var(--accent-light); transform: translateY(-1px); }
+        .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
         .btn-success {
-            background: var(--success);
+            background: linear-gradient(135deg, #22c98a 0%, #17a878 100%);
             color: #fff;
-            box-shadow: 0 4px 12px rgba(59, 170, 106, 0.3);
+            box-shadow: 0 4px 12px rgba(34, 201, 138, 0.35);
         }
         .btn-success:hover { filter: brightness(1.08); transform: translateY(-1px); }
         .btn-warning {
-            background: var(--warning);
+            background: linear-gradient(135deg, #ffab2e 0%, #ff7a3c 100%);
             color: #fff;
-            box-shadow: 0 4px 12px rgba(212, 154, 58, 0.3);
+            box-shadow: 0 4px 12px rgba(255, 138, 46, 0.35);
         }
         .btn-warning:hover { filter: brightness(1.08); transform: translateY(-1px); }
         .btn-danger {
-            background: var(--danger);
+            background: linear-gradient(135deg, #ff5470 0%, #e0405f 100%);
             color: #fff;
-            box-shadow: 0 4px 12px rgba(212, 90, 90, 0.3);
+            box-shadow: 0 4px 12px rgba(255, 84, 112, 0.35);
         }
         .btn-danger:hover { filter: brightness(1.08); transform: translateY(-1px); }
         .btn-outline {
@@ -175,18 +182,18 @@
             border: 1.5px solid var(--text-muted);
             color: var(--text-secondary);
         }
-        .btn-outline:hover { background: rgba(255, 255, 255, 0.05); }
+        .btn-outline:hover { background: rgba(108, 92, 231, 0.08); }
         .btn-sm {
             padding: 0.2rem 0.7rem;
             min-height: 28px;
             font-size: 0.7rem;
         }
         .btn-drive {
-            background: #2a5a9a;
+            background: linear-gradient(135deg, #00c2ff 0%, #2a6ee0 100%);
             color: #fff;
-            box-shadow: 0 4px 12px rgba(42, 90, 154, 0.3);
+            box-shadow: 0 4px 12px rgba(0, 194, 255, 0.35);
         }
-        .btn-drive:hover { background: #3a7aba; transform: translateY(-1px); }
+        .btn-drive:hover { filter: brightness(1.1); transform: translateY(-1px); }
 
         /* ============================================================
            HEADER
@@ -212,8 +219,11 @@
         .header .logo .iem {
             font-size: 1.6rem;
             font-weight: 800;
-            color: var(--heading-color);
             letter-spacing: -0.5px;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         .header .logo .laive {
             font-size: 0.8rem;
@@ -248,7 +258,7 @@
             transition: 0.2s;
             flex-shrink: 0;
         }
-        .header .theme-toggle:hover { background: rgba(74, 138, 186, 0.2); transform: rotate(10deg); }
+        .header .theme-toggle:hover { background: rgba(108, 92, 231, 0.25); transform: rotate(10deg); }
 
         /* ============================================================
            BUSCADOR
@@ -276,7 +286,7 @@
         .search-row input::placeholder { color: var(--text-muted); }
         .search-row input:focus {
             border-color: var(--input-focus);
-            box-shadow: 0 0 0 3px rgba(74, 138, 186, 0.15);
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.18);
             background: rgba(255, 255, 255, 0.1);
         }
         .search-row .btn { flex-shrink: 0; }
@@ -351,8 +361,8 @@
         .result-item:hover { background: rgba(255,255,255,0.08); border-color: var(--accent); }
         .result-item.selected {
             border-color: var(--accent);
-            background: rgba(74, 138, 186, 0.12);
-            box-shadow: 0 0 0 2px rgba(74, 138, 186, 0.2);
+            background: rgba(108, 92, 231, 0.15);
+            box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.25);
         }
         .result-item .codigo { font-weight: 700; color: var(--heading-color); font-family: monospace; }
         .result-item .fabrica { color: var(--text-muted); font-family: monospace; font-size: 0.65rem; }
@@ -412,7 +422,7 @@
             border-radius: 12px;
             background: var(--input-bg);
             color: var(--text-primary);
-            font-size: 0.85rem;
+            font-size: 16px;
             text-align: center;
             font-family: var(--font);
             transition: 0.2s;
@@ -421,7 +431,7 @@
         }
         .cantidad-row .group input:focus {
             border-color: var(--input-focus);
-            box-shadow: 0 0 0 3px rgba(74, 138, 186, 0.15);
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.18);
             outline: none;
         }
         .cantidad-row .group input:disabled {
@@ -564,8 +574,8 @@
         }
         .year-tab:hover { border-color: var(--accent); }
         .year-tab.active {
-            background: var(--accent);
-            border-color: var(--accent);
+            background: var(--accent-gradient);
+            border-color: transparent;
             color: #fff;
         }
         .btn-guardar-grande {
@@ -612,8 +622,11 @@
         .login-logo .iem {
             font-size: 1.4rem;
             font-weight: 800;
-            color: var(--heading-color);
             letter-spacing: -0.5px;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         .login-logo .laive {
             font-size: 0.75rem;
@@ -645,13 +658,13 @@
             background: var(--input-bg);
             color: var(--text-primary);
             font-family: var(--font);
-            font-size: 0.9rem;
+            font-size: 16px;
             outline: none;
             transition: 0.2s;
         }
         .login-field input:focus {
             border-color: var(--input-focus);
-            box-shadow: 0 0 0 3px rgba(74, 138, 186, 0.15);
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.18);
         }
         .login-error {
             color: var(--danger);
@@ -812,7 +825,7 @@
                 flex: 1 1 55%;
                 width: auto;
                 min-width: 0;
-                font-size: 0.85rem;
+                font-size: 16px;
                 padding: 0.65rem 1rem;
             }
             .search-row #searchButton {
@@ -977,12 +990,12 @@
 
             body.modo-seleccion .producto-activo-card {
                 display: block;
-                background: linear-gradient(135deg, #1c3f8f 0%, #0d1f52 100%);
+                background: linear-gradient(135deg, #00c2ff 0%, #6c5ce7 55%, #b23ede 100%);
                 border-radius: 20px;
                 padding: 1rem 1.1rem;
                 margin-bottom: 0.9rem;
                 color: #fff;
-                box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+                box-shadow: 0 8px 24px rgba(108, 92, 231, 0.4);
             }
             body.modo-seleccion .pa-header {
                 display: flex;
@@ -1077,7 +1090,7 @@
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                background: rgba(74, 138, 186, 0.12);
+                background: rgba(108, 92, 231, 0.15);
                 border: 1px solid var(--accent);
                 border-radius: 16px;
                 padding: 0.7rem 1rem;
@@ -1274,7 +1287,7 @@
         @media (max-width: 400px) {
             .header .logo .iem { font-size: 1rem; }
             .btn { font-size: 0.6rem; padding: 0.25rem 0.6rem; min-height: 28px; }
-            .search-row input { font-size: 0.7rem; padding: 0.4rem 0.6rem; }
+            .search-row input { font-size: 16px; padding: 0.4rem 0.6rem; }
             .result-item .row1 .codigo { font-size: 0.75rem; }
             .result-item .row2 .descripcion { font-size: 0.7rem; }
         }
