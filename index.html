@@ -1636,7 +1636,7 @@
         // secreto en el body/cabecera y rechazando la petición si no coincide,
         // y/o limitando el rango de escritura de la hoja de cálculo.
         const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRKg3h0F7KMnRz2Fm2co7zlUFW1uZXeka4ljxSEbWLjDvDch3tglSqCDMn9uMVKiQ/pub?gid=2124077802&single=true&output=csv';
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwKiFS1gtVz24Z5K0TVSCpWOZnpv_U30c820dJV38gM3eV75PVdkjTTz-HOC-cFxo7d3w/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxrxRu_UzmG13NyyEyGOurnZmeatdeg5wMwzvFKfWlcwgC6YLdPFeR9prDcm1j8A_gGeg/exec';
 
         const sampleData = [
             {"Producto":"MANJAR ESPECIAL BAZO VELARDE BALDE X 20 KG","Codigo":"9010","CodigoFabrica":"50000111","Unidad Ref":"BAL/BAL","Cantidad":"15","FactorEmpaque":"1","Linea":"MANJARES: ESPECIAL","Marca":"BAZO VELARDE"},
@@ -3347,17 +3347,11 @@
         // ============================================================
         // INICIO DE SESIÓN (usuario y clave por persona)
         // ============================================================
-        // ⚠️ IMPORTANTE: como esta app es un solo archivo HTML sin servidor
-        // propio, esta lista queda dentro del código fuente. No es una
-        // seguridad robusta (alguien que revise el código puede verla), pero
-        // sirve como filtro para que no entre cualquiera. Agrega o cambia
-        // aquí los usuarios autorizados (usuario y clave, en minúsculas):
-        const USUARIOS_VALIDOS = [
-            { usuario: 'luis', clave: '123' },
-            { usuario: 'almacen1', clave: 'almacen1' },
-            { usuario: 'almacen2', clave: 'almacen2' }
-            // { usuario: 'nombre3', clave: 'clave3' },
-        ];
+        // Antes la lista de usuarios y claves estaba escrita aquí mismo,
+        // en texto plano, dentro del HTML — cualquiera que abriera "Ver
+        // código fuente" del navegador podía leerla. Ahora la validación
+        // se hace contra el Apps Script (accion: 'login'): el navegador
+        // nunca recibe la lista de usuarios/claves, solo un sí/no.
 
         const SESSION_KEY = 'iem_sesion_activa';
         const SESSION_HORAS = 24; // pide iniciar sesión de nuevo una vez al día
@@ -3431,17 +3425,42 @@
         function intentarLogin() {
             const usuario = loginUsuario.value.trim().toLowerCase();
             const clave = loginClave.value;
-            const valido = USUARIOS_VALIDOS.some(u => u.usuario.toLowerCase() === usuario && u.clave === clave);
-            if (valido) {
-                usuarioActual = usuario;
-                try { localStorage.setItem(SESSION_KEY, JSON.stringify({ ts: Date.now(), usuario: usuario })); } catch (e) {}
-                mostrarApp();
-            } else {
-                loginError.textContent = 'Usuario o clave incorrectos.';
+            if (!usuario || !clave) {
+                loginError.textContent = 'Ingrese usuario y clave.';
                 loginError.classList.remove('hidden');
-                loginClave.value = '';
-                loginClave.focus();
+                return;
             }
+
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Verificando...';
+            loginError.classList.add('hidden');
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ accion: 'login', usuario: usuario, clave: clave })
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data && data.valido) {
+                        usuarioActual = usuario;
+                        try { localStorage.setItem(SESSION_KEY, JSON.stringify({ ts: Date.now(), usuario: usuario })); } catch (e) {}
+                        mostrarApp();
+                    } else {
+                        loginError.textContent = 'Usuario o clave incorrectos.';
+                        loginError.classList.remove('hidden');
+                        loginClave.value = '';
+                        loginClave.focus();
+                    }
+                })
+                .catch(() => {
+                    loginError.textContent = 'No se pudo conectar para verificar. Revise su conexión e intente de nuevo.';
+                    loginError.classList.remove('hidden');
+                })
+                .finally(() => {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'Entrar';
+                });
         }
 
         loginBtn.addEventListener('click', intentarLogin);
