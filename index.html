@@ -32,8 +32,10 @@
                operativo siempre en blanco, sin importar el tema de la app. */
             color-scheme: dark;
 
-            /* Colores base (tema oscuro, versión más colorida) */
-            --bg-gradient: linear-gradient(160deg, #0c1638 0%, #1a1450 45%, #2a1454 100%);
+            /* Colores base (tema oscuro, un poco menos saturado que el morado
+               intenso original, para que canse menos la vista en sesiones
+               largas de conteo, sin perder la identidad azul/morado) */
+            --bg-gradient: linear-gradient(160deg, #1a233e 0%, #2a2653 45%, #372656 100%);
             --card-bg: rgba(255, 255, 255, 0.07);
             --card-border: rgba(255, 255, 255, 0.1);
             --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
@@ -219,6 +221,15 @@
             color: var(--text-secondary);
         }
         .btn-outline:hover { background: rgba(108, 92, 231, 0.08); }
+        /* El botón de Actualizar usa el color de acento en vez del gris
+           neutro de btn-outline, para que se note que es un botón activo
+           y no un botón secundario apagado. */
+        #refreshDriveBtn {
+            border-color: var(--accent-light);
+            color: var(--accent-light);
+            background: rgba(108, 92, 231, 0.1);
+        }
+        #refreshDriveBtn:hover { background: rgba(108, 92, 231, 0.18); }
         .btn-sm {
             padding: 0.2rem 0.7rem;
             min-height: 28px;
