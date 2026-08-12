@@ -1728,8 +1728,11 @@
         const confirmAceptar = document.getElementById('confirmAceptar');
         let confirmResolver = null;
 
-        function confirmarAccion(mensaje) {
+        function confirmarAccion(mensaje, textoAceptar, tipoAceptar) {
             confirmMensaje.textContent = mensaje;
+            confirmAceptar.textContent = textoAceptar || 'Eliminar';
+            confirmAceptar.classList.remove('btn-danger', 'btn-primary');
+            confirmAceptar.classList.add(tipoAceptar === 'primary' ? 'btn-primary' : 'btn-danger');
             confirmOverlay.classList.add('visible');
             return new Promise(resolve => { confirmResolver = resolve; });
         }
@@ -3325,7 +3328,7 @@
         // que sesionValida() vuelva a dar false) y regresa a la pantalla
         // de login. Pide confirmación para evitar salidas accidentales.
         function cerrarSesion() {
-            confirmarAccion('¿Cerrar sesión?').then(ok => {
+            confirmarAccion('¿Cerrar sesión?', 'Salir', 'primary').then(ok => {
                 if (!ok) return;
                 try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
                 usuarioActual = '';
