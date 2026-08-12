@@ -1636,7 +1636,7 @@
         // secreto en el body/cabecera y rechazando la petición si no coincide,
         // y/o limitando el rango de escritura de la hoja de cálculo.
         const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRKg3h0F7KMnRz2Fm2co7zlUFW1uZXeka4ljxSEbWLjDvDch3tglSqCDMn9uMVKiQ/pub?gid=2124077802&single=true&output=csv';
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbznYpLIJjYL2MbAMcakvxAKnEJDVKih9nxWzdq9o_DQoSeJvrDK8alb6Fb9rma2lYjB5Q/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwKiFS1gtVz24Z5K0TVSCpWOZnpv_U30c820dJV38gM3eV75PVdkjTTz-HOC-cFxo7d3w/exec';
 
         const sampleData = [
             {"Producto":"MANJAR ESPECIAL BAZO VELARDE BALDE X 20 KG","Codigo":"9010","CodigoFabrica":"50000111","Unidad Ref":"BAL/BAL","Cantidad":"15","FactorEmpaque":"1","Linea":"MANJARES: ESPECIAL","Marca":"BAZO VELARDE"},
@@ -2733,6 +2733,29 @@
             record.diferencia = record.stockFisico - record.stockTeorico;
         }
 
+        // El servidor (obtenerLotes en el Apps Script) manda SIEMPRE la
+        // hoja "ConteoVivo" completa, no solo lo nuevo. Aprovechamos eso
+        // para borrar localmente cualquier lote que ya no esté en esa
+        // lista (por ejemplo, porque otro celular lo eliminó): si un lote
+        // tiene id (ya se sincronizó alguna vez) y ese id ya no aparece en
+        // la lista del servidor, se quita de aquí también. Los lotes sin
+        // id (registros viejos, previos a esta sincronización) se dejan
+        // intactos porque nunca llegaron a viajar al servidor.
+        function quitarLotesBorradosEnServidor(registros) {
+            const idsServidor = new Set(registros.map(r => String(r.id)));
+            let huboCambios = false;
+            inventarioFisico = inventarioFisico.filter(record => {
+                const lotesAntes = record.lotes.length;
+                record.lotes = record.lotes.filter(l => !l.id || idsServidor.has(String(l.id)));
+                if (record.lotes.length !== lotesAntes) huboCambios = true;
+                if (record.lotes.length === 0) return false;
+                record.stockFisico = record.lotes.reduce((sum, l) => sum + l.cantidad, 0);
+                record.diferencia = record.stockFisico - record.stockTeorico;
+                return true;
+            });
+            return huboCambios;
+        }
+
         // Consulta la hoja "ConteoVivo" y trae lo que hayan contado otros
         // celulares desde la última vez. Se llama sola cada 10 segundos.
         function sincronizarDesdeServidor() {
@@ -2742,8 +2765,9 @@
                 .then(r => r.json())
                 .then(data => {
                     const registros = (data && data.registros) || [];
-                    if (registros.length === 0) return;
                     registros.forEach(fusionarRegistroRemoto);
+                    const huboBorrados = quitarLotesBorradosEnServidor(registros);
+                    if (registros.length === 0 && !huboBorrados && inventarioFisico.length === 0) return;
                     saveInventario();
                     renderInventario();
                 })
