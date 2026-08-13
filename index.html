@@ -1990,7 +1990,6 @@
         // nunca recibe la lista de usuarios/claves, solo un sí/no.
 
         const SESSION_KEY = 'iem_sesion_activa';
-        const SESSION_HORAS = 24; // pide iniciar sesión de nuevo una vez al día
 
         const loginOverlay = document.getElementById('loginOverlay');
         const loginUsuario = document.getElementById('loginUsuario');
@@ -2008,14 +2007,26 @@
         // contaron el mismo producto por error.
         let usuarioActual = '';
 
+        // La sesión no dura 24 horas fijas: vence apenas cambia el día del
+        // calendario (por ejemplo, si entró a las 23:50, a las 00:00 ya pide
+        // clave de nuevo) o cuando el usuario toca "Cerrar sesión". Por eso
+        // se guarda también la fecha (día) del login y se compara contra la
+        // fecha actual, en vez de contar horas transcurridas.
+        function mismoDia(ts) {
+            const a = new Date(ts);
+            const b = new Date();
+            return a.getFullYear() === b.getFullYear() &&
+                   a.getMonth() === b.getMonth() &&
+                   a.getDate() === b.getDate();
+        }
+
         function sesionValida() {
             try {
                 const raw = localStorage.getItem(SESSION_KEY);
                 if (!raw) return false;
                 const data = JSON.parse(raw);
                 if (!data || !data.ts) return false;
-                const horas = (Date.now() - data.ts) / 3600000;
-                if (horas >= SESSION_HORAS) return false;
+                if (!mismoDia(data.ts)) return false;
                 usuarioActual = data.usuario || '';
                 return true;
             } catch (e) {
@@ -2109,6 +2120,43 @@
         } else {
             mostrarLogin();
         }
+
+        // sesionValida() solo se revisaba al cargar la página, así que si el
+        // usuario dejaba la pestaña abierta la sesión nunca vencía sola: pasaba
+        // la medianoche y la app seguía funcionando hasta que alguien recargara.
+        // Este intervalo vuelve a comprobar cada minuto, y si ya cambió el día
+        // (y la app está visible, no la pantalla de login) cierra la sesión sin
+        // pedir confirmación y muestra el login.
+        setInterval(() => {
+            if (!appContainer.classList.contains('oculto') && !sesionValida()) {
+                try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+                usuarioActual = '';
+                mostrarLogin();
+            }
+        }, 60000);
+
+        // Cierre por inactividad: si pasan 20 minutos sin que la persona toque,
+        // haga clic o escriba nada en la app, se cierra la sesión sola (sin
+        // pedir confirmación) y vuelve a la pantalla de login. Cada evento de
+        // uso reinicia el conteo.
+        const INACTIVIDAD_MS = 20 * 60000; // 20 minutos
+        let ultimoUso = Date.now();
+
+        function marcarActividad() {
+            ultimoUso = Date.now();
+        }
+
+        ['click', 'touchstart', 'keydown', 'scroll', 'mousemove'].forEach(ev => {
+            document.addEventListener(ev, marcarActividad, { passive: true });
+        });
+
+        setInterval(() => {
+            if (!appContainer.classList.contains('oculto') && Date.now() - ultimoUso >= INACTIVIDAD_MS) {
+                try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+                usuarioActual = '';
+                mostrarLogin();
+            }
+        }, 60000);
     })();
 </script>
 </body>
