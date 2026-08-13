@@ -1339,6 +1339,17 @@
         // los demás celulares lo vean en su próxima sincronización. No hace
         // falta leer la respuesta: si la red falla, el conteo local no se
         // pierde (queda guardado igual) y se puede reintentar más tarde.
+        function normalizarVencimiento(v) {
+            if (v === null || v === undefined) return '';
+            return String(v).trim().toLowerCase();
+        }
+
+        // Mismo producto + misma fecha de vencimiento = mismo lote (se suma, no se duplica)
+        function idLotePorProductoYVencimiento(codigo, vencimiento) {
+            const venc = normalizarVencimiento(vencimiento) || 'sin_vencimiento';
+            return String(codigo).trim() + '__' + venc.replace(/\s+/g, '_');
+        }
+
         function sincronizarLoteAlServidor(record, lote) {
             const factor = record.factor || 1;
             const cajasLote = factor > 1 ? Math.floor(lote.cantidad / factor) : 0;
@@ -1353,13 +1364,49 @@
                 unidades: unidadesLote,
                 vencimiento: lote.vencimiento || null,
                 fecha: lote.fecha || null,
-                usuario: lote.usuario || '',
+                usuario: lote.usuario || usuarioActual || '',
                 device_id: deviceId
             }).then(({ error }) => { if (error) console.warn('No se pudo subir lote:', error); });
         }
 
-        // Combina un registro recibido del servidor con el inventario local,
-        // sin duplicar (cada lote tiene un id único por celular + hora).
+        // Une lotes del mismo producto con la misma fecha de vencimiento sumando cantidades.
+        // Así varios dispositivos (o el mismo) no generan filas duplicadas en el reporte.
+        function consolidarLotesDelRegistro(record) {
+            if (!record || !Array.isArray(record.lotes)) return;
+            const mapa = new Map();
+            const idsAEliminar = [];
+            record.lotes.forEach(l => {
+                const key = normalizarVencimiento(l.vencimiento);
+                const idCanonico = idLotePorProductoYVencimiento(record.codigo, l.vencimiento);
+                if (!mapa.has(key)) {
+                    const copia = Object.assign({}, l);
+                    copia.id = idCanonico;
+                    copia.cantidad = Number(copia.cantidad) || 0;
+                    mapa.set(key, copia);
+                    if (l.id && String(l.id) !== idCanonico) {
+                        idsAEliminar.push(String(l.id));
+                    }
+                } else {
+                    const acc = mapa.get(key);
+                    acc.cantidad = (Number(acc.cantidad) || 0) + (Number(l.cantidad) || 0);
+                    if (l.usuario && !acc.usuario) acc.usuario = l.usuario;
+                    if (l.fecha) acc.fecha = l.fecha;
+                    if (l.id && String(l.id) !== acc.id) {
+                        idsAEliminar.push(String(l.id));
+                    }
+                }
+            });
+            record.lotes = Array.from(mapa.values());
+            record.stockFisico = record.lotes.reduce((sum, l) => sum + (Number(l.cantidad) || 0), 0);
+            record.diferencia = record.stockFisico - (Number(record.stockTeorico) || 0);
+            // Limpia ids viejos duplicados en la nube (best-effort)
+            idsAEliminar.forEach(id => {
+                if (id) eliminarLoteDelServidor(id);
+            });
+        }
+
+        // Combina un registro recibido del servidor con el inventario local.
+        // Mismo código + misma fecha de vencimiento → se SUMA, no se duplica.
         function fusionarRegistroRemoto(r) {
             let record = inventarioFisico.find(d => d.codigo === r.codigo);
             if (!record) {
@@ -1381,19 +1428,47 @@
                 }
                 inventarioFisico.push(record);
             }
-            const yaExiste = record.lotes.some(l => l.id === r.id);
-            if (!yaExiste) {
+
+            const idCanonico = r.id || idLotePorProductoYVencimiento(r.codigo, r.vencimiento);
+            const vencKey = normalizarVencimiento(r.vencimiento);
+            let lote = record.lotes.find(l =>
+                l.id === idCanonico || normalizarVencimiento(l.vencimiento) === vencKey
+            );
+
+            const cantidadRemota = Number(r.cantidad) || 0;
+            if (!lote) {
                 record.lotes.push({
-                    id: r.id,
+                    id: idCanonico,
                     vencimiento: r.vencimiento,
-                    cantidad: Number(r.cantidad) || 0,
+                    cantidad: cantidadRemota,
                     fecha: r.fecha,
                     fechaISO: new Date().toISOString(),
                     usuario: r.usuario || ''
                 });
+            } else {
+                // Si llega el mismo id, tomamos la cantidad del servidor (ya consolidada).
+                // Si es otro id pero misma fecha, sumamos solo si aún no estaba ese id.
+                if (lote.id === r.id || lote.id === idCanonico) {
+                    lote.cantidad = cantidadRemota;
+                } else {
+                    // Evitar doble suma en cada poll: guardamos ids fusionados
+                    if (!lote._idsFusionados) lote._idsFusionados = new Set([String(lote.id)]);
+                    const rid = String(r.id || idCanonico);
+                    if (!lote._idsFusionados.has(rid)) {
+                        lote.cantidad = (Number(lote.cantidad) || 0) + cantidadRemota;
+                        lote._idsFusionados.add(rid);
+                    } else {
+                        // Ya integrado; si el servidor trae total canónico con id fijo, preferir mayor
+                        lote.cantidad = Math.max(Number(lote.cantidad) || 0, cantidadRemota);
+                    }
+                }
+                lote.id = idCanonico;
+                lote.vencimiento = r.vencimiento;
+                if (r.usuario) lote.usuario = r.usuario;
+                if (r.fecha) lote.fecha = r.fecha;
             }
-            record.stockFisico = record.lotes.reduce((sum, l) => sum + l.cantidad, 0);
-            record.diferencia = record.stockFisico - record.stockTeorico;
+
+            consolidarLotesDelRegistro(record);
         }
 
         // El servidor (obtenerLotes en el Apps Script) manda SIEMPRE la
@@ -1433,6 +1508,7 @@
                     cantidad: r.cantidad, vencimiento: r.vencimiento, fecha: r.fecha, usuario: r.usuario || ''
                 }));
                 registros.forEach(fusionarRegistroRemoto);
+                inventarioFisico.forEach(consolidarLotesDelRegistro);
                 const huboBorrados = quitarLotesBorradosEnServidor(registros);
                 if (registros.length === 0 && !huboBorrados && inventarioFisico.length === 0) return;
                 saveInventario();
@@ -1535,32 +1611,50 @@
             }
             record.factor = factor;
 
-            const nuevoLote = {
-                id: deviceId + '_' + ahora.getTime(),
-                vencimiento: vencimiento,
-                cantidad: cantidadLote,
-                fecha: fechaStr,
-                fechaISO: ahora.toISOString(),
-                usuario: usuarioActual || ''
-            };
-            record.lotes.push(nuevoLote);
+            const idCanonico = idLotePorProductoYVencimiento(codigo, vencimiento);
+            const vencKey = normalizarVencimiento(vencimiento);
+            let loteExistente = record.lotes.find(l =>
+                l.id === idCanonico || normalizarVencimiento(l.vencimiento) === vencKey
+            );
+
+            let loteParaSync;
+            if (loteExistente) {
+                // Mismo producto + misma fecha → SUMAR, no crear otra fila
+                loteExistente.cantidad = (Number(loteExistente.cantidad) || 0) + cantidadLote;
+                loteExistente.id = idCanonico;
+                loteExistente.fecha = fechaStr;
+                loteExistente.fechaISO = ahora.toISOString();
+                loteExistente.usuario = usuarioActual || loteExistente.usuario || '';
+                loteExistente.vencimiento = vencimiento;
+                loteParaSync = loteExistente;
+            } else {
+                loteParaSync = {
+                    id: idCanonico,
+                    vencimiento: vencimiento,
+                    cantidad: cantidadLote,
+                    fecha: fechaStr,
+                    fechaISO: ahora.toISOString(),
+                    usuario: usuarioActual || ''
+                };
+                record.lotes.push(loteParaSync);
+            }
+
             record.stockTeorico = stockTeorico;
-            record.stockFisico = record.lotes.reduce((sum, l) => sum + l.cantidad, 0);
+            record.stockFisico = record.lotes.reduce((sum, l) => sum + (Number(l.cantidad) || 0), 0);
             record.diferencia = record.stockFisico - record.stockTeorico;
             record.fecha = fechaStr;
             record.fechaISO = ahora.toISOString();
 
-            // Comparte este lote de inmediato con los demás celulares que
-            // estén contando al mismo tiempo (vía la hoja "ConteoVivo").
-            sincronizarLoteAlServidor(record, nuevoLote);
+            // Comparte el total consolidado con los demás dispositivos
+            sincronizarLoteAlServidor(record, loteParaSync);
 
             saveInventario();
             renderInventario();
             txtCajas.value = '0';
             txtUnidades.value = '0';
             const totalLotes = record.lotes.length;
-            const msgLote = totalLotes > 1 ? ` (${totalLotes} lotes, total físico ${record.stockFisico})` : '';
-            showToast(`✅ Cantidad agregada (vence ${vencimiento}): ${cantidadLote}${msgLote}. Diferencia: ${record.diferencia}`, 'success');
+            const msgLote = totalLotes > 1 ? ` (${totalLotes} fechas, total físico ${record.stockFisico})` : ` (total físico ${record.stockFisico})`;
+            showToast(`✅ +${cantidadLote} (vence ${vencimiento || 's/f'})${msgLote}. Dif: ${record.diferencia}`, 'success');
             // Vuelve a la lista de resultados para seguir contando el
             // siguiente producto, en vez de quedarse en el mismo.
             volverABuscar();
