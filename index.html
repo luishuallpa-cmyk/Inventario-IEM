@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -44,7 +45,7 @@
         <span class="badge badge-usuario" id="usuarioBadge" title="Usuario con sesión activa en este dispositivo"><span class="dot-activo"></span><span id="usuarioBadgeTexto">-</span></span>
         <button class="theme-toggle" id="themeToggleBtn" type="button" title="Cambiar tema" aria-label="Cambiar tema día/noche">🌙</button>
         <button class="theme-toggle" id="logoutBtn" type="button" title="Cerrar sesión" aria-label="Cerrar sesión">🚪</button>
-        <span class="version">v2.2</span>
+        <span class="version">v3.0 · Supabase</span>
     </header>
 
     <!-- ============================================================
@@ -55,8 +56,12 @@
             <input type="text" id="searchInput" placeholder="Buscar por código, descripción o marca..." autofocus>
             <button class="btn btn-primary" id="searchButton">🔍 Buscar</button>
             <button class="btn btn-outline" id="refreshDriveBtn" title="Actualizar" aria-label="Actualizar"><span class="btn-icon">🔄</span><span class="btn-label"> Actualizar</span></button>
+            <label class="btn btn-drive" style="cursor:pointer;margin:0;" title="Importar Excel del sistema">
+                📤 Importar Excel
+                <input type="file" id="importExcelInput" accept=".xlsx,.xls,.csv" style="display:none;">
+            </label>
         </div>
-        <div id="fileStatus">(cargando desde Google Sheets...)</div>
+        <div id="fileStatus">(cargando desde Supabase...)</div>
     </section>
 
     <!-- ============================================================
@@ -271,8 +276,15 @@
         // hacerse del lado del Apps Script, por ejemplo exigiendo un token
         // secreto en el body/cabecera y rechazando la petición si no coincide,
         // y/o limitando el rango de escritura de la hoja de cálculo.
-        const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSpSz5tyvMbPS3iOLzfXwV3AfS6sALkVcR-ndTQbL1Z5ubdmua-QfqZXqZNsoOZpt04ewwWDJi06vv2/pub?gid=1427329978&single=true&output=csv';
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxrxRu_UzmG13NyyEyGOurnZmeatdeg5wMwzvFKfWlcwgC6YLdPFeR9prDcm1j8A_gGeg/exec';
+        // ============================================================
+        // SUPABASE
+        // ============================================================
+        const SUPABASE_URL = 'https://rgqlkeuzzqrmmgxtmren.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJncWxrZXV6enFybW1neHRtcmVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2NDE5NzMsImV4cCI6MjEwMjIxNzk3M30.P-Y577WPIgckmqCcy77rm-R55TDj6McQFvGayd0_yq0';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const GOOGLE_SHEETS_CSV_URL = '';
+        const SCRIPT_URL = '';
 
         const sampleData = [
             {"Producto":"MANJAR ESPECIAL BAZO VELARDE BALDE X 20 KG","Codigo":"9010","CodigoFabrica":"50000111","Unidad Ref":"BAL/BAL","Cantidad":"15","FactorEmpaque":"1","Linea":"MANJARES: ESPECIAL","Marca":"BAZO VELARDE"},
@@ -517,37 +529,49 @@
         // ============================================================
         // CARGA DESDE GOOGLE SHEETS
         // ============================================================
-        function loadFromGoogleSheets() {
-            fileStatus.textContent = '⏳ Cargando desde Google Sheets...';
-            fetch(GOOGLE_SHEETS_CSV_URL)
-                .then(res => {
-                    if (!res.ok) throw new Error('No se pudo obtener el CSV');
-                    return res.text();
-                })
-                .then(csvText => {
-                    const data = parseCSV(csvText);
-                    if (data && data.length > 0) {
-                        currentData = data;
-                        guardarRespaldo(data);
-                        fileStatus.textContent = `✅ ${data.length} registros desde Google Sheets`;
-                        // Bug #2: antes esto siempre borraba la búsqueda, los resultados y las
-                        // cantidades del usuario, incluso en el auto-refresco cada 5 minutos.
-                        // Ahora solo se reinicia la vista si el usuario no tenía nada en curso.
-                        if (!searchInput.value.trim() && selectedIndex === -1) {
-                            filteredData = [];
-                            renderResults([]);
-                            limpiarCantidades();
-                        }
-                    } else {
-                        fileStatus.textContent = '⚠️ Google Sheets vacío, buscando respaldo...';
-                        useBackupOrLocalData();
+        async function loadFromGoogleSheets() {
+            fileStatus.textContent = '⏳ Cargando productos desde Supabase...';
+            try {
+                const { data, error } = await supabaseClient
+                    .from('productos')
+                    .select('*')
+                    .eq('activo', true)
+                    .order('codigo');
+                if (error) throw error;
+                if (data && data.length > 0) {
+                    currentData = data.map(p => ({
+                        Codigo: p.codigo,
+                        CodigoFabrica: p.codigo_fabrica || '',
+                        Producto: p.descripcion,
+                        'Unidad Ref': p.unidad_ref || '',
+                        Cantidad: String(p.stock_teorico ?? 0),
+                        FactorEmpaque: String(p.factor_empaque ?? 1),
+                        Linea: p.linea || '',
+                        Marca: p.marca || '',
+                        InventarioProductoCodigo: p.codigo,
+                        InventarioProductoDescripcion: p.descripcion,
+                        InventarioProductoUnidadReferenciaAbreviacion: p.unidad_ref || '',
+                        InventarioProductoUnidadReferenciaFactor: String(p.factor_empaque ?? 1),
+                        InventarioProductoCantidad: String(p.stock_teorico ?? 0),
+                        InventarioProductoCategoriaDescripcion: p.linea || '',
+                        InventarioProductoProveedorNombre: p.marca || ''
+                    }));
+                    guardarRespaldo(currentData);
+                    fileStatus.textContent = `✅ ${currentData.length} productos (Supabase)`;
+                    if (!searchInput.value.trim() && selectedIndex === -1) {
+                        filteredData = [];
+                        renderResults([]);
+                        limpiarCantidades();
                     }
-                })
-                .catch(err => {
-                    console.warn('Error al cargar Google Sheets, buscando respaldo.', err);
-                    fileStatus.textContent = '⚠️ Sin conexión, buscando respaldo...';
+                } else {
+                    fileStatus.textContent = '⚠️ Sin productos en Supabase, buscando respaldo...';
                     useBackupOrLocalData();
-                });
+                }
+            } catch (err) {
+                console.warn('Error Supabase productos:', err);
+                fileStatus.textContent = '⚠️ Sin conexión, buscando respaldo...';
+                useBackupOrLocalData();
+            }
         }
 
         // Si Google Sheets falla o está vacío, primero intenta usar el último
@@ -1243,40 +1267,7 @@
                 showToast('No hay productos en el pedido.', 'error');
                 return;
             }
-
-            const dataToExport = pedido.map((p, idx) => ({
-                '#': idx + 1,
-                'Código': p.codigo,
-                'Código Fábrica': p.codigoFabrica,
-                'Descripción': p.descripcion,
-                'Unidad': p.unidad,
-                'Línea': p.linea || 'SIN LÍNEA',
-                'Cajas': p.cajas,
-                'Unidades': p.unidades,
-                'Factor': p.factor,
-                'Total (und)': (p.cajas * p.factor) + p.unidades
-            }));
-
-            guardarPedidoDriveBtn.textContent = '⏳ Subiendo...';
-            guardarPedidoDriveBtn.disabled = true;
-
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dataToExport)
-            })
-            .then(() => {
-                // Bug #4: mismo caso que en guardarInventarioDrive (ver comentario allí).
-                showToast('☁️ Pedido enviado a Google Drive (no se puede confirmar si se guardó correctamente).', 'info');
-                guardarPedidoDriveBtn.textContent = '☁️ Drive';
-                guardarPedidoDriveBtn.disabled = false;
-            })
-            .catch(err => {
-                showToast('❌ Error de red al enviar a Drive: ' + err.message, 'error');
-                guardarPedidoDriveBtn.textContent = '☁️ Drive';
-                guardarPedidoDriveBtn.disabled = false;
-            });
+            showToast('Use el botón Excel para descargar el pedido. Drive ya no es necesario con Supabase.', 'info');
         }
 
         // Avisa al servidor que un lote puntual (por su id) fue eliminado,
@@ -1287,11 +1278,8 @@
         // reaparecía en los demás.
         function eliminarLoteDelServidor(id) {
             if (!id) return;
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ accion: 'eliminar_lote', id: id })
-            }).catch(() => { /* sin red: se reintentará en la próxima sincronización */ });
+            supabaseClient.from('lotes_conteo').delete().eq('id', id)
+                .then(({ error }) => { if (error) console.warn('No se pudo borrar lote:', error); });
         }
 
         // ============================================================
@@ -1302,33 +1290,22 @@
         // falta leer la respuesta: si la red falla, el conteo local no se
         // pierde (queda guardado igual) y se puede reintentar más tarde.
         function sincronizarLoteAlServidor(record, lote) {
-            // Antes solo se enviaba "cantidad" (en unidades sueltas), por lo
-            // que las columnas "cajas" y "unidades" de la hoja de Google
-            // quedaban siempre en 0. Aquí se calcula el mismo desglose que
-            // ya se usa en la app (según el factor de empaque del producto)
-            // para que, si la hoja/Apps Script tiene esas columnas, se
-            // llenen con datos reales en vez de quedar vacías.
             const factor = record.factor || 1;
             const cajasLote = factor > 1 ? Math.floor(lote.cantidad / factor) : 0;
-            const unidadesLote = factor > 1 ? lote.cantidad % factor : lote.cantidad;
-
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({
-                    accion: 'agregar_lote',
-                    id: lote.id,
-                    codigo: record.codigo,
-                    descripcion: record.descripcion,
-                    linea: record.linea,
-                    cantidad: lote.cantidad,
-                    cajas: cajasLote,
-                    unidades: unidadesLote,
-                    vencimiento: lote.vencimiento,
-                    fecha: lote.fecha,
-                    usuario: lote.usuario || ''
-                })
-            }).catch(() => { /* sin red: se reintentará en la próxima sincronización */ });
+            const unidadesLote = factor > 1 ? (lote.cantidad % factor) : lote.cantidad;
+            supabaseClient.from('lotes_conteo').upsert({
+                id: lote.id,
+                codigo: record.codigo,
+                descripcion: record.descripcion,
+                linea: record.linea || 'SIN LÍNEA',
+                cantidad: lote.cantidad,
+                cajas: cajasLote,
+                unidades: unidadesLote,
+                vencimiento: lote.vencimiento || null,
+                fecha: lote.fecha || null,
+                usuario: lote.usuario || '',
+                device_id: deviceId
+            }).then(({ error }) => { if (error) console.warn('No se pudo subir lote:', error); });
         }
 
         // Combina un registro recibido del servidor con el inventario local,
@@ -1394,21 +1371,24 @@
 
         // Consulta la hoja "ConteoVivo" y trae lo que hayan contado otros
         // celulares desde la última vez. Se llama sola cada 10 segundos.
-        function sincronizarDesdeServidor() {
+        async function sincronizarDesdeServidor() {
             if (sincronizando) return;
             sincronizando = true;
-            fetch(SCRIPT_URL)
-                .then(r => r.json())
-                .then(data => {
-                    const registros = (data && data.registros) || [];
-                    registros.forEach(fusionarRegistroRemoto);
-                    const huboBorrados = quitarLotesBorradosEnServidor(registros);
-                    if (registros.length === 0 && !huboBorrados && inventarioFisico.length === 0) return;
-                    saveInventario();
-                    renderInventario();
-                })
-                .catch(() => { /* sin red: se sigue mostrando lo último conocido */ })
-                .finally(() => { sincronizando = false; });
+            try {
+                const { data, error } = await supabaseClient
+                    .from('lotes_conteo').select('*').order('creado_en', { ascending: true });
+                if (error) throw error;
+                const registros = (data || []).map(r => ({
+                    id: r.id, codigo: r.codigo, descripcion: r.descripcion, linea: r.linea,
+                    cantidad: r.cantidad, vencimiento: r.vencimiento, fecha: r.fecha, usuario: r.usuario || ''
+                }));
+                registros.forEach(fusionarRegistroRemoto);
+                const huboBorrados = quitarLotesBorradosEnServidor(registros);
+                if (registros.length === 0 && !huboBorrados && inventarioFisico.length === 0) return;
+                saveInventario();
+                renderInventario();
+            } catch (e) { /* sin red */ }
+            finally { sincronizando = false; }
         }
 
         // ============================================================
@@ -1732,49 +1712,7 @@
         // GUARDAR INVENTARIO EN DRIVE
         // ============================================================
         function guardarInventarioDrive() {
-            if (inventarioFisico.length === 0) {
-                showToast('No hay datos para guardar.', 'error');
-                return;
-            }
-
-            const dataToExport = inventarioFisico.map((d, idx) => {
-                const usuarios = usuariosDeRegistro(d);
-                return {
-                    '#': idx + 1,
-                    'Código': d.codigo,
-                    'Descripción': d.descripcion,
-                    'Línea': d.linea || 'SIN LÍNEA',
-                    'Stock Teórico': d.stockTeorico,
-                    'Stock Físico': d.stockFisico,
-                    'Diferencia': d.diferencia,
-                    'Vencimiento': (d.lotes || []).map(l => `${l.vencimiento || 'S/F'}: ${l.cantidad}`).join(' | ') || (d.vencimiento || '-'),
-                    'Fecha/Hora': d.fecha,
-                    'Usuario(s)': usuarios.length > 1 ? `⚠️ ${usuarios.join(', ')}` : (usuarios.join(', ') || '-')
-                };
-            });
-
-            guardarDriveBtn.textContent = '⏳ Subiendo...';
-            guardarDriveBtn.disabled = true;
-
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dataToExport)
-            })
-            .then(() => {
-                // Bug #4: con mode:'no-cors' la respuesta es opaca y este .then() se
-                // ejecuta casi siempre, aunque el script de Google falle del lado del
-                // servidor. Ya no se afirma un "éxito" que no podemos confirmar.
-                showToast('☁️ Inventario enviado a Google Drive (no se puede confirmar si se guardó correctamente).', 'info');
-                guardarDriveBtn.textContent = '☁️ Drive';
-                guardarDriveBtn.disabled = false;
-            })
-            .catch(err => {
-                showToast('❌ Error de red al enviar a Drive: ' + err.message, 'error');
-                guardarDriveBtn.textContent = '☁️ Drive';
-                guardarDriveBtn.disabled = false;
-            });
+            showToast('El inventario compartido ya está en la nube (Supabase). Use Excel para descargar una copia.', 'info');
         }
 
         // ============================================================
@@ -1787,11 +1725,8 @@
                 inventarioFisico = [];
                 saveInventario();
                 renderInventario();
-                fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ accion: 'limpiar_conteo' })
-                }).catch(() => {});
+                supabaseClient.from('lotes_conteo').delete().neq('id', '')
+                    .then(({ error }) => { if (error) console.warn('No se pudo limpiar nube:', error); });
                 showToast('Inventario limpiado (local y compartido).', 'info');
             });
         }
@@ -1886,6 +1821,76 @@
             });
         }
 
+
+        function parseFactorDesdeTexto(texto) {
+            if (texto === null || texto === undefined || texto === '') return 1;
+            const n = Number(texto);
+            if (!isNaN(n) && n > 0) return n;
+            const m = String(texto).match(/(\d+)\s*$/);
+            return m ? Number(m[1]) : 1;
+        }
+
+        function filaExcelAProducto(row) {
+            const codigo = String(row['InventarioProductoCodigo'] ?? row['Codigo'] ?? row['codigo'] ?? '').trim();
+            if (!codigo) return null;
+            const descripcion = String(row['InventarioProductoDescripcion'] ?? row['Producto'] ?? row['descripcion'] ?? '').trim();
+            if (!descripcion) return null;
+            const factorRaw = row['InventarioProductoUnidadReferenciaFactor'] ?? row['FactorEmpaque'] ?? row['factor_empaque'] ?? 1;
+            const cantidadRaw = row['InventarioProductoCantidad'] ?? row['Cantidad'] ?? row['stock_teorico'] ?? 0;
+            return {
+                codigo: codigo,
+                codigo_fabrica: String(row['CodigoFabrica'] ?? row['codigo_fabrica'] ?? '').trim() || null,
+                descripcion: descripcion,
+                unidad_ref: String(row['InventarioProductoUnidadReferenciaAbreviacion'] ?? row['Unidad Ref'] ?? row['unidad_ref'] ?? '').trim() || null,
+                factor_empaque: parseFactorDesdeTexto(factorRaw),
+                stock_teorico: Number(cantidadRaw) || 0,
+                linea: String(row['InventarioProductoCategoriaDescripcion'] ?? row['Linea'] ?? row['linea'] ?? '').trim() || null,
+                marca: String(row['InventarioProductoProveedorNombre'] ?? row['Marca'] ?? row['marca'] ?? '').trim() || null,
+                activo: true,
+                actualizado_en: new Date().toISOString()
+            };
+        }
+
+        async function importarExcelASupabase(file) {
+            if (!file) return;
+            showToast('⏳ Leyendo Excel...', 'info');
+            try {
+                const buffer = await file.arrayBuffer();
+                const wb = XLSX.read(buffer, { type: 'array' });
+                const hoja = wb.Sheets[wb.SheetNames[0]];
+                const filas = XLSX.utils.sheet_to_json(hoja, { defval: '' });
+                if (!filas.length) { showToast('El archivo no tiene filas de datos.', 'error'); return; }
+                const productos = [];
+                const codigosVistos = new Set();
+                filas.forEach(row => {
+                    const p = filaExcelAProducto(row);
+                    if (!p) return;
+                    if (codigosVistos.has(p.codigo)) {
+                        const idx = productos.findIndex(x => x.codigo === p.codigo);
+                        if (idx >= 0) productos[idx] = p;
+                    } else {
+                        codigosVistos.add(p.codigo);
+                        productos.push(p);
+                    }
+                });
+                if (!productos.length) { showToast('No se encontraron productos con código y descripción.', 'error'); return; }
+                showToast(`⏳ Subiendo ${productos.length} productos a la nube...`, 'info');
+                const TAMANO_LOTE = 200;
+                let subidos = 0;
+                for (let i = 0; i < productos.length; i += TAMANO_LOTE) {
+                    const lote = productos.slice(i, i + TAMANO_LOTE);
+                    const { error } = await supabaseClient.from('productos').upsert(lote, { onConflict: 'codigo' });
+                    if (error) throw error;
+                    subidos += lote.length;
+                }
+                showToast(`✅ ${subidos} productos actualizados en Supabase.`, 'success');
+                await loadFromGoogleSheets();
+            } catch (err) {
+                console.error(err);
+                showToast('❌ Error al importar: ' + (err.message || err), 'error');
+            }
+        }
+
         function init() {
             cargarTema();
             themeToggleBtn.addEventListener('click', alternarTema);
@@ -1901,10 +1906,28 @@
             loadPedido();
             loadFromGoogleSheets();
 
+            const importExcelInput = document.getElementById('importExcelInput');
+            if (importExcelInput) {
+                importExcelInput.addEventListener('change', function () {
+                    const file = this.files && this.files[0];
+                    if (file) {
+                        importarExcelASupabase(file);
+                        this.value = '';
+                    }
+                });
+            }
+
             // Sincronización en vivo del conteo compartido entre celulares.
             sincronizarDesdeServidor();
             if (syncTimer) clearInterval(syncTimer);
             syncTimer = setInterval(sincronizarDesdeServidor, 10000);
+            try {
+                supabaseClient.channel('conteos-vivos')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'lotes_conteo' },
+                        () => { sincronizarDesdeServidor(); })
+                    .subscribe();
+            } catch (e) { console.warn('Realtime no disponible', e); }
+
 
             refreshBtn.addEventListener('click', function() {
                 const icon = this.querySelector('.btn-icon');
@@ -2069,7 +2092,7 @@
         // saber si ya pasó el día y hay que volver a pedir la clave, y
         // también para poder marcar con qué usuario se registra cada
         // conteo de Inventario Físico.
-        function intentarLogin() {
+        async function intentarLogin() {
             const usuario = loginUsuario.value.trim().toLowerCase();
             const clave = loginClave.value;
             if (!usuario || !clave) {
@@ -2077,37 +2100,37 @@
                 loginError.classList.remove('hidden');
                 return;
             }
-
             loginBtn.disabled = true;
             loginBtn.textContent = 'Verificando...';
             loginError.classList.add('hidden');
-
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ accion: 'login', usuario: usuario, clave: clave })
-            })
-                .then(r => r.json())
-                .then(data => {
-                    if (data && data.valido) {
-                        usuarioActual = usuario;
-                        try { localStorage.setItem(SESSION_KEY, JSON.stringify({ ts: Date.now(), usuario: usuario })); } catch (e) {}
-                        mostrarApp();
-                    } else {
-                        loginError.textContent = 'Usuario o clave incorrectos.';
-                        loginError.classList.remove('hidden');
-                        loginClave.value = '';
-                        loginClave.focus();
-                    }
-                })
-                .catch(() => {
-                    loginError.textContent = 'No se pudo conectar para verificar. Revise su conexión e intente de nuevo.';
+            try {
+                const { data, error } = await supabaseClient
+                    .from('app_usuarios')
+                    .select('usuario, nombre')
+                    .eq('usuario', usuario)
+                    .eq('clave', clave)
+                    .eq('activo', true)
+                    .maybeSingle();
+                if (error) throw error;
+                if (data) {
+                    usuarioActual = data.usuario;
+                    try {
+                        localStorage.setItem(SESSION_KEY, JSON.stringify({ ts: Date.now(), usuario: data.usuario }));
+                    } catch (e) {}
+                    mostrarApp();
+                } else {
+                    loginError.textContent = 'Usuario o clave incorrectos.';
                     loginError.classList.remove('hidden');
-                })
-                .finally(() => {
-                    loginBtn.disabled = false;
-                    loginBtn.textContent = 'Entrar';
-                });
+                    loginClave.value = '';
+                    loginClave.focus();
+                }
+            } catch (e) {
+                loginError.textContent = 'No se pudo conectar para verificar. Revise su conexión e intente de nuevo.';
+                loginError.classList.remove('hidden');
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Entrar';
+            }
         }
 
         loginBtn.addEventListener('click', intentarLogin);
