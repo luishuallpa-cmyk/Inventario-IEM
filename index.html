@@ -155,6 +155,9 @@
         <div class="card-body-collapsible" id="diffCardBody">
         <div class="card-body-inner">
         <div class="card-actions-row">
+                <button class="btn btn-primary btn-sm" id="enviarInventarioBtn" title="Enviar a la nube el conteo ya revisado">
+                    <span class="btn-icon">📤</span><span class="btn-label"> Enviar inventario</span>
+                </button>
                 <button class="btn btn-success btn-sm" id="exportDiffBtn"><span class="btn-icon">📊</span><span class="btn-label"> Excel</span></button>
                 <button class="btn btn-outline btn-sm" id="guardarDriveBtn" title="Ya sincroniza en la nube"><span class="btn-icon">☁️</span><span class="btn-label"> Nube</span></button>
                 <button class="btn btn-danger btn-sm" id="clearDiffBtn" title="Limpiar conteo físico"><span class="btn-icon">🗑️</span><span class="btn-label"> Limpiar</span></button>
@@ -281,6 +284,21 @@
                     </button>
                 </div>
                 <p class="admin-status" id="adminStatus"></p>
+
+                <hr class="admin-divider">
+
+                <h3 class="admin-subtitle">📥 Descargar inventarios terminados</h3>
+                <p class="admin-lead" style="margin-bottom:0.6rem;">Exporta el conteo físico de todos los dispositivos (datos en la nube).</p>
+                <div class="admin-actions" style="justify-content:stretch;">
+                    <button type="button" class="btn btn-primary" id="adminExportInvBtn" style="flex:1;">
+                        <span class="btn-icon">📊</span><span class="btn-label"> Descargar inventario físico</span>
+                    </button>
+                </div>
+                <div class="admin-actions" style="justify-content:stretch;margin-top:0.5rem;">
+                    <button type="button" class="btn btn-outline" id="adminExportPedidoBtn" style="flex:1;">
+                        <span class="btn-icon">🛒</span><span class="btn-label"> Descargar pedido</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1698,7 +1716,90 @@
         // ============================================================
         // EXPORTAR INVENTARIO
         // ============================================================
+        
+        async function enviarInventarioCompleto() {
+            if (!inventarioFisico || inventarioFisico.length === 0) {
+                showToast('No hay conteo físico para enviar.', 'error');
+                return;
+            }
+            const ok = await confirmarAccion(
+                '¿Enviar el inventario físico revisado a la nube?\nSe subirán todos los lotes contados para que el administrador los vea y descargue.',
+                'Enviar',
+                'primary'
+            );
+            if (!ok) return;
+
+            const btn = document.getElementById('enviarInventarioBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="btn-icon">⏳</span><span class="btn-label"> Enviando...</span>';
+            }
+            showToast('⏳ Enviando inventario a la nube...', 'info');
+
+            try {
+                const filas = [];
+                inventarioFisico.forEach(record => {
+                    const factor = record.factor || 1;
+                    (record.lotes || []).forEach(lote => {
+                        const cajasLote = factor > 1 ? Math.floor(lote.cantidad / factor) : 0;
+                        const unidadesLote = factor > 1 ? (lote.cantidad % factor) : lote.cantidad;
+                        filas.push({
+                            id: lote.id,
+                            codigo: record.codigo,
+                            descripcion: record.descripcion,
+                            linea: record.linea || 'SIN LÍNEA',
+                            cantidad: lote.cantidad,
+                            cajas: cajasLote,
+                            unidades: unidadesLote,
+                            vencimiento: lote.vencimiento || null,
+                            fecha: lote.fecha || null,
+                            usuario: lote.usuario || usuarioActual || '',
+                            device_id: deviceId
+                        });
+                    });
+                });
+
+                if (filas.length === 0) {
+                    showToast('No hay lotes para enviar.', 'error');
+                    return;
+                }
+
+                const TAM = 200;
+                for (let i = 0; i < filas.length; i += TAM) {
+                    const lote = filas.slice(i, i + TAM);
+                    const { error } = await supabaseClient
+                        .from('lotes_conteo')
+                        .upsert(lote, { onConflict: 'id' });
+                    if (error) throw error;
+                }
+
+                try {
+                    localStorage.setItem('iem_ultimo_envio_inventario', JSON.stringify({
+                        ts: Date.now(),
+                        usuario: usuarioActual || '',
+                        lotes: filas.length,
+                        productos: inventarioFisico.length
+                    }));
+                } catch (e) {}
+
+                showToast('✅ Inventario enviado (' + filas.length + ' lotes). El administrador ya puede descargarlo.', 'success');
+                await sincronizarDesdeServidor();
+            } catch (err) {
+                console.error(err);
+                showToast('❌ No se pudo enviar: ' + (err.message || err), 'error');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span class="btn-icon">📤</span><span class="btn-label"> Enviar inventario</span>';
+                }
+            }
+        }
+
         function exportarInventario() {
+            if (!esAdmin()) {
+                showToast('Solo el administrador puede descargar el inventario.', 'error');
+                return;
+            }
             if (inventarioFisico.length === 0) {
                 showToast('No hay datos para exportar.', 'error');
                 return;
@@ -1751,6 +1852,10 @@
         // LIMPIAR INVENTARIO
         // ============================================================
         function limpiarInventario() {
+            if (!esAdmin()) {
+                showToast('Solo el administrador puede limpiar el inventario.', 'error');
+                return;
+            }
             if (inventarioFisico.length === 0) return;
             confirmarAccion('¿Eliminar todos los registros del inventario físico? Esto también borra el conteo compartido en la nube para todos los celulares.').then(ok => {
                 if (!ok) return;
@@ -1999,6 +2104,20 @@
                     }
                 });
             }
+            const adminExportInvBtn = document.getElementById('adminExportInvBtn');
+            if (adminExportInvBtn) {
+                adminExportInvBtn.addEventListener('click', function () {
+                    if (!esAdmin()) return;
+                    exportarInventario();
+                });
+            }
+            const adminExportPedidoBtn = document.getElementById('adminExportPedidoBtn');
+            if (adminExportPedidoBtn) {
+                adminExportPedidoBtn.addEventListener('click', function () {
+                    if (!esAdmin()) return;
+                    exportarPedido();
+                });
+            }
 
             // Sincronización en vivo del conteo compartido entre celulares.
             sincronizarDesdeServidor();
@@ -2081,6 +2200,8 @@
             guardarPedidoDriveBtn.addEventListener('click', guardarPedidoEnDrive);
             limpiarPedidoBtn.addEventListener('click', limpiarPedido);
 
+            const enviarInventarioBtn = document.getElementById('enviarInventarioBtn');
+            if (enviarInventarioBtn) enviarInventarioBtn.addEventListener('click', enviarInventarioCompleto);
             exportDiffBtn.addEventListener('click', exportarInventario);
             clearDiffBtn.addEventListener('click', limpiarInventario);
             guardarDriveBtn.addEventListener('click', guardarInventarioDrive);
@@ -2147,10 +2268,15 @@
         }
 
         function actualizarUIPorRol() {
+            const es = esAdmin();
             const btnAdmin = document.getElementById('adminPanelBtn');
-            if (btnAdmin) {
-                btnAdmin.style.display = esAdmin() ? 'inline-flex' : 'none';
-            }
+            if (btnAdmin) btnAdmin.style.display = es ? 'inline-flex' : 'none';
+
+            // Solo admin descarga inventario / limpia conteo
+            ['exportDiffBtn', 'clearDiffBtn', 'guardarDriveBtn'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = es ? '' : 'none';
+            });
         }
 
         let adminSelectedFile = null;
