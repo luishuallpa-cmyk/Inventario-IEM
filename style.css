@@ -1675,3 +1675,16 @@ label.btn-drive {
         width: 100%;
     }
 }
+
+
+.admin-divider {
+    border: none;
+    border-top: 1px solid var(--divider);
+    margin: 1.15rem 0 0.9rem;
+}
+.admin-subtitle {
+    margin: 0 0 0.4rem;
+    font-size: 0.95rem;
+    color: var(--heading-color);
+    font-weight: 700;
+}
