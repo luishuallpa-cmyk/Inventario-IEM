@@ -56,7 +56,7 @@
             <input type="text" id="searchInput" placeholder="Buscar por código, descripción o marca..." autofocus>
             <button class="btn btn-primary" id="searchButton">🔍 Buscar</button>
             <button class="btn btn-outline" id="refreshDriveBtn" title="Actualizar" aria-label="Actualizar"><span class="btn-icon">🔄</span><span class="btn-label"> Actualizar</span></button>
-            <label class="btn btn-drive" style="cursor:pointer;margin:0;" title="Importar Excel del sistema">
+            <label class="btn btn-drive" id="importExcelBtn" style="cursor:pointer;margin:0;display:none;" title="Importar Excel del sistema (solo administrador)">
                 📤 Importar Excel
                 <input type="file" id="importExcelInput" accept=".xlsx,.xls,.csv" style="display:none;">
             </label>
@@ -1853,6 +1853,10 @@
 
         async function importarExcelASupabase(file) {
             if (!file) return;
+            if (!esAdmin()) {
+                showToast('Solo el administrador puede importar el Excel.', 'error');
+                return;
+            }
             showToast('⏳ Leyendo Excel...', 'info');
             try {
                 const buffer = await file.arrayBuffer();
@@ -2029,6 +2033,7 @@
         // quién contó cada cosa y detectar si dos celulares (dos usuarios)
         // contaron el mismo producto por error.
         let usuarioActual = '';
+        let rolUsuario = '';
 
         // La sesión no dura 24 horas fijas: vence apenas cambia el día del
         // calendario (por ejemplo, si entró a las 23:50, a las 00:00 ya pide
@@ -2051,9 +2056,21 @@
                 if (!data || !data.ts) return false;
                 if (!mismoDia(data.ts)) return false;
                 usuarioActual = data.usuario || '';
+                rolUsuario = String(data.rol || 'usuario').toLowerCase();
                 return true;
             } catch (e) {
                 return false;
+            }
+        }
+
+        function esAdmin() {
+            return String(rolUsuario || '').toLowerCase() === 'admin';
+        }
+
+        function actualizarUIPorRol() {
+            const btnImport = document.getElementById('importExcelBtn');
+            if (btnImport) {
+                btnImport.style.display = esAdmin() ? 'inline-flex' : 'none';
             }
         }
 
@@ -2061,6 +2078,7 @@
             loginOverlay.classList.add('hidden');
             appContainer.classList.remove('oculto');
             if (usuarioBadgeTexto) usuarioBadgeTexto.textContent = usuarioActual || '-';
+            actualizarUIPorRol();
             if (!appIniciado) {
                 appIniciado = true;
                 init();
@@ -2084,6 +2102,7 @@
                 if (!ok) return;
                 try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
                 usuarioActual = '';
+                rolUsuario = '';
                 mostrarLogin();
             });
         }
@@ -2106,7 +2125,7 @@
             try {
                 const { data, error } = await supabaseClient
                     .from('app_usuarios')
-                    .select('usuario, nombre')
+                    .select('usuario, nombre, rol')
                     .eq('usuario', usuario)
                     .eq('clave', clave)
                     .eq('activo', true)
@@ -2114,8 +2133,13 @@
                 if (error) throw error;
                 if (data) {
                     usuarioActual = data.usuario;
+                    rolUsuario = String(data.rol || 'usuario').toLowerCase();
                     try {
-                        localStorage.setItem(SESSION_KEY, JSON.stringify({ ts: Date.now(), usuario: data.usuario }));
+                        localStorage.setItem(SESSION_KEY, JSON.stringify({
+                            ts: Date.now(),
+                            usuario: data.usuario,
+                            rol: rolUsuario
+                        }));
                     } catch (e) {}
                     mostrarApp();
                 } else {
@@ -2154,6 +2178,7 @@
             if (!appContainer.classList.contains('oculto') && !sesionValida()) {
                 try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
                 usuarioActual = '';
+                rolUsuario = '';
                 mostrarLogin();
             }
         }, 60000);
