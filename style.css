@@ -296,54 +296,86 @@
         }
         .header .theme-toggle:hover { background: rgba(108, 92, 231, 0.25); transform: rotate(10deg); }
 
-        /* Botón Salir — visible pero discreto (no compite con acciones principales) */
+        /* Botón Salir: en móvil solo icono (como tema/admin); en PC texto discreto */
         .btn-logout {
             display: inline-flex !important;
             align-items: center;
             justify-content: center;
             gap: 0.3rem;
+            margin-left: 0;
+            width: 38px;
+            height: 38px;
             min-height: 38px;
-            padding: 0.35rem 0.8rem;
-            border-radius: 999px;
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            background: rgba(255, 255, 255, 0.08);
-            color: var(--text-secondary) !important;
+            padding: 0;
+            border-radius: 50%;
+            border: 1px solid rgba(251, 113, 133, 0.4);
+            background: rgba(251, 113, 133, 0.14);
+            color: #fda4af !important;
             font-family: var(--font);
-            font-size: 0.78rem;
-            font-weight: 650;
-            letter-spacing: 0.02em;
+            font-size: 1.05rem;
+            font-weight: 600;
             cursor: pointer;
             transition: 0.15s;
             flex-shrink: 0;
             box-shadow: none;
             text-transform: none;
+            letter-spacing: 0;
         }
         .btn-logout:hover,
         .btn-logout:active {
-            background: rgba(225, 29, 72, 0.18);
-            border-color: rgba(225, 29, 72, 0.45);
-            color: #fda4af !important;
+            background: rgba(251, 113, 133, 0.28);
+            border-color: rgba(251, 113, 133, 0.65);
+            color: #fecdd3 !important;
             transform: none;
         }
-        .btn-logout-label {
-            display: inline !important;
+        .btn-logout-icon {
+            font-size: 1.15rem;
+            line-height: 1;
             color: inherit !important;
         }
-        body.light-theme .btn-logout {
-            background: rgba(15, 23, 42, 0.05);
-            border-color: rgba(15, 23, 42, 0.12);
-            color: var(--text-secondary) !important;
+        .btn-logout-label {
+            display: none; /* móvil / por defecto: solo icono */
         }
-        body.light-theme .btn-logout:hover {
+        body.light-theme .btn-logout {
             background: rgba(225, 29, 72, 0.1);
             border-color: rgba(225, 29, 72, 0.35);
+            color: #e11d48 !important;
+        }
+        body.light-theme .btn-logout:hover {
+            background: rgba(225, 29, 72, 0.18);
             color: #be123c !important;
+        }
+        /* PC: icono + texto Salir, mismo estilo suave */
+        @media (min-width: 641px) {
+            .btn-logout {
+                width: auto;
+                height: 38px;
+                padding: 0 0.75rem 0 0.55rem;
+                border-radius: 999px;
+                font-size: 0.78rem;
+                font-weight: 650;
+            }
+            .btn-logout-label {
+                display: inline !important;
+                color: inherit !important;
+            }
+            .btn-logout-icon {
+                font-size: 1rem;
+            }
         }
         @media (max-width: 640px) {
             .btn-logout {
+                width: 42px !important;
+                height: 42px !important;
                 min-height: 42px !important;
-                padding: 0.35rem 0.7rem !important;
-                font-size: 0.75rem !important;
+                padding: 0 !important;
+                border-radius: 50% !important;
+            }
+            .btn-logout-label {
+                display: none !important;
+            }
+            .btn-logout-icon {
+                font-size: 1.2rem !important;
             }
         }
 
