@@ -8,85 +8,82 @@
         }
 
         :root {
-            --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
-            /* Le dice al navegador que estamos en tema oscuro para que los
-               controles nativos (el desplegable de Día/Mes al abrirlo,
-               scrollbars, etc.) se pinten oscuros también. Sin esto, en
-               escritorio el <select> se ve con el fondo del tema pero, al
-               desplegarlo, la lista de opciones la dibuja el sistema
-               operativo siempre en blanco, sin importar el tema de la app. */
             color-scheme: dark;
 
-            /* Colores base (tema oscuro, un poco menos saturado que el morado
-               intenso original, para que canse menos la vista en sesiones
-               largas de conteo, sin perder la identidad azul/morado) */
-            --bg-gradient: linear-gradient(160deg, #1a233e 0%, #2a2653 45%, #372656 100%);
-            --card-bg: rgba(255, 255, 255, 0.07);
-            --card-border: rgba(255, 255, 255, 0.1);
-            --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-            --text-primary: #eef1fb;
-            --text-secondary: #aab4e8;
-            --text-muted: #7d87c2;
-            --heading-color: #c9d6ff;
-            --accent: #6c5ce7;
-            --accent-2: #00c2ff;
-            --accent-light: #8f7bff;
-            --accent-gradient: linear-gradient(135deg, #00c2ff 0%, #6c5ce7 55%, #d152e0 100%);
-            --success: #22c98a;
-            --warning: #ffab2e;
-            --danger: #ff5470;
-            --input-bg: rgba(255, 255, 255, 0.08);
-            --input-border: rgba(255, 255, 255, 0.14);
-            --input-focus: #6c5ce7;
-            --table-header-bg: rgba(108, 92, 231, 0.18);
-            --table-row-alt: rgba(255, 255, 255, 0.03);
-            --badge-bg: rgba(108, 92, 231, 0.22);
-            --badge-text: #b9c1ff;
-            --divider: rgba(255, 255, 255, 0.08);
-            --shadow-color: rgba(0, 0, 0, 0.3);
+            /* Tema oscuro — más contraste para leer bien en almacén / móvil */
+            --bg-gradient: linear-gradient(165deg, #12182b 0%, #1e1a3a 48%, #2a1f42 100%);
+            --card-bg: rgba(28, 32, 58, 0.92);
+            --card-border: rgba(180, 190, 255, 0.14);
+            --card-shadow: 0 10px 36px rgba(0, 0, 0, 0.45);
+            --text-primary: #f4f6ff;
+            --text-secondary: #c5cce8;
+            --text-muted: #9aa3c7;
+            --heading-color: #dce4ff;
+            --accent: #7b6cff;
+            --accent-2: #22d3ee;
+            --accent-light: #a594ff;
+            --accent-gradient: linear-gradient(135deg, #22d3ee 0%, #7b6cff 55%, #e879f9 100%);
+            --success: #34d399;
+            --warning: #fbbf24;
+            --danger: #fb7185;
+            --input-bg: rgba(255, 255, 255, 0.1);
+            --input-border: rgba(200, 210, 255, 0.22);
+            --input-focus: #8b7cff;
+            --table-header-bg: rgba(123, 108, 255, 0.22);
+            --table-row-alt: rgba(255, 255, 255, 0.035);
+            --badge-bg: rgba(123, 108, 255, 0.28);
+            --badge-text: #d4dbff;
+            --divider: rgba(200, 210, 255, 0.12);
+            --shadow-color: rgba(0, 0, 0, 0.35);
         }
 
-        /* Tema claro */
+        /* Tema claro — texto más oscuro y cards más sólidas */
         body.light-theme {
             color-scheme: light;
-            --bg-gradient: linear-gradient(160deg, #eef2ff 0%, #e6ecff 40%, #f3e8ff 100%);
-            --card-bg: rgba(255, 255, 255, 0.8);
-            --card-border: rgba(108, 92, 231, 0.12);
-            --card-shadow: 0 8px 32px rgba(84, 60, 180, 0.1);
-            --text-primary: #201b45;
-            --text-secondary: #4a437e;
-            --text-muted: #6b6499;
-            --heading-color: #4b2ea3;
-            --accent: #6c48d6;
-            --accent-2: #0090d9;
-            --accent-light: #8a63e8;
-            --accent-gradient: linear-gradient(135deg, #0090d9 0%, #6c48d6 55%, #c23ed0 100%);
-            --success: #17a878;
-            --warning: #e08a1a;
-            --danger: #e0405f;
-            --input-bg: rgba(255, 255, 255, 0.7);
-            --input-border: rgba(108, 92, 231, 0.18);
-            --table-header-bg: rgba(108, 92, 231, 0.08);
-            --table-row-alt: rgba(108, 92, 231, 0.03);
-            --badge-bg: rgba(108, 92, 231, 0.12);
-            --badge-text: #5a3ec2;
-            --divider: rgba(108, 92, 231, 0.1);
-            --shadow-color: rgba(84, 60, 180, 0.1);
+            --bg-gradient: linear-gradient(165deg, #eef2ff 0%, #e8edff 42%, #f5e9ff 100%);
+            --card-bg: rgba(255, 255, 255, 0.94);
+            --card-border: rgba(76, 58, 180, 0.16);
+            --card-shadow: 0 10px 32px rgba(60, 40, 140, 0.1);
+            --text-primary: #15122a;
+            --text-secondary: #3d3868;
+            --text-muted: #5c5688;
+            --heading-color: #3b2494;
+            --accent: #5b45d6;
+            --accent-2: #0284c7;
+            --accent-light: #7c5ce8;
+            --accent-gradient: linear-gradient(135deg, #0284c7 0%, #5b45d6 55%, #c026d3 100%);
+            --success: #059669;
+            --warning: #d97706;
+            --danger: #e11d48;
+            --input-bg: #ffffff;
+            --input-border: rgba(76, 58, 180, 0.22);
+            --table-header-bg: rgba(91, 69, 214, 0.1);
+            --table-row-alt: rgba(91, 69, 214, 0.04);
+            --badge-bg: rgba(91, 69, 214, 0.14);
+            --badge-text: #4c35b5;
+            --divider: rgba(76, 58, 180, 0.12);
+            --shadow-color: rgba(60, 40, 140, 0.12);
         }
 
         body {
             font-family: var(--font);
             background: var(--bg-gradient);
+            background-attachment: fixed;
             min-height: 100vh;
             min-height: 100dvh;
             padding-left: env(safe-area-inset-left, 0);
             padding-right: env(safe-area-inset-right, 0);
             padding-bottom: env(safe-area-inset-bottom, 0);
-            padding: 0.7rem;
+            padding: 0.75rem;
             color: var(--text-primary);
-            transition: background 0.4s, color 0.3s;
-            line-height: 1.5;
+            transition: background 0.35s, color 0.25s;
+            line-height: 1.55;
+            font-size: 15px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
         }
 
         .container {
@@ -1340,9 +1337,9 @@
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.55);
-            backdrop-filter: blur(2px);
-            z-index: 999;
+            background: rgba(0,0,0,0.65);
+            backdrop-filter: blur(3px);
+            z-index: 5000; /* por encima del panel admin (3000) y login (2000) */
             align-items: center;
             justify-content: center;
             padding: 1rem;
@@ -1355,7 +1352,9 @@
             padding: 1.2rem 1.3rem;
             max-width: 340px;
             width: 100%;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            box-shadow: 0 12px 48px rgba(0,0,0,0.55);
+            position: relative;
+            z-index: 5001;
         }
         .confirm-box p {
             color: var(--text-primary);
@@ -1814,4 +1813,186 @@ body.light-theme .admin-panel-header {
     font-size: 0.8rem;
     color: var(--text-muted);
     padding: 0.4rem 0;
+}
+
+/* ============================================================
+   LEGIBILIDAD v4 — contraste, tipografía y tamaños
+   ============================================================ */
+
+/* Texto secundario / muted un poco más legible */
+.result-item .descripcion,
+.mi-card-desc,
+.admin-lead,
+.admin-tips,
+.file-status,
+#fileStatus {
+    color: var(--text-secondary) !important;
+    letter-spacing: 0.01em;
+}
+
+/* Códigos más legibles (mono + peso) */
+.result-item .codigo,
+.mi-card-codigo,
+.pa-codigo {
+    letter-spacing: 0.03em;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Inputs: tamaño mínimo 16px evita zoom iOS y se lee mejor */
+input[type="text"],
+input[type="search"],
+input[type="number"],
+input[type="password"],
+select,
+textarea {
+    font-size: 16px !important;
+    color: var(--text-primary);
+}
+
+input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.9;
+}
+
+/* Títulos de sección */
+.card-header h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+/* Badges más contrastados */
+.badge {
+    font-size: 0.72rem;
+    font-weight: 650;
+    letter-spacing: 0.02em;
+}
+
+/* Resultados de búsqueda */
+.result-item {
+    font-size: 0.88rem;
+}
+.result-item .codigo {
+    font-size: 0.92rem;
+}
+.result-item .descripcion {
+    font-size: 0.84rem;
+    line-height: 1.35;
+}
+
+/* Tablas */
+.diff-table th {
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+.diff-table td {
+    font-size: 0.82rem;
+    color: var(--text-primary);
+}
+
+/* Login */
+.login-card h2 {
+    letter-spacing: -0.02em;
+}
+.login-field label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.3rem;
+    display: block;
+}
+
+/* Botones: un poco más de peso visual */
+.btn {
+    letter-spacing: 0.01em;
+    font-weight: 650;
+}
+.btn-primary,
+.btn-success,
+.btn-danger,
+.btn-warning,
+.btn-drive {
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.12);
+}
+
+/* Tarjetas móviles de inventario */
+.mi-card-desc {
+    font-size: 0.84rem !important;
+    line-height: 1.4;
+}
+.mi-stat-value {
+    font-size: 0.95rem !important;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Admin: textos claros */
+.admin-subtitle {
+    font-size: 1rem !important;
+    letter-spacing: -0.01em;
+}
+.admin-sesion-item .ses-user {
+    font-size: 0.92rem;
+}
+.admin-sesion-item .ses-meta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Selección de producto (móvil) — texto blanco bien visible */
+body.modo-seleccion .producto-activo-card,
+body.modo-seleccion .pa-descripcion,
+body.modo-seleccion .pa-codigo,
+body.modo-seleccion .pa-meta {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+body.modo-seleccion .pa-descripcion {
+    font-size: 1.1rem !important;
+    line-height: 1.35;
+}
+
+/* Hint de conversión más visible */
+.conversion-hint {
+    font-weight: 650;
+    font-size: 0.85rem !important;
+}
+
+/* Focus visible para teclado / accesibilidad */
+:focus-visible {
+    outline: 2px solid var(--accent-2);
+    outline-offset: 2px;
+}
+
+/* Tema claro: inputs con borde más marcado */
+body.light-theme input,
+body.light-theme select {
+    border-color: var(--input-border);
+    background: #fff;
+}
+body.light-theme .card {
+    background: rgba(255, 255, 255, 0.96);
+}
+
+/* Contraste en números de stock */
+.result-item .stock-cajas,
+.mi-stat-value {
+    font-weight: 750;
+}
+
+@media (max-width: 640px) {
+    body {
+        font-size: 15px;
+    }
+    .card-header h2 {
+        font-size: 1.05rem;
+    }
+    .result-item .row2 .descripcion {
+        font-size: 0.86rem !important;
+        line-height: 1.4 !important;
+        color: var(--text-secondary) !important;
+    }
+    .result-item .row1 .codigo {
+        font-size: 0.95rem !important;
+    }
 }
