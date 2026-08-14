@@ -124,6 +124,7 @@
             if (idBorrar) {
                 supabaseClient.from('sesiones_activas').delete().eq('id', idBorrar).then(function () {});
             }
+            try { supabaseClient.auth.signOut(); } catch (e) {}
             document.body.style.overflow = '';
             const ov = document.getElementById('adminOverlay');
             if (ov) {
@@ -2355,15 +2356,19 @@
         }, true);
 
         // ============================================================
-        // INICIO DE SESIÓN (usuario y clave por persona)
+        // INICIO DE SESIÓN — Supabase Auth
         // ============================================================
-        // Antes la lista de usuarios y claves estaba escrita aquí mismo,
-        // en texto plano, dentro del HTML — cualquiera que abriera "Ver
-        // código fuente" del navegador podía leerla. Ahora la validación
-        // se hace contra el Apps Script (accion: 'login'): el navegador
-        // nunca recibe la lista de usuarios/claves, solo un sí/no.
+        // Login con auth.signInWithPassword (JWT). El rol se lee de la
+        // tabla public.perfiles (no de app_usuarios). Ejecuta primero
+        // MIGRACION_SUPABASE_AUTH.sql y crea usuarios en Authentication.
+        // ============================================================
 
         const SESSION_KEY = 'iem_sesion_activa';
+        const AUTH_EMAIL_DOMAIN = 'iem.local'; // luis → luis@iem.local
+        const LOGIN_MAX_INTENTOS = 5;
+        const LOGIN_BLOQUEO_MS = 60 * 1000;
+        let loginIntentos = 0;
+        let loginBloqueoHasta = 0;
 
         const loginOverlay = document.getElementById('loginOverlay');
         const loginUsuario = document.getElementById('loginUsuario');
@@ -2375,18 +2380,9 @@
         const usuarioBadgeTexto = document.getElementById('usuarioBadgeTexto');
         let appIniciado = false;
 
-        // Usuario que inició sesión en este dispositivo. Se guarda junto con
-        // el conteo de cada producto para poder ver, en Inventario Físico,
-        // quién contó cada cosa y detectar si dos celulares (dos usuarios)
-        // contaron el mismo producto por error.
         let usuarioActual = '';
         let rolUsuario = '';
 
-        // La sesión no dura 24 horas fijas: vence apenas cambia el día del
-        // calendario (por ejemplo, si entró a las 23:50, a las 00:00 ya pide
-        // clave de nuevo) o cuando el usuario toca "Cerrar sesión". Por eso
-        // se guarda también la fecha (día) del login y se compara contra la
-        // fecha actual, en vez de contar horas transcurridas.
         function mismoDia(ts) {
             const a = new Date(ts);
             const b = new Date();
@@ -2395,18 +2391,35 @@
                    a.getDate() === b.getDate();
         }
 
-        function sesionValida() {
+        function usuarioAEmail(usuario) {
+            const u = String(usuario || '').trim().toLowerCase();
+            if (!u) return '';
+            if (u.includes('@')) return u;
+            return u + '@' + AUTH_EMAIL_DOMAIN;
+        }
+
+        function guardarMetaSesion(usuario, rol) {
+            try {
+                localStorage.setItem(SESSION_KEY, JSON.stringify({
+                    ts: Date.now(),
+                    usuario: usuario,
+                    rol: rol,
+                    deviceId: deviceId
+                }));
+            } catch (e) {}
+        }
+
+        function leerMetaSesion() {
             try {
                 const raw = localStorage.getItem(SESSION_KEY);
-                if (!raw) return false;
+                if (!raw) return null;
                 const data = JSON.parse(raw);
-                if (!data || !data.ts) return false;
-                if (!mismoDia(data.ts)) return false;
-                usuarioActual = data.usuario || '';
-                rolUsuario = String(data.rol || 'usuario').toLowerCase();
-                return true;
+                if (!data || !data.ts) return null;
+                if (!mismoDia(data.ts)) return null;
+                if (data.deviceId && data.deviceId !== deviceId) return null;
+                return data;
             } catch (e) {
-                return false;
+                return null;
             }
         }
 
@@ -2418,8 +2431,6 @@
             const es = esAdmin();
             const btnAdmin = document.getElementById('adminPanelBtn');
             if (btnAdmin) btnAdmin.style.display = es ? 'inline-flex' : 'none';
-
-            // Solo admin descarga inventario / limpia conteo
             ['exportDiffBtn', 'clearDiffBtn', 'guardarDriveBtn'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.style.display = es ? '' : 'none';
@@ -2486,33 +2497,86 @@
         function mostrarLogin() {
             appContainer.classList.add('oculto');
             loginOverlay.classList.remove('hidden');
-            loginUsuario.value = '';
-            loginClave.value = '';
-            loginError.classList.add('hidden');
-            loginUsuario.focus();
+            if (loginUsuario) loginUsuario.value = '';
+            if (loginClave) loginClave.value = '';
+            if (loginError) loginError.classList.add('hidden');
+            if (loginUsuario) loginUsuario.focus();
         }
 
-        // Cierra la sesión activa: borra la marca de tiempo guardada (para
-        // que sesionValida() vuelva a dar false) y regresa a la pantalla
-        // de login. Pide confirmación para evitar salidas accidentales.
-        function cerrarSesion() {
-            confirmarAccion('¿Cerrar sesión?', 'Salir', 'primary').then(ok => {
-                if (!ok) return;
-                borrarSesionActiva();
+        async function cargarPerfil(userId, emailFallback) {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('perfiles')
+                    .select('usuario, nombre, rol, activo')
+                    .eq('id', userId)
+                    .maybeSingle();
+                if (error) throw error;
+                if (data) {
+                    if (data.activo === false) {
+                        return { ok: false, motivo: 'Usuario desactivado.' };
+                    }
+                    return {
+                        ok: true,
+                        usuario: data.usuario || split_part_email(emailFallback),
+                        rol: String(data.rol || 'usuario').toLowerCase() === 'admin' ? 'admin' : 'usuario'
+                    };
+                }
+            } catch (e) {
+                console.warn('No se pudo leer perfiles (¿ejecutaste el SQL de migración?)', e);
+            }
+            // Fallback: sin tabla perfiles → usuario del email, rol usuario
+            // (excepto si el email empieza por luis@ → admin de emergencia)
+            const u = split_part_email(emailFallback);
+            const rol = (u === 'luis') ? 'admin' : 'usuario';
+            return { ok: true, usuario: u, rol: rol };
+        }
+
+        function split_part_email(email) {
+            return String(email || '').split('@')[0].toLowerCase() || 'usuario';
+        }
+
+        async function aplicarSesionAuth(session) {
+            if (!session || !session.user) return false;
+            const perfil = await cargarPerfil(session.user.id, session.user.email);
+            if (!perfil.ok) {
+                try { await supabaseClient.auth.signOut(); } catch (e) {}
                 try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+                if (loginError) {
+                    loginError.textContent = perfil.motivo || 'Usuario no autorizado.';
+                    loginError.classList.remove('hidden');
+                }
+                return false;
+            }
+            usuarioActual = perfil.usuario;
+            rolUsuario = perfil.rol;
+            guardarMetaSesion(usuarioActual, rolUsuario);
+            mostrarApp();
+            return true;
+        }
+
+        function cerrarSesion() {
+            confirmarAccion('¿Cerrar sesión?', 'Salir', 'primary').then(async ok => {
+                if (!ok) return;
+                await borrarSesionActiva();
+                try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+                try { await supabaseClient.auth.signOut(); } catch (e) {}
                 usuarioActual = '';
                 rolUsuario = '';
                 mostrarLogin();
             });
         }
 
-        // Se guarda qué usuario inició sesión (además de la hora), para
-        // saber si ya pasó el día y hay que volver a pedir la clave, y
-        // también para poder marcar con qué usuario se registra cada
-        // conteo de Inventario Físico.
         async function intentarLogin() {
-            const usuario = loginUsuario.value.trim().toLowerCase();
-            const clave = loginClave.value;
+            const ahora = Date.now();
+            if (ahora < loginBloqueoHasta) {
+                const seg = Math.ceil((loginBloqueoHasta - ahora) / 1000);
+                loginError.textContent = 'Demasiados intentos. Espere ' + seg + 's.';
+                loginError.classList.remove('hidden');
+                return;
+            }
+
+            const usuario = (loginUsuario.value || '').trim().toLowerCase().slice(0, 64);
+            const clave = (loginClave.value || '').slice(0, 128);
             if (!usuario || !clave) {
                 loginError.textContent = 'Ingrese usuario y clave.';
                 loginError.classList.remove('hidden');
@@ -2523,61 +2587,46 @@
                 loginError.classList.remove('hidden');
                 return;
             }
+
             loginBtn.disabled = true;
             loginBtn.textContent = 'Verificando...';
             loginError.classList.add('hidden');
+
             try {
-                // Primero intenta con columna rol; si no existe, cae al select básico
-                let data = null;
-                let error = null;
-                let res = await supabaseClient
-                    .from('app_usuarios')
-                    .select('usuario, nombre, rol')
-                    .eq('usuario', usuario)
-                    .eq('clave', clave)
-                    .eq('activo', true)
-                    .maybeSingle();
-                data = res.data;
-                error = res.error;
-
-                if (error && /rol|column/i.test(String(error.message || ''))) {
-                    res = await supabaseClient
-                        .from('app_usuarios')
-                        .select('usuario, nombre')
-                        .eq('usuario', usuario)
-                        .eq('clave', clave)
-                        .eq('activo', true)
-                        .maybeSingle();
-                    data = res.data;
-                    error = res.error;
-                }
-
+                const email = usuarioAEmail(usuario);
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: clave
+                });
                 if (error) throw error;
+                if (!data || !data.session) throw new Error('Sin sesión');
 
-                if (data) {
-                    usuarioActual = data.usuario;
-                    // admin = rol admin, o el usuario "luis" por defecto
-                    const rolRaw = data.rol || (String(data.usuario).toLowerCase() === 'luis' ? 'admin' : 'usuario');
-                    rolUsuario = String(rolRaw).toLowerCase();
-                    try {
-                        localStorage.setItem(SESSION_KEY, JSON.stringify({
-                            ts: Date.now(),
-                            usuario: data.usuario,
-                            rol: rolUsuario
-                        }));
-                    } catch (e) {}
-                    mostrarApp();
-                } else {
-                    loginError.textContent = 'Usuario o clave incorrectos.';
-                    loginError.classList.remove('hidden');
-                    loginClave.value = '';
+                loginIntentos = 0;
+                loginClave.value = '';
+                const ok = await aplicarSesionAuth(data.session);
+                if (!ok) {
                     loginClave.focus();
                 }
             } catch (e) {
                 console.error('Login error:', e);
-                const msg = (e && e.message) ? e.message : String(e);
-                loginError.textContent = 'No se pudo verificar el usuario. ' + msg;
+                loginIntentos += 1;
+                if (loginIntentos >= LOGIN_MAX_INTENTOS) {
+                    loginBloqueoHasta = Date.now() + LOGIN_BLOQUEO_MS;
+                    loginIntentos = 0;
+                    loginError.textContent = 'Demasiados intentos. Espere 60 segundos.';
+                } else {
+                    const msg = String((e && e.message) || e || '');
+                    if (/invalid login|invalid credentials|email not confirmed/i.test(msg)) {
+                        loginError.textContent = 'Usuario o clave incorrectos.';
+                    } else if (/failed to fetch|network/i.test(msg)) {
+                        loginError.textContent = 'Sin conexión. Intente de nuevo.';
+                    } else {
+                        loginError.textContent = 'No se pudo iniciar sesión. Revise usuario/clave o que el usuario exista en Authentication.';
+                    }
+                }
                 loginError.classList.remove('hidden');
+                loginClave.value = '';
+                loginClave.focus();
             } finally {
                 loginBtn.disabled = false;
                 loginBtn.textContent = 'Entrar';
@@ -2589,33 +2638,54 @@
         loginUsuario.addEventListener('keyup', (e) => { if (e.key === 'Enter') loginClave.focus(); });
         document.getElementById('logoutBtn').addEventListener('click', cerrarSesion);
 
-        if (sesionValida()) {
-            mostrarApp();
-        } else {
+        // Arranque: si hay sesión Auth válida + meta del día, entrar
+        (async function arrancarSesion() {
+            try {
+                const meta = leerMetaSesion();
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (session && meta) {
+                    const ok = await aplicarSesionAuth(session);
+                    if (ok) return;
+                }
+                if (session && !meta) {
+                    // Sesión Auth de otro día/dispositivo → cerrar y pedir login
+                    try { await supabaseClient.auth.signOut(); } catch (e) {}
+                    try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+                }
+            } catch (e) {
+                console.warn('arrancarSesion', e);
+            }
             mostrarLogin();
-        }
+        })();
 
-        // sesionValida() solo se revisaba al cargar la página, así que si el
-        // usuario dejaba la pestaña abierta la sesión nunca vencía sola: pasaba
-        // la medianoche y la app seguía funcionando hasta que alguien recargara.
-        // Este intervalo vuelve a comprobar cada minuto, y si ya cambió el día
-        // (y la app está visible, no la pantalla de login) cierra la sesión sin
-        // pedir confirmación y muestra el login.
+        // Escuchar cambios de Auth (logout en otra pestaña, etc.)
+        try {
+            supabaseClient.auth.onAuthStateChange(function (event, session) {
+                if (event === 'SIGNED_OUT') {
+                    usuarioActual = '';
+                    rolUsuario = '';
+                    try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+                    if (appContainer && !appContainer.classList.contains('oculto')) {
+                        mostrarLogin();
+                    }
+                }
+            });
+        } catch (e) {}
+
+        // Cierre si cambió el día (meta local)
         setInterval(() => {
-            if (!appContainer.classList.contains('oculto') && !sesionValida()) {
+            if (!appContainer.classList.contains('oculto') && !leerMetaSesion()) {
                 borrarSesionActiva();
                 try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+                try { supabaseClient.auth.signOut(); } catch (e) {}
                 usuarioActual = '';
                 rolUsuario = '';
                 mostrarLogin();
             }
         }, 60000);
 
-        // Cierre por inactividad: si pasan 20 minutos sin que la persona toque,
-        // haga clic o escriba nada en la app, se cierra la sesión sola (sin
-        // pedir confirmación) y vuelve a la pantalla de login. Cada evento de
-        // uso reinicia el conteo.
-        const INACTIVIDAD_MS = 20 * 60000; // 20 minutos
+        // Cierre por inactividad (20 min)
+        const INACTIVIDAD_MS = 20 * 60000;
         let ultimoUso = Date.now();
 
         function marcarActividad() {
@@ -2630,6 +2700,7 @@
             if (!appContainer.classList.contains('oculto') && Date.now() - ultimoUso >= INACTIVIDAD_MS) {
                 borrarSesionActiva();
                 try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+                try { supabaseClient.auth.signOut(); } catch (e) {}
                 usuarioActual = '';
                 rolUsuario = '';
                 mostrarLogin();
