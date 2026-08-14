@@ -886,8 +886,37 @@
         }
 
         // ============================================================
-        // PEDIDO
+        // PEDIDO (modo secundario + mismo buscador / catálogo existencias)
         // ============================================================
+        let modoPedido = false;
+
+        function activarModoPedido() {
+            modoPedido = true;
+            document.body.classList.add('modo-pedido-activo');
+            const banner = document.getElementById('modoPedidoBanner');
+            if (banner) banner.classList.remove('hidden');
+            setCardExpandida('pedido', true);
+            // Mismo buscador: enfocar y mostrar sección de búsqueda
+            document.body.classList.remove('modo-seleccion');
+            const searchSection = document.getElementById('searchSection');
+            if (searchSection) {
+                searchSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            if (searchInput) {
+                searchInput.focus();
+                searchInput.select();
+            }
+            showToast('Modo pedido activo. Busca por código o nombre del catálogo.', 'info');
+        }
+
+        function salirModoPedido() {
+            modoPedido = false;
+            document.body.classList.remove('modo-pedido-activo');
+            const banner = document.getElementById('modoPedidoBanner');
+            if (banner) banner.classList.add('hidden');
+            showToast('Volviste al modo inventario.', 'info');
+        }
+
         function agregarProducto() {
             if (selectedIndex === -1 || selectedIndex >= filteredData.length) {
                 showToast('Seleccione un producto de la lista.', 'error');
@@ -2195,7 +2224,7 @@
                 debounceTimer = setTimeout(performSearch, 300);
             });
 
-            btnAgregar.addEventListener('click', agregarProducto);
+            // btnAgregar se enlaza más abajo (modo pedido + agregarProducto)
             txtCajas.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); txtUnidades.focus(); } });
             txtUnidades.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); agregarProducto(); } });
             txtCajas.addEventListener('input', actualizarTotalCalculado);
@@ -2231,6 +2260,15 @@
             exportPedidoBtn.addEventListener('click', exportarPedido);
             guardarPedidoDriveBtn.addEventListener('click', guardarPedidoEnDrive);
             limpiarPedidoBtn.addEventListener('click', limpiarPedido);
+
+            const btnArmarPedido = document.getElementById('btnArmarPedido');
+            if (btnArmarPedido) btnArmarPedido.addEventListener('click', activarModoPedido);
+            const btnSalirModoPedido = document.getElementById('btnSalirModoPedido');
+            if (btnSalirModoPedido) btnSalirModoPedido.addEventListener('click', salirModoPedido);
+            if (btnAgregar) btnAgregar.addEventListener('click', function () {
+                if (!modoPedido) activarModoPedido();
+                agregarProducto();
+            });
 
             const enviarInventarioBtn = document.getElementById('enviarInventarioBtn');
             if (enviarInventarioBtn) enviarInventarioBtn.addEventListener('click', enviarInventarioCompleto);
