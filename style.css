@@ -1525,40 +1525,52 @@ label.btn-drive {
 
 
 /* ============================================================
-   PANEL ADMINISTRADOR (subir Excel)
+   PANEL ADMINISTRADOR (pantalla completa en móvil)
    ============================================================ */
 .admin-overlay {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.55);
     backdrop-filter: blur(4px);
     z-index: 1000;
-    align-items: center;
+    align-items: stretch;
     justify-content: center;
-    padding: 1rem;
-    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0));
+    padding: 0;
 }
 .admin-overlay.visible {
     display: flex;
 }
 .admin-panel {
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 18px;
+    background: var(--bg-gradient);
+    background-color: #1a233e;
+    border: none;
+    border-radius: 0;
     width: 100%;
-    max-width: 420px;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    box-shadow: none;
     overflow: hidden;
-    backdrop-filter: blur(12px);
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: none;
+}
+body.light-theme .admin-panel {
+    background-color: #eef2ff;
 }
 .admin-panel-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1rem 1.15rem;
+    padding: 0.85rem 1rem;
+    padding-top: max(0.85rem, env(safe-area-inset-top, 0px));
     border-bottom: 1px solid var(--divider);
-    background: rgba(108, 92, 231, 0.12);
+    background: var(--card-bg);
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 2;
 }
 .admin-panel-header h2 {
     margin: 0;
@@ -1567,24 +1579,30 @@ label.btn-drive {
     font-weight: 700;
 }
 .admin-close {
-    background: transparent;
-    border: none;
-    color: var(--text-secondary);
-    font-size: 1.2rem;
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
+    background: rgba(255, 84, 112, 0.12);
+    border: 1px solid rgba(255, 84, 112, 0.35);
+    color: var(--danger);
+    font-size: 1.1rem;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
 .admin-close:hover {
-    background: rgba(255, 84, 112, 0.15);
+    background: rgba(255, 84, 112, 0.22);
     color: var(--danger);
 }
 .admin-panel-body {
-    padding: 1.1rem 1.15rem 1.25rem;
+    padding: 1rem 1.1rem;
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    flex: 1 1 auto;
+    overscroll-behavior: contain;
 }
 .admin-lead {
     font-size: 0.85rem;
@@ -1664,15 +1682,53 @@ label.btn-drive {
 }
 
 @media (max-width: 640px) {
+    .admin-overlay {
+        padding: 0;
+    }
     .admin-panel {
         max-width: 100%;
-        border-radius: 16px;
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
     }
     .admin-actions {
         flex-direction: column-reverse;
     }
     .admin-actions .btn {
         width: 100%;
+        min-height: 48px !important;
+    }
+    .admin-dropzone {
+        padding: 1.6rem 1rem;
+        min-height: 120px;
+    }
+}
+
+/* Escritorio: panel centrado tipo tarjeta (no pantalla completa) */
+@media (min-width: 641px) {
+    .admin-overlay {
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+    }
+    .admin-panel {
+        max-width: 440px;
+        width: 100%;
+        height: auto;
+        max-height: 90vh;
+        border-radius: 18px;
+        border: 1px solid var(--card-border);
+        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+        background: var(--card-bg);
+        backdrop-filter: blur(12px);
+    }
+    .admin-panel-header {
+        border-radius: 18px 18px 0 0;
+        position: static;
+        padding-top: 1rem;
+    }
+    .admin-panel-body {
+        max-height: calc(90vh - 64px);
     }
 }
 
