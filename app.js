@@ -2106,6 +2106,10 @@
             const adminCancelBtn = document.getElementById('adminCancelBtn');
             if (adminCloseBtn) adminCloseBtn.addEventListener('click', cerrarPanelAdmin);
             if (adminCancelBtn) adminCancelBtn.addEventListener('click', cerrarPanelAdmin);
+
+            // Pestañas admin (también hay delegación global más abajo)
+            window.__mostrarTabAdmin = mostrarTabAdmin;
+
             const adminOverlay = document.getElementById('adminOverlay');
             if (adminOverlay) {
                 adminOverlay.addEventListener('click', function (e) {
@@ -2277,6 +2281,47 @@
             guardarDriveBtn.addEventListener('click', guardarInventarioDrive);
         }
 
+
+        // ============================================================
+        // PESTAÑAS DEL PANEL ADMIN (delegación global = siempre clicables)
+        // ============================================================
+        function mostrarTabAdmin(tabId) {
+            if (!tabId) return;
+            document.querySelectorAll('.admin-nav-btn').forEach(function (b) {
+                const on = b.getAttribute('data-admin-tab') === tabId;
+                b.classList.toggle('active', on);
+                b.setAttribute('aria-selected', on ? 'true' : 'false');
+            });
+            document.querySelectorAll('.admin-tab').forEach(function (panel) {
+                const on = panel.getAttribute('data-admin-panel') === tabId;
+                if (on) {
+                    panel.hidden = false;
+                    panel.removeAttribute('hidden');
+                    panel.style.display = '';
+                    panel.classList.add('active');
+                } else {
+                    panel.hidden = true;
+                    panel.setAttribute('hidden', '');
+                    panel.style.display = 'none';
+                    panel.classList.remove('active');
+                }
+            });
+            if (tabId === 'sesiones' && typeof cargarSesionesActivas === 'function') {
+                cargarSesionesActivas();
+            }
+        }
+        window.__mostrarTabAdmin = mostrarTabAdmin;
+
+        // Clic / toque en menú admin (no depende de init)
+        document.addEventListener('click', function (e) {
+            const btn = e.target && e.target.closest && e.target.closest('.admin-nav-btn');
+            if (!btn) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const tab = btn.getAttribute('data-admin-tab');
+            if (tab) mostrarTabAdmin(tab);
+        }, true);
+
         // ============================================================
         // INICIO DE SESIÓN (usuario y clave por persona)
         // ============================================================
@@ -2368,7 +2413,8 @@
             if (nameEl) nameEl.textContent = '';
             if (statusEl) statusEl.textContent = '';
             if (importBtn) importBtn.disabled = true;
-            cargarSesionesActivas();
+            if (typeof window.__mostrarTabAdmin === 'function') window.__mostrarTabAdmin('subir');
+            else cargarSesionesActivas();
             const body = ov.querySelector('.admin-panel-body');
             if (body) body.scrollTop = 0;
         }
