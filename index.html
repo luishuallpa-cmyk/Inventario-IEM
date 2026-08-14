@@ -2616,6 +2616,7 @@
             if (!ov) return;
             ov.classList.add('visible');
             ov.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
             adminSelectedFile = null;
             const nameEl = document.getElementById('adminFileName');
             const statusEl = document.getElementById('adminStatus');
@@ -2624,6 +2625,8 @@
             if (statusEl) statusEl.textContent = '';
             if (importBtn) importBtn.disabled = true;
             cargarSesionesActivas();
+            const body = ov.querySelector('.admin-panel-body');
+            if (body) body.scrollTop = 0;
         }
 
         function cerrarPanelAdmin() {
@@ -2631,6 +2634,7 @@
             if (!ov) return;
             ov.classList.remove('visible');
             ov.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
             adminSelectedFile = null;
             const input = document.getElementById('importExcelInput');
             if (input) input.value = '';
