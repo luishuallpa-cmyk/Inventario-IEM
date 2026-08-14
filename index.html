@@ -1,40 +1,1143 @@
--- 1) Columna rol
-alter table app_usuarios
-  add column if not exists rol text default 'usuario';
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f1419" />
+  <title>IEM GROUP · Inventario físico</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <!-- ========== LOGIN ========== -->
+  <div id="loginScreen" class="login-wrap">
+    <div class="login-card">
+      <h1>IEM GROUP</h1>
+      <p class="sub">Inventario físico</p>
+      <label for="loginUsuario">Usuario</label>
+      <input id="loginUsuario" type="text" autocomplete="username" autocapitalize="none" />
+      <label for="loginClave">Clave</label>
+      <input id="loginClave" type="password" autocomplete="current-password" />
+      <p id="loginError" class="login-error hidden"></p>
+      <button id="loginBtn" class="btn btn-primary" style="width:100%;">Entrar</button>
+    </div>
+  </div>
 
--- 2) Tus usuarios reales (los de la captura)
-insert into app_usuarios (usuario, clave, nombre, activo, rol) values
-  ('luis',     '123',      'Luis',      true, 'admin'),
-  ('almacen1', 'almacen1', 'almacen 1', true, 'usuario'),
-  ('almacen2', 'almacen2', 'almacen2',  true, 'usuario')
-on conflict (usuario) do update set
-  clave  = excluded.clave,
-  nombre = excluded.nombre,
-  activo = excluded.activo,
-  rol    = excluded.rol;
+  <!-- ========== APP ========== -->
+  <div id="app">
+    <header class="header">
+      <div>
+        <div class="header-brand">IEM GROUP</div>
+        <div class="header-user" id="headerUser"></div>
+      </div>
+      <div class="header-actions">
+        <button type="button" class="btn btn-icon" id="btnAdmin" title="Administración" style="display:none;">⚙️</button>
+        <button type="button" class="btn btn-icon" id="btnTheme" title="Tema">🌓</button>
+        <button type="button" class="btn btn-icon" id="btnLogout" title="Cerrar sesión">⏻</button>
+      </div>
+    </header>
 
--- 3) Si aún tienes los de prueba, dales rol también
-update app_usuarios set rol = 'admin'   where usuario in ('luis', 'admin');
-update app_usuarios set rol = 'usuario' where usuario not in ('luis', 'admin');
+    <main class="main">
+      <div class="search-row">
+        <input type="search" id="searchInput" placeholder="Buscar código o producto..." enterkeyhint="search" />
+        <button type="button" class="btn" id="btnBuscar">🔎 Buscar</button>
+        <button type="button" class="btn" id="btnActualizar">↻ Actualizar</button>
+      </div>
+      <div class="file-status" id="fileStatus">Cargando catálogo...</div>
 
--- 4) Policies (por si faltaba alguna)
-alter table app_usuarios enable row level security;
+      <div id="resultsList" class="results-list"></div>
 
-drop policy if exists "leer usuarios" on app_usuarios;
-drop policy if exists "lectura usuarios login" on app_usuarios;
-create policy "leer usuarios"
-  on app_usuarios for select
-  using (activo = true);
+      <!-- Producto seleccionado / conteo -->
+      <div id="selectedPanel" class="selected-panel hidden">
+        <div class="codigo-big" id="selCodigo"></div>
+        <h2 id="selDescripcion"></h2>
+        <div style="font-size:0.8rem;opacity:0.9;" id="selMeta"></div>
+        <div class="qty-row">
+          <div>
+            <label for="inputCajas">Cajas</label>
+            <input type="number" id="inputCajas" min="0" step="1" inputmode="numeric" value="" />
+          </div>
+          <div>
+            <label for="inputUnidades">Unidades</label>
+            <input type="number" id="inputUnidades" min="0" step="1" inputmode="numeric" value="" />
+          </div>
+        </div>
+        <div class="hint-conv" id="hintConv"></div>
+        <div class="venc-row">
+          <label for="inputVencimiento">Vencimiento (ej. 2026-08 o S/F)</label>
+          <input type="text" id="inputVencimiento" placeholder="AAAA-MM o S/F" />
+        </div>
+        <button type="button" class="btn btn-success" id="btnGuardarConteo" style="width:100%;">💾 GUARDAR CONTEO</button>
+      </div>
 
--- Productos y lotes (igual que antes, por si acaso)
-alter table productos enable row level security;
-alter table lotes_conteo enable row level security;
+      <!-- Inventario físico -->
+      <div class="section-title">
+        <span>Inventario físico</span>
+        <span id="invCount" style="font-size:0.8rem;color:var(--muted);font-weight:500;"></span>
+      </div>
+      <div class="inv-actions">
+        <button type="button" class="btn btn-primary" id="btnEnviarInventario">📤 Enviar inventario</button>
+        <button type="button" class="btn" id="btnExportExcel" style="display:none;">📊 Excel</button>
+        <button type="button" class="btn btn-danger" id="btnLimpiar" style="display:none;">🗑 Limpiar</button>
+      </div>
+      <div id="invCards" class="inv-cards-mobile"></div>
+      <table class="inv-table" id="invTable">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Producto</th>
+            <th>Cant.</th>
+            <th>Vence</th>
+            <th>Usuario</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="invTableBody"></tbody>
+      </table>
+    </main>
+  </div>
 
-drop policy if exists "leer productos" on productos;
-create policy "leer productos" on productos for select using (activo = true);
+  <!-- ========== PANEL ADMIN ========== -->
+  <div id="adminOverlay" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal-panel">
+      <h2>
+        <span>⚙️ Administración</span>
+        <button type="button" class="btn btn-icon" id="btnCerrarAdmin" title="Cerrar">✕</button>
+      </h2>
 
-drop policy if exists "escribir productos" on productos;
-create policy "escribir productos" on productos for all using (true) with check (true);
+      <div class="admin-section" style="margin-top:0;padding-top:0;border:none;">
+        <h3>📤 Subir Excel a la nube</h3>
+        <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.5rem;">
+          Acepta el Excel de <strong>existencias</strong> (base) o el de <strong>inventario valorado</strong> (diario).
+        </p>
+        <label class="checkbox-row">
+          <input type="checkbox" id="chkSoloCatalogo" />
+          Solo catálogo (nombres / línea / marca) — no modificar stock
+        </label>
+        <div class="drop-zone" id="dropZone">
+          <div>Arrastra el Excel aquí o toca para elegir</div>
+          <div id="dropFileName" style="margin-top:0.5rem;font-size:0.8rem;"></div>
+          <input type="file" id="importExcelInput" accept=".xlsx,.xls,.csv" />
+        </div>
+        <button type="button" class="btn btn-primary" id="btnSubirExcel" style="width:100%;" disabled>Subir a Supabase</button>
+      </div>
 
-drop policy if exists "todo lotes" on lotes_conteo;
-create policy "todo lotes" on lotes_conteo for all using (true) with check (true);
+      <div class="admin-section">
+        <h3>📊 Descargas</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
+          <button type="button" class="btn" id="btnAdminExportInv">📊 Descargar inventario físico</button>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <h3>👥 Usuarios conectados</h3>
+        <button type="button" class="btn" id="btnRefrescarSesiones">↻ Actualizar lista</button>
+        <div id="listaSesiones" style="margin-top:0.5rem;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <script>
+(function () {
+  'use strict';
+
+  // ============================================================
+  // SUPABASE — tus credenciales
+  // ============================================================
+  const SUPABASE_URL = 'https://rgqlkeuzzqrmmgxtmren.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJncWxrZXV6enFybW1neHRtcmVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2NDE5NzMsImV4cCI6MjEwMjIxNzk3M30.P-Y577WPIgckmqCcy77rm-R55TDj6McQFvGayd0_yq0';
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const SESSION_KEY = 'iem_session_v1';
+  const BACKUP_KEY = 'iem_productos_backup';
+  const INV_KEY = 'iem_inventario_local';
+  const THEME_KEY = 'iem_theme';
+
+  // Estado
+  let usuarioActual = '';
+  let rolActual = 'usuario';
+  let currentData = [];
+  let filteredData = [];
+  let selectedIndex = -1;
+  let selectedProduct = null;
+  let inventarioFisico = []; // { id, codigo, descripcion, linea, cantidad, vencimiento, fecha, usuario }
+  let sincronizando = false;
+  let deviceId = localStorage.getItem('iem_device_id');
+  if (!deviceId) {
+    deviceId = 'dev_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem('iem_device_id', deviceId);
+  }
+  let idSesionActual = null;
+  let archivoPendiente = null;
+
+  // DOM
+  const loginScreen = document.getElementById('loginScreen');
+  const loginUsuario = document.getElementById('loginUsuario');
+  const loginClave = document.getElementById('loginClave');
+  const loginBtn = document.getElementById('loginBtn');
+  const loginError = document.getElementById('loginError');
+  const app = document.getElementById('app');
+  const headerUser = document.getElementById('headerUser');
+  const btnAdmin = document.getElementById('btnAdmin');
+  const btnTheme = document.getElementById('btnTheme');
+  const btnLogout = document.getElementById('btnLogout');
+  const searchInput = document.getElementById('searchInput');
+  const btnBuscar = document.getElementById('btnBuscar');
+  const btnActualizar = document.getElementById('btnActualizar');
+  const fileStatus = document.getElementById('fileStatus');
+  const resultsList = document.getElementById('resultsList');
+  const selectedPanel = document.getElementById('selectedPanel');
+  const selCodigo = document.getElementById('selCodigo');
+  const selDescripcion = document.getElementById('selDescripcion');
+  const selMeta = document.getElementById('selMeta');
+  const inputCajas = document.getElementById('inputCajas');
+  const inputUnidades = document.getElementById('inputUnidades');
+  const hintConv = document.getElementById('hintConv');
+  const inputVencimiento = document.getElementById('inputVencimiento');
+  const btnGuardarConteo = document.getElementById('btnGuardarConteo');
+  const invCount = document.getElementById('invCount');
+  const invCards = document.getElementById('invCards');
+  const invTableBody = document.getElementById('invTableBody');
+  const btnEnviarInventario = document.getElementById('btnEnviarInventario');
+  const btnExportExcel = document.getElementById('btnExportExcel');
+  const btnLimpiar = document.getElementById('btnLimpiar');
+  const adminOverlay = document.getElementById('adminOverlay');
+  const btnCerrarAdmin = document.getElementById('btnCerrarAdmin');
+  const dropZone = document.getElementById('dropZone');
+  const importExcelInput = document.getElementById('importExcelInput');
+  const dropFileName = document.getElementById('dropFileName');
+  const btnSubirExcel = document.getElementById('btnSubirExcel');
+  const chkSoloCatalogo = document.getElementById('chkSoloCatalogo');
+  const btnAdminExportInv = document.getElementById('btnAdminExportInv');
+  const btnRefrescarSesiones = document.getElementById('btnRefrescarSesiones');
+  const listaSesiones = document.getElementById('listaSesiones');
+  const toastWrap = document.getElementById('toastWrap');
+
+  function esAdmin() {
+    return String(rolActual || '').toLowerCase() === 'admin' ||
+           String(usuarioActual || '').toLowerCase() === 'luis';
+  }
+
+  function showToast(msg, type) {
+    type = type || 'info';
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.textContent = msg;
+    toastWrap.appendChild(el);
+    setTimeout(function () {
+      el.remove();
+    }, 3800);
+  }
+
+  function hoyStr() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function normVenc(v) {
+    v = String(v || '').trim().toUpperCase();
+    if (!v || v === 'S/F' || v === 'SF' || v === 'SIN FECHA') return 'S/F';
+    return v;
+  }
+
+  // ---------- Tema ----------
+  function applyTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    try { localStorage.setItem(THEME_KEY, t); } catch (e) {}
+  }
+  applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
+  btnTheme.addEventListener('click', function () {
+    const cur = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    applyTheme(cur);
+  });
+
+  // ---------- Login ----------
+  async function intentarLogin() {
+    const usuario = loginUsuario.value.trim().toLowerCase();
+    const clave = loginClave.value;
+    if (!usuario || !clave) {
+      loginError.textContent = 'Ingrese usuario y clave.';
+      loginError.classList.remove('hidden');
+      return;
+    }
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Verificando...';
+    loginError.classList.add('hidden');
+    try {
+      const { data, error } = await supabaseClient
+        .from('app_usuarios')
+        .select('usuario, nombre, rol, activo')
+        .eq('usuario', usuario)
+        .eq('clave', clave)
+        .eq('activo', true)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) {
+        loginError.textContent = 'Usuario o clave incorrectos.';
+        loginError.classList.remove('hidden');
+        loginClave.value = '';
+        loginClave.focus();
+        return;
+      }
+      usuarioActual = data.usuario;
+      rolActual = data.rol || (data.usuario === 'luis' ? 'admin' : 'usuario');
+      try {
+        localStorage.setItem(SESSION_KEY, JSON.stringify({
+          ts: Date.now(),
+          usuario: data.usuario,
+          rol: rolActual,
+          nombre: data.nombre || data.usuario
+        }));
+      } catch (e) {}
+      await registrarSesionActiva();
+      mostrarApp();
+    } catch (e) {
+      console.error(e);
+      loginError.textContent = 'No se pudo conectar: ' + (e.message || e);
+      loginError.classList.remove('hidden');
+    } finally {
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Entrar';
+    }
+  }
+
+  loginBtn.addEventListener('click', intentarLogin);
+  loginClave.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') intentarLogin();
+  });
+  loginUsuario.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') loginClave.focus();
+  });
+
+  function cerrarSesion() {
+    if (idSesionActual) {
+      supabaseClient.from('sesiones_activas').delete().eq('id', idSesionActual).then(function () {});
+      idSesionActual = null;
+    }
+    usuarioActual = '';
+    rolActual = 'usuario';
+    try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+    app.classList.remove('visible');
+    loginScreen.classList.remove('hidden');
+    loginClave.value = '';
+  }
+
+  btnLogout.addEventListener('click', function () {
+    if (confirm('¿Cerrar sesión?')) cerrarSesion();
+  });
+
+  function mostrarApp() {
+    loginScreen.classList.add('hidden');
+    app.classList.add('visible');
+    headerUser.textContent = usuarioActual + (esAdmin() ? ' · admin' : '');
+    btnAdmin.style.display = esAdmin() ? '' : 'none';
+    btnExportExcel.style.display = esAdmin() ? '' : 'none';
+    btnLimpiar.style.display = esAdmin() ? '' : 'none';
+    loadProductos();
+    loadInventarioLocal();
+    sincronizarDesdeServidor();
+  }
+
+  // ---------- Sesiones ----------
+  async function registrarSesionActiva() {
+    if (!usuarioActual) return;
+    idSesionActual = (usuarioActual + '_' + deviceId).slice(0, 120);
+    try {
+      await supabaseClient.from('sesiones_activas').upsert({
+        id: idSesionActual,
+        usuario: usuarioActual,
+        device_id: deviceId,
+        nombre_dispositivo: (navigator.userAgent || '').slice(0, 80),
+        ultimo_ping: new Date().toISOString(),
+        conectado_en: new Date().toISOString(),
+        forzar_cierre: false
+      });
+    } catch (e) {
+      console.warn('Sesión no registrada (¿falta tabla sesiones_activas?)', e);
+    }
+  }
+
+  setInterval(async function () {
+    if (!usuarioActual || !idSesionActual) return;
+    try {
+      const { data } = await supabaseClient
+        .from('sesiones_activas')
+        .select('forzar_cierre')
+        .eq('id', idSesionActual)
+        .maybeSingle();
+      if (data && data.forzar_cierre) {
+        showToast('El administrador cerró tu sesión.', 'error');
+        cerrarSesion();
+        return;
+      }
+      await supabaseClient.from('sesiones_activas').upsert({
+        id: idSesionActual,
+        usuario: usuarioActual,
+        device_id: deviceId,
+        ultimo_ping: new Date().toISOString(),
+        forzar_cierre: false
+      });
+    } catch (e) {}
+  }, 30000);
+
+  async function cargarSesionesActivas() {
+    listaSesiones.innerHTML = 'Cargando...';
+    const desde = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+    try {
+      const { data, error } = await supabaseClient
+        .from('sesiones_activas')
+        .select('*')
+        .gte('ultimo_ping', desde)
+        .order('ultimo_ping', { ascending: false });
+      if (error) throw error;
+      if (!data || !data.length) {
+        listaSesiones.innerHTML = '<p style="opacity:0.7;font-size:0.85rem;">Nadie conectado ahora.</p>';
+        return;
+      }
+      listaSesiones.innerHTML = data.map(function (s) {
+        const hace = Math.round((Date.now() - new Date(s.ultimo_ping).getTime()) / 1000);
+        return (
+          '<div class="sesion-item">' +
+            '<div><strong>' + escapeHtml(s.usuario) + '</strong>' +
+            '<div class="meta">Hace ' + hace + 's · ' + escapeHtml((s.device_id || '').slice(0, 16)) + '</div></div>' +
+            '<button type="button" class="btn btn-danger btn-cerrar-sesion" data-id="' + escapeHtml(s.id) + '">Cerrar</button>' +
+          '</div>'
+        );
+      }).join('');
+      listaSesiones.querySelectorAll('.btn-cerrar-sesion').forEach(function (btn) {
+        btn.addEventListener('click', async function () {
+          const id = btn.getAttribute('data-id');
+          if (!confirm('¿Cerrar la sesión de este usuario en ese dispositivo?')) return;
+          await supabaseClient.from('sesiones_activas').update({ forzar_cierre: true }).eq('id', id);
+          showToast('Sesión marcada para cierre.', 'success');
+          cargarSesionesActivas();
+        });
+      });
+    } catch (e) {
+      listaSesiones.innerHTML = '<p style="color:var(--danger);font-size:0.85rem;">Error: ' + escapeHtml(e.message || String(e)) +
+        '<br><small>¿Ejecutaste el SQL de sesiones_activas?</small></p>';
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // ---------- Productos ----------
+  function guardarRespaldo(data) {
+    try { localStorage.setItem(BACKUP_KEY, JSON.stringify(data)); } catch (e) {}
+  }
+
+  function useBackupOrLocalData() {
+    try {
+      const raw = localStorage.getItem(BACKUP_KEY);
+      if (raw) {
+        currentData = JSON.parse(raw);
+        fileStatus.textContent = '⚠️ Respaldo local: ' + currentData.length + ' productos';
+        return;
+      }
+    } catch (e) {}
+    currentData = [];
+    fileStatus.textContent = '⚠️ Sin productos. Admin debe importar Excel.';
+  }
+
+  async function loadProductos() {
+    fileStatus.textContent = '⏳ Cargando productos desde Supabase...';
+    try {
+      const { data, error } = await supabaseClient
+        .from('productos')
+        .select('*')
+        .eq('activo', true)
+        .order('codigo');
+      if (error) throw error;
+      if (data && data.length > 0) {
+        currentData = data.map(function (p) {
+          return {
+            Codigo: p.codigo,
+            CodigoFabrica: p.codigo_fabrica || '',
+            Producto: p.descripcion,
+            'Unidad Ref': p.unidad_ref || '',
+            Cantidad: String(p.stock_teorico ?? 0),
+            FactorEmpaque: String(p.factor_empaque ?? 1),
+            Linea: p.linea || '',
+            Marca: p.marca || ''
+          };
+        });
+        guardarRespaldo(currentData);
+        fileStatus.textContent = '✅ ' + currentData.length + ' productos (Supabase)';
+      } else {
+        fileStatus.textContent = '⚠️ Sin productos en Supabase, buscando respaldo...';
+        useBackupOrLocalData();
+      }
+    } catch (err) {
+      console.warn(err);
+      fileStatus.textContent = '⚠️ Sin conexión, buscando respaldo...';
+      useBackupOrLocalData();
+    }
+  }
+
+  function getFactor(row) {
+    const n = Number(row.FactorEmpaque);
+    return (!isNaN(n) && n > 0) ? n : 1;
+  }
+
+  function buscar() {
+    const q = searchInput.value.trim().toLowerCase();
+    if (!q) {
+      filteredData = [];
+      renderResults([]);
+      return;
+    }
+    filteredData = currentData.filter(function (r) {
+      const cod = String(r.Codigo || '').toLowerCase();
+      const fab = String(r.CodigoFabrica || '').toLowerCase();
+      const des = String(r.Producto || '').toLowerCase();
+      return cod.indexOf(q) >= 0 || fab.indexOf(q) >= 0 || des.indexOf(q) >= 0;
+    }).slice(0, 80);
+    renderResults(filteredData);
+  }
+
+  function renderResults(list) {
+    if (!list.length) {
+      resultsList.innerHTML = searchInput.value.trim()
+        ? '<p style="color:var(--muted);font-size:0.85rem;">Sin resultados.</p>'
+        : '';
+      return;
+    }
+    resultsList.innerHTML = list.map(function (r, i) {
+      return (
+        '<div class="result-item" data-i="' + i + '">' +
+          '<div class="codigo">' + escapeHtml(r.Codigo) + '</div>' +
+          '<div class="meta">Stock: ' + escapeHtml(r.Cantidad) + '</div>' +
+          '<div class="desc">' + escapeHtml(r.Producto) + '</div>' +
+          '<div class="meta">' + escapeHtml(r.Linea || '') + ' · Factor ' + escapeHtml(r.FactorEmpaque) + '</div>' +
+        '</div>'
+      );
+    }).join('');
+    resultsList.querySelectorAll('.result-item').forEach(function (el) {
+      el.addEventListener('click', function () {
+        const i = Number(el.getAttribute('data-i'));
+        seleccionarProducto(filteredData[i]);
+      });
+    });
+  }
+
+  function seleccionarProducto(row) {
+    if (!row) return;
+    selectedProduct = row;
+    selectedPanel.classList.remove('hidden');
+    selCodigo.textContent = row.Codigo;
+    selDescripcion.textContent = row.Producto;
+    const factor = getFactor(row);
+    selMeta.textContent = (row.Linea || '') + ' · ' + (row.Marca || '') + ' · Und: ' + (row['Unidad Ref'] || '') + ' · Factor: ' + factor;
+    inputCajas.value = '';
+    inputUnidades.value = '';
+    inputVencimiento.value = '';
+    actualizarHint();
+    inputCajas.focus();
+  }
+
+  function actualizarHint() {
+    if (!selectedProduct) return;
+    const factor = getFactor(selectedProduct);
+    const c = Number(inputCajas.value) || 0;
+    const u = Number(inputUnidades.value) || 0;
+    const total = c * factor + u;
+    hintConv.textContent = factor > 1
+      ? (c + ' cajas × ' + factor + ' + ' + u + ' und = ' + total + ' unidades')
+      : ('Total: ' + total + ' unidades');
+  }
+
+  inputCajas.addEventListener('input', actualizarHint);
+  inputUnidades.addEventListener('input', actualizarHint);
+  btnBuscar.addEventListener('click', buscar);
+  searchInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') buscar();
+  });
+  btnActualizar.addEventListener('click', function () {
+    loadProductos();
+    sincronizarDesdeServidor();
+  });
+
+  // ---------- Conteo / inventario ----------
+  function loadInventarioLocal() {
+    try {
+      const raw = localStorage.getItem(INV_KEY);
+      if (raw) inventarioFisico = JSON.parse(raw) || [];
+    } catch (e) {
+      inventarioFisico = [];
+    }
+    renderInventario();
+  }
+
+  function saveInventario() {
+    try { localStorage.setItem(INV_KEY, JSON.stringify(inventarioFisico)); } catch (e) {}
+  }
+
+  function claveLote(codigo, vencimiento) {
+    return String(codigo) + '||' + normVenc(vencimiento);
+  }
+
+  function nuevoIdLote(codigo, vencimiento) {
+    // ID estable por código+vencimiento → permite sumar entre dispositivos
+    return 'L_' + btoa(unescape(encodeURIComponent(claveLote(codigo, vencimiento))))
+      .replace(/[^a-zA-Z0-9]/g, '')
+      .slice(0, 40);
+  }
+
+  async function guardarConteo() {
+    if (!selectedProduct) return;
+    const factor = getFactor(selectedProduct);
+    const cajas = Number(inputCajas.value) || 0;
+    const unidades = Number(inputUnidades.value) || 0;
+    const cantidad = cajas * factor + unidades;
+    if (cantidad <= 0) {
+      showToast('Ingrese cajas o unidades mayores a 0.', 'error');
+      return;
+    }
+    const vencimiento = normVenc(inputVencimiento.value);
+    const codigo = selectedProduct.Codigo;
+    const id = nuevoIdLote(codigo, vencimiento);
+
+    // Buscar si ya existe local (mismo código + vencimiento) → sumar
+    let existente = inventarioFisico.find(function (x) {
+      return x.codigo === codigo && normVenc(x.vencimiento) === vencimiento;
+    });
+
+    if (existente) {
+      existente.cantidad = Number(existente.cantidad) + cantidad;
+      existente.usuario = usuarioActual;
+      existente.fecha = hoyStr();
+      existente.id = id;
+    } else {
+      existente = {
+        id: id,
+        codigo: codigo,
+        descripcion: selectedProduct.Producto,
+        linea: selectedProduct.Linea || 'SIN LÍNEA',
+        cantidad: cantidad,
+        vencimiento: vencimiento,
+        fecha: hoyStr(),
+        usuario: usuarioActual
+      };
+      inventarioFisico.push(existente);
+    }
+
+    saveInventario();
+    renderInventario();
+    await sincronizarLoteAlServidor(existente, factor);
+    showToast('Conteo guardado: +' + cantidad + ' (' + codigo + ')', 'success');
+    inputCajas.value = '';
+    inputUnidades.value = '';
+    actualizarHint();
+  }
+
+  btnGuardarConteo.addEventListener('click', guardarConteo);
+
+  async function sincronizarLoteAlServidor(record, factor) {
+    factor = factor || 1;
+    const cajasLote = factor > 1 ? Math.floor(Number(record.cantidad) / factor) : 0;
+    const unidadesLote = factor > 1 ? (Number(record.cantidad) % factor) : Number(record.cantidad);
+    try {
+      // Leer cantidad actual en nube para SUMAR si otro dispositivo ya subió
+      const { data: remoto } = await supabaseClient
+        .from('lotes_conteo')
+        .select('cantidad')
+        .eq('id', record.id)
+        .maybeSingle();
+
+      // Si el remoto tiene más (otro dispositivo sumó), no pisar hacia abajo:
+      // usamos el valor local que ya incluye lo fusionado en sincronizarDesdeServidor
+      const { error } = await supabaseClient.from('lotes_conteo').upsert({
+        id: record.id,
+        codigo: record.codigo,
+        descripcion: record.descripcion,
+        linea: record.linea || 'SIN LÍNEA',
+        cantidad: Number(record.cantidad),
+        cajas: cajasLote,
+        unidades: unidadesLote,
+        vencimiento: record.vencimiento || null,
+        fecha: record.fecha || hoyStr(),
+        usuario: record.usuario || usuarioActual,
+        device_id: deviceId
+      });
+      if (error) console.warn('No se pudo subir lote:', error);
+    } catch (e) {
+      console.warn(e);
+    }
+  }
+
+  function fusionarRegistroRemoto(r) {
+    const venc = normVenc(r.vencimiento);
+    const id = r.id || nuevoIdLote(r.codigo, venc);
+    let local = inventarioFisico.find(function (x) {
+      return x.id === id || (x.codigo === r.codigo && normVenc(x.vencimiento) === venc);
+    });
+    if (local) {
+      // Tomar el máximo o sumar solo si son de distintas fuentes es complejo;
+      // con ID estable, el servidor tiene el total consolidado por upserts de cada app.
+      // Preferimos el valor del servidor si es más reciente / mayor coherente:
+      if (Number(r.cantidad) !== Number(local.cantidad)) {
+        local.cantidad = Number(r.cantidad);
+        local.usuario = r.usuario || local.usuario;
+        local.fecha = r.fecha || local.fecha;
+        local.descripcion = r.descripcion || local.descripcion;
+        local.id = id;
+      }
+    } else {
+      inventarioFisico.push({
+        id: id,
+        codigo: r.codigo,
+        descripcion: r.descripcion,
+        linea: r.linea,
+        cantidad: Number(r.cantidad),
+        vencimiento: venc,
+        fecha: r.fecha,
+        usuario: r.usuario || ''
+      });
+    }
+  }
+
+  async function sincronizarDesdeServidor() {
+    if (sincronizando) return;
+    sincronizando = true;
+    try {
+      const { data, error } = await supabaseClient
+        .from('lotes_conteo')
+        .select('*')
+        .order('creado_en', { ascending: true });
+      if (error) throw error;
+      const registros = (data || []).map(function (r) {
+        return {
+          id: r.id,
+          codigo: r.codigo,
+          descripcion: r.descripcion,
+          linea: r.linea,
+          cantidad: r.cantidad,
+          vencimiento: r.vencimiento,
+          fecha: r.fecha,
+          usuario: r.usuario || ''
+        };
+      });
+      // Reconstruir desde servidor como fuente de verdad compartida
+      const mapa = {};
+      registros.forEach(function (r) {
+        const k = claveLote(r.codigo, r.vencimiento);
+        mapa[k] = {
+          id: r.id || nuevoIdLote(r.codigo, r.vencimiento),
+          codigo: r.codigo,
+          descripcion: r.descripcion,
+          linea: r.linea,
+          cantidad: Number(r.cantidad),
+          vencimiento: normVenc(r.vencimiento),
+          fecha: r.fecha,
+          usuario: r.usuario || ''
+        };
+      });
+      inventarioFisico = Object.keys(mapa).map(function (k) { return mapa[k]; });
+      saveInventario();
+      renderInventario();
+    } catch (e) {
+      /* offline: se mantiene local */
+    } finally {
+      sincronizando = false;
+    }
+  }
+
+  // Realtime
+  try {
+    supabaseClient
+      .channel('conteos-vivos')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'lotes_conteo' }, function () {
+        sincronizarDesdeServidor();
+      })
+      .subscribe();
+  } catch (e) {}
+
+  setInterval(function () {
+    if (usuarioActual) sincronizarDesdeServidor();
+  }, 10000);
+
+  function renderInventario() {
+    invCount.textContent = inventarioFisico.length + ' lote(s)';
+    invCards.innerHTML = inventarioFisico.map(function (r) {
+      return (
+        '<div class="mi-card">' +
+          '<div class="row1"><span>' + escapeHtml(r.codigo) + '</span><span>' + escapeHtml(String(r.cantidad)) + '</span></div>' +
+          '<div class="row2">' + escapeHtml(r.descripcion || '') + '</div>' +
+          '<div class="row3"><span>Vence: ' + escapeHtml(r.vencimiento || 'S/F') + ' · ' + escapeHtml(r.usuario || '') + '</span>' +
+          (esAdmin() ? '<button type="button" class="btn btn-danger" data-del="' + escapeHtml(r.id) + '" style="min-height:36px;padding:0.25rem 0.5rem;">✕</button>' : '') +
+          '</div></div>'
+      );
+    }).join('') || '<p style="color:var(--muted);font-size:0.85rem;">Aún no hay conteos.</p>';
+
+    invCards.querySelectorAll('[data-del]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        eliminarLote(btn.getAttribute('data-del'));
+      });
+    });
+
+    invTableBody.innerHTML = inventarioFisico.map(function (r) {
+      return (
+        '<tr>' +
+          '<td>' + escapeHtml(r.codigo) + '</td>' +
+          '<td>' + escapeHtml(r.descripcion || '') + '</td>' +
+          '<td>' + escapeHtml(String(r.cantidad)) + '</td>' +
+          '<td>' + escapeHtml(r.vencimiento || '') + '</td>' +
+          '<td>' + escapeHtml(r.usuario || '') + '</td>' +
+          '<td>' + (esAdmin() ? '<button type="button" class="btn btn-danger" data-del="' + escapeHtml(r.id) + '" style="min-height:32px;padding:0.2rem 0.4rem;">✕</button>' : '') + '</td>' +
+        '</tr>'
+      );
+    }).join('');
+
+    invTableBody.querySelectorAll('[data-del]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        eliminarLote(btn.getAttribute('data-del'));
+      });
+    });
+  }
+
+  async function eliminarLote(id) {
+    if (!esAdmin()) return;
+    if (!confirm('¿Eliminar este lote?')) return;
+    inventarioFisico = inventarioFisico.filter(function (x) { return x.id !== id; });
+    saveInventario();
+    renderInventario();
+    try {
+      await supabaseClient.from('lotes_conteo').delete().eq('id', id);
+    } catch (e) {}
+  }
+
+  btnEnviarInventario.addEventListener('click', async function () {
+    if (!inventarioFisico.length) {
+      showToast('No hay conteos para enviar.', 'error');
+      return;
+    }
+    if (!confirm('¿Confirmar envío del inventario físico a la nube?')) return;
+    showToast('⏳ Enviando...', 'info');
+    let ok = 0;
+    for (let i = 0; i < inventarioFisico.length; i++) {
+      const rec = inventarioFisico[i];
+      const prod = currentData.find(function (p) { return p.Codigo === rec.codigo; });
+      const factor = prod ? getFactor(prod) : 1;
+      await sincronizarLoteAlServidor(rec, factor);
+      ok++;
+    }
+    await sincronizarDesdeServidor();
+    showToast('✅ Inventario enviado (' + ok + '). El administrador ya puede descargarlo.', 'success');
+  });
+
+  function exportarInventarioExcel() {
+    if (!esAdmin()) {
+      showToast('Solo el administrador puede descargar.', 'error');
+      return;
+    }
+    if (!inventarioFisico.length) {
+      showToast('No hay datos para exportar.', 'error');
+      return;
+    }
+    const filas = inventarioFisico.map(function (r) {
+      return {
+        Codigo: r.codigo,
+        Producto: r.descripcion,
+        Linea: r.linea,
+        Cantidad: r.cantidad,
+        Vencimiento: r.vencimiento,
+        Fecha: r.fecha,
+        Usuario: r.usuario
+      };
+    });
+    const ws = XLSX.utils.json_to_sheet(filas);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'InventarioFisico');
+    XLSX.writeFile(wb, 'inventario_fisico_' + hoyStr() + '.xlsx');
+    showToast('Excel descargado.', 'success');
+  }
+
+  btnExportExcel.addEventListener('click', exportarInventarioExcel);
+  btnAdminExportInv.addEventListener('click', exportarInventarioExcel);
+
+  btnLimpiar.addEventListener('click', async function () {
+    if (!esAdmin()) return;
+    if (!confirm('¿Borrar TODO el inventario físico en este dispositivo y en la nube?')) return;
+    inventarioFisico = [];
+    saveInventario();
+    renderInventario();
+    try {
+      await supabaseClient.from('lotes_conteo').delete().neq('id', '');
+    } catch (e) {}
+    showToast('Inventario limpiado.', 'success');
+  });
+
+  // ---------- Admin panel / import Excel ----------
+  btnAdmin.addEventListener('click', function () {
+    if (!esAdmin()) return;
+    adminOverlay.classList.add('open');
+    cargarSesionesActivas();
+  });
+  btnCerrarAdmin.addEventListener('click', function () {
+    adminOverlay.classList.remove('open');
+  });
+  adminOverlay.addEventListener('click', function (e) {
+    if (e.target === adminOverlay) adminOverlay.classList.remove('open');
+  });
+  btnRefrescarSesiones.addEventListener('click', cargarSesionesActivas);
+
+  dropZone.addEventListener('click', function () {
+    importExcelInput.click();
+  });
+  dropZone.addEventListener('dragover', function (e) {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+  dropZone.addEventListener('dragleave', function () {
+    dropZone.classList.remove('dragover');
+  });
+  dropZone.addEventListener('drop', function (e) {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) setArchivoPendiente(f);
+  });
+  importExcelInput.addEventListener('change', function () {
+    const f = this.files && this.files[0];
+    if (f) setArchivoPendiente(f);
+    this.value = '';
+  });
+
+  function setArchivoPendiente(file) {
+    archivoPendiente = file;
+    dropFileName.textContent = file.name + ' (' + Math.round(file.size / 1024) + ' KB)';
+    btnSubirExcel.disabled = false;
+  }
+
+  btnSubirExcel.addEventListener('click', function () {
+    if (!esAdmin()) {
+      showToast('Solo el administrador puede importar.', 'error');
+      return;
+    }
+    if (!archivoPendiente) return;
+    importarExcelASupabase(archivoPendiente, chkSoloCatalogo.checked);
+  });
+
+  function parseFactorDesdeTexto(texto) {
+    if (texto === null || texto === undefined || texto === '') return 1;
+    const n = Number(texto);
+    if (!isNaN(n) && n > 0) return n;
+    const m = String(texto).match(/(\d+)/);
+    return m ? Number(m[1]) : 1;
+  }
+
+  function parseStockSlash(texto, factor) {
+    // "5/0" o "5/18" con factor de empaque
+    const s = String(texto || '').trim();
+    const m = s.match(/^(\d+)\s*\/\s*(\d+)$/);
+    if (m) {
+      const cajas = Number(m[1]);
+      const und = Number(m[2]);
+      return cajas * (factor || 1) + und;
+    }
+    const n = Number(s);
+    return isNaN(n) ? 0 : n;
+  }
+
+  function filaExcelAProducto(row, soloCatalogo) {
+    // Formato inventario valorado (columnas largas)
+    let codigo = String(
+      row['InventarioProductoCodigo'] ?? row['Codigo'] ?? row['codigo'] ?? row['Codigo'] ?? ''
+    ).trim();
+    // Formato existencias a veces tiene el nombre en primera columna sin título claro
+    if (!codigo) {
+      // buscar cualquier key que parezca código
+      Object.keys(row).forEach(function (k) {
+        if (/codigo/i.test(k) && !codigo) codigo = String(row[k] || '').trim();
+      });
+    }
+    if (!codigo) return null;
+
+    let descripcion = String(
+      row['InventarioProductoDescripcion'] ?? row['Producto'] ?? row['descripcion'] ?? row['Descripcion'] ?? ''
+    ).trim();
+    if (!descripcion) {
+      // en existencias a veces la 1ª columna es el nombre
+      const keys = Object.keys(row);
+      if (keys.length && !/codigo|linea|marca|stock|unidad|factor|activo/i.test(keys[0])) {
+        descripcion = String(row[keys[0]] || '').trim();
+      }
+    }
+    if (!descripcion) return null;
+
+    const factorRaw =
+      row['InventarioProductoUnidadReferenciaFactor'] ??
+      row['FactorEmpaque'] ??
+      row['factor_empaque'] ??
+      row['Unidad Ref'] ??
+      row['UnidadRef'] ??
+      1;
+    // Unidad Ref tipo "CJ*12/BAR"
+    let factor = parseFactorDesdeTexto(factorRaw);
+    const undRefStr = String(
+      row['InventarioProductoUnidadReferenciaAbreviacion'] ??
+      row['Unidad Ref'] ??
+      row['unidad_ref'] ??
+      row['UnidadRef'] ??
+      factorRaw ??
+      ''
+    );
+    const mCj = undRefStr.match(/CJ\s*\*\s*(\d+)/i) || undRefStr.match(/\*\s*(\d+)/);
+    if (mCj) factor = Number(mCj[1]) || factor;
+
+    const cantidadRaw =
+      row['InventarioProductoCantidad'] ??
+      row['Cantidad'] ??
+      row['stock_teorico'] ??
+      row['Stock Fisico'] ??
+      row['Stock Físico'] ??
+      row['Stock'] ??
+      0;
+
+    const stock = parseStockSlash(cantidadRaw, factor);
+
+    const prod = {
+      codigo: codigo,
+      codigo_fabrica: String(row['CodigoFabrica'] ?? row['codigo_fabrica'] ?? '').trim() || null,
+      descripcion: descripcion,
+      unidad_ref: undRefStr.trim() || null,
+      factor_empaque: factor,
+      linea: String(
+        row['InventarioProductoCategoriaDescripcion'] ??
+        row['Linea'] ??
+        row['linea'] ??
+        row['Línea'] ??
+        ''
+      ).trim() || null,
+      marca: String(
+        row['InventarioProductoProveedorNombre'] ??
+        row['Marca'] ??
+        row['marca'] ??
+        row['Proveedor'] ??
+        ''
+      ).trim() || null,
+      activo: true,
+      actualizado_en: new Date().toISOString()
+    };
+
+    const activoRaw = row['Activo'] ?? row['activo'];
+    if (activoRaw === false || String(activoRaw).toUpperCase() === 'FALSE') {
+      prod.activo = false;
+    }
+
+    if (!soloCatalogo) {
+      prod.stock_teorico = stock;
+    }
+
+    return prod;
+  }
+
+  async function importarExcelASupabase(file, soloCatalogo) {
+    if (!file) return;
+    showToast('⏳ Leyendo Excel...', 'info');
+    try {
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(buffer, { type: 'array' });
+      const hoja = wb.Sheets[wb.SheetNames[0]];
+      const filas = XLSX.utils.sheet_to_json(hoja, { defval: '' });
+      if (!filas.length) {
+        showToast('El archivo no tiene filas.', 'error');
+        return;
+      }
+      const productos = [];
+      const vistos = new Set();
+      filas.forEach(function (row) {
+        const p = filaExcelAProducto(row, soloCatalogo);
+        if (!p) return;
+        if (vistos.has(p.codigo)) {
+          const idx = productos.findIndex(function (x) { return x.codigo === p.codigo; });
+          if (idx >= 0) productos[idx] = p;
+        } else {
+          vistos.add(p.codigo);
+          productos.push(p);
+        }
+      });
+      if (!productos.length) {
+        showToast('No se encontraron productos con código y descripción.', 'error');
+        return;
+      }
+      showToast('⏳ Subiendo ' + productos.length + ' productos...', 'info');
+      const TAM = 200;
+      let subidos = 0;
+      for (let i = 0; i < productos.length; i += TAM) {
+        const lote = productos.slice(i, i + TAM);
+        // Si solo catálogo, no enviar stock_teorico (undefined se omite en JSON... 
+        // mejor construir objeto limpio)
+        const payload = lote.map(function (p) {
+          const o = {
+            codigo: p.codigo,
+            codigo_fabrica: p.codigo_fabrica,
+            descripcion: p.descripcion,
+            unidad_ref: p.unidad_ref,
+            factor_empaque: p.factor_empaque,
+            linea: p.linea,
+            marca: p.marca,
+            activo: p.activo,
+            actualizado_en: p.actualizado_en
+          };
+          if (!soloCatalogo && p.stock_teorico !== undefined) {
+            o.stock_teorico = p.stock_teorico;
+          }
+          return o;
+        });
+        const { error } = await supabaseClient
+          .from('productos')
+          .upsert(payload, { onConflict: 'codigo' });
+        if (error) throw error;
+        subidos += lote.length;
+      }
+      showToast('✅ ' + subidos + ' productos actualizados' + (soloCatalogo ? ' (solo catálogo)' : '') + '.', 'success');
+      archivoPendiente = null;
+      dropFileName.textContent = '';
+      btnSubirExcel.disabled = true;
+      await loadProductos();
+    } catch (err) {
+      console.error(err);
+      showToast('❌ Error al importar: ' + (err.message || err), 'error');
+    }
+  }
+
+  // ---------- Sesión guardada ----------
+  function intentarSesionGuardada() {
+    try {
+      const raw = localStorage.getItem(SESSION_KEY);
+      if (!raw) return false;
+      const s = JSON.parse(raw);
+      // sesión válida 12 horas
+      if (!s || !s.usuario || !s.ts || (Date.now() - s.ts > 12 * 60 * 60 * 1000)) {
+        localStorage.removeItem(SESSION_KEY);
+        return false;
+      }
+      usuarioActual = s.usuario;
+      rolActual = s.rol || (s.usuario === 'luis' ? 'admin' : 'usuario');
+      registrarSesionActiva();
+      mostrarApp();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Init
+  if (!intentarSesionGuardada()) {
+    loginScreen.classList.remove('hidden');
+    app.classList.remove('visible');
+  }
+})();
+  </script>
+</body>
+</html>
