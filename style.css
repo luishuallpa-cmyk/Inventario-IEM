@@ -296,58 +296,55 @@
         }
         .header .theme-toggle:hover { background: rgba(108, 92, 231, 0.25); transform: rotate(10deg); }
 
-        /* Botón SALIR — sólido y muy visible en PC y móvil */
+        /* Botón Salir — visible pero discreto (no compite con acciones principales) */
         .btn-logout {
             display: inline-flex !important;
             align-items: center;
             justify-content: center;
             gap: 0.3rem;
-            min-height: 40px;
-            padding: 0.4rem 0.95rem;
-            border-radius: 12px;
-            border: 2px solid #ffffff;
-            background: #e11d48 !important;
-            color: #ffffff !important;
+            min-height: 38px;
+            padding: 0.35rem 0.8rem;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-secondary) !important;
             font-family: var(--font);
-            font-size: 0.85rem;
-            font-weight: 800;
-            letter-spacing: 0.03em;
-            text-transform: uppercase;
+            font-size: 0.78rem;
+            font-weight: 650;
+            letter-spacing: 0.02em;
             cursor: pointer;
             transition: 0.15s;
             flex-shrink: 0;
-            box-shadow: 0 3px 12px rgba(225, 29, 72, 0.55);
+            box-shadow: none;
+            text-transform: none;
         }
         .btn-logout:hover,
         .btn-logout:active {
-            background: #be123c !important;
-            color: #ffffff !important;
-            transform: scale(0.97);
-        }
-        .btn-logout-icon {
-            font-size: 1.05rem;
-            line-height: 1;
-            color: #ffffff !important;
+            background: rgba(225, 29, 72, 0.18);
+            border-color: rgba(225, 29, 72, 0.45);
+            color: #fda4af !important;
+            transform: none;
         }
         .btn-logout-label {
             display: inline !important;
-            color: #ffffff !important;
+            color: inherit !important;
         }
         body.light-theme .btn-logout {
-            background: #e11d48 !important;
-            border-color: #9f1239;
-            color: #ffffff !important;
+            background: rgba(15, 23, 42, 0.05);
+            border-color: rgba(15, 23, 42, 0.12);
+            color: var(--text-secondary) !important;
+        }
+        body.light-theme .btn-logout:hover {
+            background: rgba(225, 29, 72, 0.1);
+            border-color: rgba(225, 29, 72, 0.35);
+            color: #be123c !important;
         }
         @media (max-width: 640px) {
             .btn-logout {
-                min-height: 46px !important;
-                min-width: 72px;
-                padding: 0.45rem 0.85rem !important;
-                font-size: 0.8rem !important;
-                border-radius: 12px !important;
-                box-shadow: 0 4px 14px rgba(225, 29, 72, 0.6);
+                min-height: 42px !important;
+                padding: 0.35rem 0.7rem !important;
+                font-size: 0.75rem !important;
             }
-            .btn-logout-label { display: inline !important; }
         }
 
         /* ============================================================
@@ -1871,6 +1868,27 @@ body.light-theme .admin-panel-header {
     .admin-tab[hidden] { display: none !important; }
 }
 
+/* Menú admin siempre clicable */
+.admin-nav {
+    position: relative;
+    z-index: 20;
+    pointer-events: auto;
+}
+.admin-nav-btn {
+    position: relative;
+    z-index: 21;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(123, 108, 255, 0.35);
+}
+.admin-tab[hidden],
+.admin-tab[hidden=""] {
+    display: none !important;
+}
+.admin-tab.active:not([hidden]) {
+    display: block !important;
+}
 
 .admin-divider {
     border: none;
