@@ -1,1709 +1,1143 @@
-/* ============================================================
-           RESET Y VARIABLES
-           ============================================================ */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f1419" />
+  <title>IEM GROUP · Inventario físico</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <!-- ========== LOGIN ========== -->
+  <div id="loginScreen" class="login-wrap">
+    <div class="login-card">
+      <h1>IEM GROUP</h1>
+      <p class="sub">Inventario físico</p>
+      <label for="loginUsuario">Usuario</label>
+      <input id="loginUsuario" type="text" autocomplete="username" autocapitalize="none" />
+      <label for="loginClave">Clave</label>
+      <input id="loginClave" type="password" autocomplete="current-password" />
+      <p id="loginError" class="login-error hidden"></p>
+      <button id="loginBtn" class="btn btn-primary" style="width:100%;">Entrar</button>
+    </div>
+  </div>
 
-        :root {
-            --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  <!-- ========== APP ========== -->
+  <div id="app">
+    <header class="header">
+      <div>
+        <div class="header-brand">IEM GROUP</div>
+        <div class="header-user" id="headerUser"></div>
+      </div>
+      <div class="header-actions">
+        <button type="button" class="btn btn-icon" id="btnAdmin" title="Administración" style="display:none;">⚙️</button>
+        <button type="button" class="btn btn-icon" id="btnTheme" title="Tema">🌓</button>
+        <button type="button" class="btn btn-icon" id="btnLogout" title="Cerrar sesión">⏻</button>
+      </div>
+    </header>
 
-            /* Le dice al navegador que estamos en tema oscuro para que los
-               controles nativos (el desplegable de Día/Mes al abrirlo,
-               scrollbars, etc.) se pinten oscuros también. Sin esto, en
-               escritorio el <select> se ve con el fondo del tema pero, al
-               desplegarlo, la lista de opciones la dibuja el sistema
-               operativo siempre en blanco, sin importar el tema de la app. */
-            color-scheme: dark;
+    <main class="main">
+      <div class="search-row">
+        <input type="search" id="searchInput" placeholder="Buscar código o producto..." enterkeyhint="search" />
+        <button type="button" class="btn" id="btnBuscar">🔎 Buscar</button>
+        <button type="button" class="btn" id="btnActualizar">↻ Actualizar</button>
+      </div>
+      <div class="file-status" id="fileStatus">Cargando catálogo...</div>
 
-            /* Colores base (tema oscuro, un poco menos saturado que el morado
-               intenso original, para que canse menos la vista en sesiones
-               largas de conteo, sin perder la identidad azul/morado) */
-            --bg-gradient: linear-gradient(160deg, #1a233e 0%, #2a2653 45%, #372656 100%);
-            --card-bg: rgba(255, 255, 255, 0.07);
-            --card-border: rgba(255, 255, 255, 0.1);
-            --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-            --text-primary: #eef1fb;
-            --text-secondary: #aab4e8;
-            --text-muted: #7d87c2;
-            --heading-color: #c9d6ff;
-            --accent: #6c5ce7;
-            --accent-2: #00c2ff;
-            --accent-light: #8f7bff;
-            --accent-gradient: linear-gradient(135deg, #00c2ff 0%, #6c5ce7 55%, #d152e0 100%);
-            --success: #22c98a;
-            --warning: #ffab2e;
-            --danger: #ff5470;
-            --input-bg: rgba(255, 255, 255, 0.08);
-            --input-border: rgba(255, 255, 255, 0.14);
-            --input-focus: #6c5ce7;
-            --table-header-bg: rgba(108, 92, 231, 0.18);
-            --table-row-alt: rgba(255, 255, 255, 0.03);
-            --badge-bg: rgba(108, 92, 231, 0.22);
-            --badge-text: #b9c1ff;
-            --divider: rgba(255, 255, 255, 0.08);
-            --shadow-color: rgba(0, 0, 0, 0.3);
-        }
+      <div id="resultsList" class="results-list"></div>
 
-        /* Tema claro */
-        body.light-theme {
-            color-scheme: light;
-            --bg-gradient: linear-gradient(160deg, #eef2ff 0%, #e6ecff 40%, #f3e8ff 100%);
-            --card-bg: rgba(255, 255, 255, 0.8);
-            --card-border: rgba(108, 92, 231, 0.12);
-            --card-shadow: 0 8px 32px rgba(84, 60, 180, 0.1);
-            --text-primary: #201b45;
-            --text-secondary: #4a437e;
-            --text-muted: #6b6499;
-            --heading-color: #4b2ea3;
-            --accent: #6c48d6;
-            --accent-2: #0090d9;
-            --accent-light: #8a63e8;
-            --accent-gradient: linear-gradient(135deg, #0090d9 0%, #6c48d6 55%, #c23ed0 100%);
-            --success: #17a878;
-            --warning: #e08a1a;
-            --danger: #e0405f;
-            --input-bg: rgba(255, 255, 255, 0.7);
-            --input-border: rgba(108, 92, 231, 0.18);
-            --table-header-bg: rgba(108, 92, 231, 0.08);
-            --table-row-alt: rgba(108, 92, 231, 0.03);
-            --badge-bg: rgba(108, 92, 231, 0.12);
-            --badge-text: #5a3ec2;
-            --divider: rgba(108, 92, 231, 0.1);
-            --shadow-color: rgba(84, 60, 180, 0.1);
-        }
+      <!-- Producto seleccionado / conteo -->
+      <div id="selectedPanel" class="selected-panel hidden">
+        <div class="codigo-big" id="selCodigo"></div>
+        <h2 id="selDescripcion"></h2>
+        <div style="font-size:0.8rem;opacity:0.9;" id="selMeta"></div>
+        <div class="qty-row">
+          <div>
+            <label for="inputCajas">Cajas</label>
+            <input type="number" id="inputCajas" min="0" step="1" inputmode="numeric" value="" />
+          </div>
+          <div>
+            <label for="inputUnidades">Unidades</label>
+            <input type="number" id="inputUnidades" min="0" step="1" inputmode="numeric" value="" />
+          </div>
+        </div>
+        <div class="hint-conv" id="hintConv"></div>
+        <div class="venc-row">
+          <label for="inputVencimiento">Vencimiento (ej. 2026-08 o S/F)</label>
+          <input type="text" id="inputVencimiento" placeholder="AAAA-MM o S/F" />
+        </div>
+        <button type="button" class="btn btn-success" id="btnGuardarConteo" style="width:100%;">💾 GUARDAR CONTEO</button>
+      </div>
 
-        body {
-            font-family: var(--font);
-            background: var(--bg-gradient);
-            min-height: 100vh;
-            min-height: 100dvh;
-            padding-left: env(safe-area-inset-left, 0);
-            padding-right: env(safe-area-inset-right, 0);
-            padding-bottom: env(safe-area-inset-bottom, 0);
-            padding: 0.7rem;
-            color: var(--text-primary);
-            transition: background 0.4s, color 0.3s;
-            line-height: 1.5;
-        }
+      <!-- Inventario físico -->
+      <div class="section-title">
+        <span>Inventario físico</span>
+        <span id="invCount" style="font-size:0.8rem;color:var(--muted);font-weight:500;"></span>
+      </div>
+      <div class="inv-actions">
+        <button type="button" class="btn btn-primary" id="btnEnviarInventario">📤 Enviar inventario</button>
+        <button type="button" class="btn" id="btnExportExcel" style="display:none;">📊 Excel</button>
+        <button type="button" class="btn btn-danger" id="btnLimpiar" style="display:none;">🗑 Limpiar</button>
+      </div>
+      <div id="invCards" class="inv-cards-mobile"></div>
+      <table class="inv-table" id="invTable">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Producto</th>
+            <th>Cant.</th>
+            <th>Vence</th>
+            <th>Usuario</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="invTableBody"></tbody>
+      </table>
+    </main>
+  </div>
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
+  <!-- ========== PANEL ADMIN ========== -->
+  <div id="adminOverlay" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal-panel">
+      <h2>
+        <span>⚙️ Administración</span>
+        <button type="button" class="btn btn-icon" id="btnCerrarAdmin" title="Cerrar">✕</button>
+      </h2>
 
-        /* ============================================================
-           TARJETAS Y ELEMENTOS COMUNES
-           ============================================================ */
-        .card {
-            background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--card-border);
-            border-radius: 24px;
-            padding: 0.9rem 1rem;
-            margin-bottom: 0.8rem;
-            box-shadow: var(--card-shadow);
-            transition: background 0.3s, border 0.3s, box-shadow 0.3s;
-        }
+      <div class="admin-section" style="margin-top:0;padding-top:0;border:none;">
+        <h3>📤 Subir Excel a la nube</h3>
+        <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.5rem;">
+          Acepta el Excel de <strong>existencias</strong> (base) o el de <strong>inventario valorado</strong> (diario).
+        </p>
+        <label class="checkbox-row">
+          <input type="checkbox" id="chkSoloCatalogo" />
+          Solo catálogo (nombres / línea / marca) — no modificar stock
+        </label>
+        <div class="drop-zone" id="dropZone">
+          <div>Arrastra el Excel aquí o toca para elegir</div>
+          <div id="dropFileName" style="margin-top:0.5rem;font-size:0.8rem;"></div>
+          <input type="file" id="importExcelInput" accept=".xlsx,.xls,.csv" />
+        </div>
+        <button type="button" class="btn btn-primary" id="btnSubirExcel" style="width:100%;" disabled>Subir a Supabase</button>
+      </div>
 
-        .card-header {
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 0.5rem 1rem;
-            margin-bottom: 0.5rem;
-            padding-bottom: 0.4rem;
-            border-bottom: 1px solid var(--divider);
-        }
+      <div class="admin-section">
+        <h3>📊 Descargas</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
+          <button type="button" class="btn" id="btnAdminExportInv">📊 Descargar inventario físico</button>
+        </div>
+      </div>
 
-        .card-header h2 {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: var(--heading-color);
-            letter-spacing: -0.3px;
-        }
+      <div class="admin-section">
+        <h3>👥 Usuarios conectados</h3>
+        <button type="button" class="btn" id="btnRefrescarSesiones">↻ Actualizar lista</button>
+        <div id="listaSesiones" style="margin-top:0.5rem;"></div>
+      </div>
+    </div>
+  </div>
 
-        .badge {
-            background: var(--badge-bg);
-            color: var(--badge-text);
-            padding: 0.15rem 0.7rem;
-            border-radius: 40px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            white-space: nowrap;
-        }
+  <div class="toast-wrap" id="toastWrap"></div>
 
-        /* Indicador de usuario conectado: se ve como una lucecita verde de
-           "activo" (punto que late) junto al nombre, en vez del ícono. */
-        .badge-usuario {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            background: rgba(34, 201, 138, 0.14);
-            color: var(--success);
-            border: 1px solid rgba(34, 201, 138, 0.35);
-        }
-        .badge-usuario .dot-activo {
-            width: 8px;
-            height: 8px;
-            flex-shrink: 0;
-            border-radius: 50%;
-            background: var(--success);
-            box-shadow: 0 0 6px var(--success);
-            animation: pulso-activo 1.8s ease-in-out infinite;
-        }
-        @keyframes pulso-activo {
-            0%, 100% { opacity: 1; box-shadow: 0 0 4px var(--success); }
-            50% { opacity: 0.5; box-shadow: 0 0 11px var(--success); }
-        }
+  <script>
+(function () {
+  'use strict';
 
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.4rem;
-            padding: 0.45rem 1rem;
-            border: none;
-            border-radius: 60px;
-            font-family: var(--font);
-            font-weight: 600;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            touch-action: manipulation;
-            min-height: 42px;
-            white-space: nowrap;
-            background: rgba(255, 255, 255, 0.06);
-            color: var(--text-secondary);
-            border: 1px solid transparent;
-        }
-        .btn:active { transform: scale(0.94); }
-        .btn-primary {
-            background: var(--accent-gradient);
-            color: #fff;
-            box-shadow: 0 4px 14px rgba(108, 92, 231, 0.4);
-        }
-        .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
-        .btn-success {
-            background: linear-gradient(135deg, #22c98a 0%, #17a878 100%);
-            color: #fff;
-            box-shadow: 0 4px 12px rgba(34, 201, 138, 0.35);
-        }
-        .btn-success:hover { filter: brightness(1.08); transform: translateY(-1px); }
-        .btn-warning {
-            background: linear-gradient(135deg, #ffab2e 0%, #ff7a3c 100%);
-            color: #fff;
-            box-shadow: 0 4px 12px rgba(255, 138, 46, 0.35);
-        }
-        .btn-warning:hover { filter: brightness(1.08); transform: translateY(-1px); }
-        .btn-danger {
-            background: linear-gradient(135deg, #ff5470 0%, #e0405f 100%);
-            color: #fff;
-            box-shadow: 0 4px 12px rgba(255, 84, 112, 0.35);
-        }
-        .btn-danger:hover { filter: brightness(1.08); transform: translateY(-1px); }
-        .btn-outline {
-            background: transparent;
-            border: 1.5px solid var(--text-muted);
-            color: var(--text-secondary);
-        }
-        .btn-outline:hover { background: rgba(108, 92, 231, 0.08); }
-        /* El botón de Actualizar usa el color de acento en vez del gris
-           neutro de btn-outline, para que se note que es un botón activo
-           y no un botón secundario apagado. */
-        #refreshDriveBtn {
-            border-color: var(--accent-light);
-            color: var(--accent-light);
-            background: rgba(108, 92, 231, 0.1);
-        }
-        #refreshDriveBtn:hover { background: rgba(108, 92, 231, 0.18); }
-        .btn-sm {
-            padding: 0.2rem 0.7rem;
-            min-height: 28px;
-            font-size: 0.7rem;
-        }
-        .btn-drive {
-            background: linear-gradient(135deg, #00c2ff 0%, #2a6ee0 100%);
-            color: #fff;
-            box-shadow: 0 4px 12px rgba(0, 194, 255, 0.35);
-        }
-        .btn-drive:hover { filter: brightness(1.1); transform: translateY(-1px); }
-        label.btn-drive {
-            margin: 0;
-            cursor: pointer;
-            display: inline-flex;
-        }
-        label.btn-drive input[type="file"] {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            opacity: 0;
-            overflow: hidden;
-        }
+  // ============================================================
+  // SUPABASE — tus credenciales
+  // ============================================================
+  const SUPABASE_URL = 'https://rgqlkeuzzqrmmgxtmren.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJncWxrZXV6enFybW1neHRtcmVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2NDE5NzMsImV4cCI6MjEwMjIxNzk3M30.P-Y577WPIgckmqCcy77rm-R55TDj6McQFvGayd0_yq0';
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        /* ============================================================
-           HEADER
-           ============================================================ */
-        .header {
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-            padding: 0.4rem 1rem;
-            background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--card-border);
-            border-radius: 60px;
-            box-shadow: var(--card-shadow);
-            margin-bottom: 0.8rem;
-            flex-wrap: wrap;
-        }
-        .header .logo {
-            display: flex;
-            align-items: center;
-            background: #ffffff;
-            padding: 0.3rem 0.6rem;
-            border-radius: 14px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        }
-        .header .logo img {
-            height: 42px;
-            width: auto;
-            display: block;
-        }
-        .header .version {
-            font-size: 0.6rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            background: var(--badge-bg);
-            padding: 0.1rem 0.6rem;
-            border-radius: 30px;
-        }
-        .header .theme-toggle {
-            margin-left: auto;
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            background: var(--badge-bg);
-            border: 1px solid var(--card-border);
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: 0.2s;
-            flex-shrink: 0;
-        }
-        .header .theme-toggle:hover { background: rgba(108, 92, 231, 0.25); transform: rotate(10deg); }
-        .header #logoutBtn:hover { background: rgba(255, 84, 112, 0.2); color: var(--danger); transform: none; }
-        .header #logoutBtn { margin-left: 0; }
+  const SESSION_KEY = 'iem_session_v1';
+  const BACKUP_KEY = 'iem_productos_backup';
+  const INV_KEY = 'iem_inventario_local';
+  const THEME_KEY = 'iem_theme';
 
-        /* ============================================================
-           BUSCADOR
-           ============================================================ */
-        .search-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            align-items: center;
-        }
-        .search-row input {
-            flex: 1;
-            min-width: 150px;
-            padding: 0.6rem 1rem;
-            border: 1px solid var(--input-border);
-            border-radius: 60px;
-            background: var(--input-bg);
-            color: var(--text-primary);
-            font-size: 0.9rem;
-            font-family: var(--font);
-            outline: none;
-            transition: 0.2s;
-            backdrop-filter: blur(4px);
-        }
-        .search-row input::placeholder { color: var(--text-muted); }
-        .search-row input:focus {
-            border-color: var(--input-focus);
-            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.18);
-            background: rgba(255, 255, 255, 0.1);
-        }
-        .search-row .btn { flex-shrink: 0; }
+  // Estado
+  let usuarioActual = '';
+  let rolActual = 'usuario';
+  let currentData = [];
+  let filteredData = [];
+  let selectedIndex = -1;
+  let selectedProduct = null;
+  let inventarioFisico = []; // { id, codigo, descripcion, linea, cantidad, vencimiento, fecha, usuario }
+  let sincronizando = false;
+  let deviceId = localStorage.getItem('iem_device_id');
+  if (!deviceId) {
+    deviceId = 'dev_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem('iem_device_id', deviceId);
+  }
+  let idSesionActual = null;
+  let archivoPendiente = null;
 
-        #fileStatus {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            text-align: right;
-            margin-top: 0.3rem;
-        }
+  // DOM
+  const loginScreen = document.getElementById('loginScreen');
+  const loginUsuario = document.getElementById('loginUsuario');
+  const loginClave = document.getElementById('loginClave');
+  const loginBtn = document.getElementById('loginBtn');
+  const loginError = document.getElementById('loginError');
+  const app = document.getElementById('app');
+  const headerUser = document.getElementById('headerUser');
+  const btnAdmin = document.getElementById('btnAdmin');
+  const btnTheme = document.getElementById('btnTheme');
+  const btnLogout = document.getElementById('btnLogout');
+  const searchInput = document.getElementById('searchInput');
+  const btnBuscar = document.getElementById('btnBuscar');
+  const btnActualizar = document.getElementById('btnActualizar');
+  const fileStatus = document.getElementById('fileStatus');
+  const resultsList = document.getElementById('resultsList');
+  const selectedPanel = document.getElementById('selectedPanel');
+  const selCodigo = document.getElementById('selCodigo');
+  const selDescripcion = document.getElementById('selDescripcion');
+  const selMeta = document.getElementById('selMeta');
+  const inputCajas = document.getElementById('inputCajas');
+  const inputUnidades = document.getElementById('inputUnidades');
+  const hintConv = document.getElementById('hintConv');
+  const inputVencimiento = document.getElementById('inputVencimiento');
+  const btnGuardarConteo = document.getElementById('btnGuardarConteo');
+  const invCount = document.getElementById('invCount');
+  const invCards = document.getElementById('invCards');
+  const invTableBody = document.getElementById('invTableBody');
+  const btnEnviarInventario = document.getElementById('btnEnviarInventario');
+  const btnExportExcel = document.getElementById('btnExportExcel');
+  const btnLimpiar = document.getElementById('btnLimpiar');
+  const adminOverlay = document.getElementById('adminOverlay');
+  const btnCerrarAdmin = document.getElementById('btnCerrarAdmin');
+  const dropZone = document.getElementById('dropZone');
+  const importExcelInput = document.getElementById('importExcelInput');
+  const dropFileName = document.getElementById('dropFileName');
+  const btnSubirExcel = document.getElementById('btnSubirExcel');
+  const chkSoloCatalogo = document.getElementById('chkSoloCatalogo');
+  const btnAdminExportInv = document.getElementById('btnAdminExportInv');
+  const btnRefrescarSesiones = document.getElementById('btnRefrescarSesiones');
+  const listaSesiones = document.getElementById('listaSesiones');
+  const toastWrap = document.getElementById('toastWrap');
 
-        /* ============================================================
-           RESULTADOS DE BÚSQUEDA
-           ============================================================ */
-        .results-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 0.2rem 0.8rem;
-            margin-bottom: 0.6rem;
-        }
-        .results-header .count {
-            font-weight: 500;
-            font-size: 0.95rem;
-        }
-        .results-header .count span {
-            background: var(--badge-bg);
-            color: var(--badge-text);
-            padding: 0.05rem 0.6rem;
-            border-radius: 30px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin-left: 0.3rem;
-        }
-        .results-header .stats {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            display: flex;
-            gap: 0.8rem;
-        }
-        .results-header .stats .label { color: var(--text-muted); }
+  function esAdmin() {
+    return String(rolActual || '').toLowerCase() === 'admin' ||
+           String(usuarioActual || '').toLowerCase() === 'luis';
+  }
 
-        .result-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.4rem;
-            max-height: 420px;
-            overflow-y: auto;
-            padding-right: 0.2rem;
-        }
-        .result-list::-webkit-scrollbar { width: 4px; }
-        .result-list::-webkit-scrollbar-track { background: transparent; }
-        .result-list::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
+  function showToast(msg, type) {
+    type = type || 'info';
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.textContent = msg;
+    toastWrap.appendChild(el);
+    setTimeout(function () {
+      el.remove();
+    }, 3800);
+  }
 
-        .result-item {
-            display: grid;
-            grid-template-columns: 70px 90px 1fr 70px 60px 60px;
-            align-items: center;
-            gap: 0.3rem 0.6rem;
-            padding: 0.5rem 0.8rem;
-            background: var(--input-bg);
-            border-radius: 14px;
-            border: 1px solid var(--card-border);
-            cursor: pointer;
-            transition: all 0.15s ease;
-            font-size: 0.8rem;
-            color: var(--text-primary);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            backdrop-filter: blur(4px);
-        }
-        .result-item:hover { background: rgba(255,255,255,0.08); border-color: var(--accent); }
-        .result-item.selected {
-            border-color: var(--accent);
-            background: rgba(108, 92, 231, 0.15);
-            box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.25);
-        }
-        .result-item .codigo { font-weight: 700; color: var(--heading-color); font-family: monospace; }
-        .result-item .fabrica { color: var(--text-muted); font-family: monospace; font-size: 0.65rem; }
-        .result-item .descripcion {
-            color: var(--text-secondary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .result-item .unidad {
-            background: var(--badge-bg);
-            color: var(--badge-text);
-            padding: 0.05rem 0.4rem;
-            border-radius: 20px;
-            font-size: 0.6rem;
-            font-weight: 600;
-            text-align: center;
-        }
-        .result-item .stock-cajas, .result-item .stock-unidades {
-            font-weight: 600;
-            color: var(--heading-color);
-            font-family: monospace;
-            text-align: right;
-            font-size: 0.8rem;
-        }
-        .result-item .stock-unidades { color: var(--text-secondary); }
+  function hoyStr() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
 
-        /* Ocultar filas móviles en escritorio */
-        .result-item .row1, .result-item .row2 { display: none; }
+  function normVenc(v) {
+    v = String(v || '').trim().toUpperCase();
+    if (!v || v === 'S/F' || v === 'SF' || v === 'SIN FECHA') return 'S/F';
+    return v;
+  }
 
-        /* ============================================================
-           CANTIDADES (cajas / unidades)
-           ============================================================ */
-        .cantidad-row {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 0.4rem 1rem;
-            margin-top: 0.5rem;
-            padding-top: 0.5rem;
-            border-top: 1px solid var(--divider);
-        }
-        .cantidad-row .group {
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
-        .cantidad-row .group label {
-            font-size: 0.8rem;
-            font-weight: 500;
-            color: var(--text-secondary);
-        }
-        .cantidad-row .group input {
-            width: 60px;
-            padding: 0.3rem 0.4rem;
-            border: 1px solid var(--input-border);
-            border-radius: 12px;
-            background: var(--input-bg);
-            color: var(--text-primary);
-            font-size: 16px;
-            text-align: center;
-            font-family: var(--font);
-            transition: 0.2s;
-            -webkit-appearance: none;
-            appearance: none;
-        }
-        .cantidad-row .group input:focus {
-            border-color: var(--input-focus);
-            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.18);
-            outline: none;
-        }
-        .cantidad-row .group input:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-        .info-text {
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-            background: var(--badge-bg);
-            padding: 0.1rem 0.6rem;
-            border-radius: 30px;
-        }
-        .cantidad-row .acciones {
-            display: flex;
-            gap: 0.4rem;
-            flex-wrap: wrap;
-            margin-left: auto;
-        }
-        .cantidad-row .acciones .btn { min-height: 34px; font-size: 0.75rem; }
+  // ---------- Tema ----------
+  function applyTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    try { localStorage.setItem(THEME_KEY, t); } catch (e) {}
+  }
+  applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
+  btnTheme.addEventListener('click', function () {
+    const cur = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    applyTheme(cur);
+  });
 
-        .cajas-group.hidden { display: none !important; }
-
-        /* Aviso de conversión automática unidades → cajas + unidades */
-        .conversion-hint {
-            display: none;
-            align-items: center;
-            gap: 0.4rem;
-            margin-top: 0.6rem;
-            padding: 0.4rem 0.8rem;
-            border-radius: 12px;
-            background: rgba(0, 194, 255, 0.12);
-            border: 1px solid rgba(0, 194, 255, 0.3);
-            color: var(--accent-2);
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-        .conversion-hint.visible { display: flex; }
-
-        /* ============================================================
-           VENCIMIENTO (control de fechas)
-           ============================================================ */
-        .venc-block {
-            margin-top: 0.5rem;
-            padding-top: 0.5rem;
-            border-top: 1px solid var(--divider);
-        }
-        .venc-block.hidden { display: none !important; }
-        .venc-label {
-            font-size: 0.75rem;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            margin-bottom: 0.6rem;
-        }
-        .venc-history {
-            border: 1px solid var(--input-border);
-            border-radius: 16px;
-            padding: 0.5rem 0.6rem;
-            margin-bottom: 0.5rem;
-            background: var(--input-bg);
-            /* Si se acumulan muchas fechas registradas, que hagan scroll
-               interno en vez de seguir empujando el resto de la tarjeta
-               hacia abajo. */
-            max-height: 6.5rem;
-            overflow-y: auto;
-        }
-        .venc-history-title {
-            font-size: 0.7rem;
-            color: var(--accent-light);
-            font-weight: 700;
-            margin-bottom: 0.4rem;
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
-        .venc-chips {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.4rem;
-        }
-        .venc-chip {
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid var(--card-border);
-            color: var(--text-secondary);
-            font-size: 0.7rem;
-            font-weight: 600;
-            padding: 0.35rem 0.5rem 0.35rem 0.8rem;
-            border-radius: 30px;
-            white-space: nowrap;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
-        .venc-chip-del {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            font-size: 0.7rem;
-            line-height: 1;
-            padding: 0.2rem;
-            border-radius: 50%;
-            transition: 0.15s;
-        }
-        .venc-chip-del:hover { color: var(--danger); background: rgba(212, 90, 90, 0.15); }
-        .venc-chip-empty {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-        .venc-selects {
-            display: flex;
-            gap: 0.6rem;
-            margin-bottom: 0.5rem;
-        }
-        .venc-select-group { flex: 1; min-width: 0; }
-        .venc-select-label {
-            font-size: 0.65rem;
-            font-weight: 700;
-            color: var(--accent-light);
-            margin-bottom: 0.3rem;
-            letter-spacing: 0.5px;
-        }
-        .venc-select {
-            width: 100%;
-            padding: 0.55rem 0.8rem;
-            border-radius: 14px;
-            border: 1.5px solid var(--input-focus);
-            background: var(--input-bg);
-            color: var(--heading-color);
-            font-family: var(--font);
-            font-weight: 700;
-            font-size: 0.9rem;
-            outline: none;
-            cursor: pointer;
-            appearance: none;
-            -webkit-appearance: none;
-        }
-        .year-tabs {
-            display: flex;
-            gap: 0.4rem;
-            overflow-x: auto;
-            padding-bottom: 0.3rem;
-            margin-bottom: 0.6rem;
-        }
-        .year-tabs::-webkit-scrollbar { height: 3px; }
-        .year-tabs::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
-        .year-tab {
-            flex-shrink: 0;
-            padding: 0.5rem 0.9rem;
-            border-radius: 14px;
-            background: var(--input-bg);
-            border: 1px solid var(--input-border);
-            color: var(--text-muted);
-            font-weight: 700;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: 0.15s;
-            font-family: var(--font);
-        }
-        .year-tab:hover { border-color: var(--accent); }
-        .year-tab.active {
-            background: var(--accent-gradient);
-            border-color: transparent;
-            color: #fff;
-        }
-        .btn-guardar-grande {
-            width: 100%;
-            padding: 0.65rem;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            min-height: 44px;
-        }
-
-        /* ============================================================
-           PANTALLA DE INICIO DE SESIÓN
-           ============================================================ */
-        .login-overlay {
-            position: fixed;
-            inset: 0;
-            background: var(--bg-gradient);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-            padding: 1rem;
-        }
-        .login-overlay.hidden { display: none; }
-        .login-card {
-            background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--card-border);
-            border-radius: 24px;
-            padding: 2rem 1.5rem;
-            width: 100%;
-            max-width: 360px;
-            box-shadow: var(--card-shadow);
-            text-align: center;
-        }
-        .login-logo {
-            margin-bottom: 1.2rem;
-            display: flex;
-            justify-content: center;
-        }
-        .login-logo img {
-            height: 64px;
-            width: auto;
-            display: block;
-            background: #ffffff;
-            padding: 0.4rem 0.8rem;
-            border-radius: 16px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        }
-        .login-card h2 {
-            color: var(--heading-color);
-            font-size: 1.05rem;
-            font-weight: 600;
-            margin-bottom: 1.3rem;
-        }
-        .login-field { text-align: left; margin-bottom: 0.9rem; }
-        .login-field label {
-            display: block;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 0.35rem;
-        }
-        .login-field input {
-            width: 100%;
-            padding: 0.6rem 0.9rem;
-            border-radius: 14px;
-            border: 1px solid var(--input-border);
-            background: var(--input-bg);
-            color: var(--text-primary);
-            font-family: var(--font);
-            font-size: 16px;
-            outline: none;
-            transition: 0.2s;
-        }
-        .login-field input:focus {
-            border-color: var(--input-focus);
-            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.18);
-        }
-        .login-error {
-            color: var(--danger);
-            font-size: 0.8rem;
-            font-weight: 500;
-            margin-bottom: 0.8rem;
-        }
-        .login-error.hidden { display: none; }
-        .login-btn { width: 100%; min-height: 46px; margin-top: 0.3rem; }
-
-        #appContainer.oculto { display: none; }
-
-        /* ============================================================
-           TARJETA DE PRODUCTO SELECCIONADO (solo se activa en móvil,
-           ver media query más abajo). En escritorio permanece oculta y
-           la lista de resultados sigue visible como siempre.
-           ============================================================ */
-        .producto-activo-card { display: none; }
-        .pa-total-box { display: none; }
-
-        @media (max-width: 640px) {
-            .venc-selects { gap: 0.5rem; }
-            .venc-select { font-size: 0.8rem; padding: 0.5rem 0.6rem; }
-            .year-tab { padding: 0.4rem 0.7rem; font-size: 0.7rem; }
-        }
-
-        /* ============================================================
-           TABLAS (Pedido e Inventario)
-           ============================================================ */
-        .table-wrap {
-            overflow-x: auto;
-            /* Antes esta tabla crecía sin límite hacia abajo con cada
-               registro nuevo, obligando a bajar cada vez más en la página.
-               Con una altura máxima, la tabla misma hace scroll interno y
-               el resto de la app (buscador, cantidades, vencimiento) se
-               mantiene siempre visible sin moverse. */
-            max-height: 46vh;
-            overflow-y: auto;
-            margin-top: 0.4rem;
-            border-radius: 16px;
-            border: 1px solid var(--card-border);
-        }
-        .diff-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            min-width: 500px;
-        }
-        .diff-table th {
-            background: var(--table-header-bg);
-            color: var(--heading-color);
-            font-weight: 600;
-            padding: 0.4rem 0.5rem;
-            text-align: left;
-            border-bottom: 2px solid var(--divider);
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-            /* Con el scroll interno del .table-wrap, el encabezado se queda
-               fijo arriba para seguir viendo qué es cada columna. */
-            position: sticky;
-            top: 0;
-            z-index: 1;
-        }
-        .diff-table td {
-            padding: 0.35rem 0.5rem;
-            border-bottom: 1px solid var(--divider);
-            vertical-align: middle;
-        }
-        .diff-table tbody tr:nth-child(even) { background: var(--table-row-alt); }
-        .diff-table .diff-positivo { color: var(--success); font-weight: 600; }
-        .diff-table .diff-negativo { color: var(--danger); font-weight: 600; }
-        .diff-table .codigo-cell { font-family: monospace; font-weight: 600; color: var(--heading-color); }
-        .diff-table .cantidad-cell { text-align: center; font-weight: 600; color: var(--heading-color); }
-        .diff-table .acciones-cell { text-align: center; }
-        .diff-table .acciones-cell button {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            font-size: 1rem;
-            padding: 0.1rem 0.3rem;
-            transition: 0.2s;
-            border-radius: 8px;
-        }
-        .diff-table .acciones-cell button:hover { color: var(--danger); background: rgba(212, 90, 90, 0.1); }
-        .diff-table tfoot tr {
-            background: var(--table-header-bg);
-            font-weight: 600;
-            border-top: 2px solid var(--divider);
-        }
-        .diff-table tfoot td { color: var(--heading-color); padding: 0.4rem 0.5rem; }
-        .empty-message {
-            text-align: center;
-            color: var(--text-muted);
-            padding: 1.5rem;
-            font-size: 0.85rem;
-        }
-
-        .diff-totales {
-            display: flex;
-            gap: 0.8rem 1.5rem;
-            flex-wrap: wrap;
-            margin-top: 0.6rem;
-            font-size: 0.8rem;
-            font-weight: 500;
-            color: var(--text-secondary);
-            padding: 0.4rem 0.6rem;
-            background: var(--table-header-bg);
-            border-radius: 16px;
-        }
-        .diff-totales strong { color: var(--heading-color); }
-
-        /* ============================================================
-           NOTIFICACIONES (reemplazo de alert)
-           ============================================================ */
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--card-bg);
-            backdrop-filter: blur(16px);
-            border: 1px solid var(--card-border);
-            padding: 0.8rem 1.5rem;
-            border-radius: 60px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-            color: var(--text-primary);
-            font-size: 0.9rem;
-            font-weight: 500;
-            z-index: 999;
-            animation: slideUp 0.3s ease;
-            max-width: 90%;
-            text-align: center;
-            transition: opacity 0.3s;
-        }
-        .toast.success { border-left: 4px solid var(--success); }
-        .toast.error { border-left: 4px solid var(--danger); }
-        .toast.info { border-left: 4px solid var(--accent); }
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-            to { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
-
-        /* ============================================================
-           RESPONSIVE MÓVIL (con descripción visible y código)
-           ============================================================ */
-        @media (max-width: 640px) {
-            body { padding: 0.5rem; }
-            .header {
-                padding: 0.4rem 0.8rem;
-                border-radius: 40px;
-                gap: 0.4rem;
-            }
-            .header .logo img { height: 30px; }
-            .header .version { font-size: 0.5rem; padding: 0.05rem 0.4rem; }
-            .header .theme-toggle { width: 32px; height: 32px; font-size: 0.9rem; }
-            .header .badge-usuario {
-                font-size: 0.62rem;
-                padding: 0.15rem 0.55rem;
-                max-width: 34vw;
-            }
-            .header .badge-usuario #usuarioBadgeTexto {
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                max-width: 26vw;
-                display: inline-block;
-                vertical-align: middle;
-            }
-
-            .card { padding: 0.8rem; border-radius: 18px; margin-bottom: 0.8rem; }
-            .card-header h2 { font-size: 1rem; }
-            .btn { font-size: 0.7rem; padding: 0.35rem 0.8rem; min-height: 32px; }
-            .btn-sm { font-size: 0.6rem; padding: 0.15rem 0.5rem; min-height: 26px; }
-
-            /* Buscador en móvil: input, "Buscar" y el ícono de
-               "Actualizar" comparten la misma fila, con buen tamaño de
-               toque. Actualizar queda como botón cuadrado solo con
-               ícono para no ocupar tanto espacio con la palabra. */
-            .search-row input {
-                flex: 1 1 auto;
-                width: auto;
-                min-width: 0;
-                font-size: 16px;
-                padding: 0.65rem 1rem;
-            }
-            .search-row #searchButton {
-                flex: 0 0 auto;
-                width: auto;
-                justify-content: center;
-                padding: 0.65rem 0.9rem;
-                white-space: nowrap;
-                min-height: 44px;
-            }
-            .search-row #refreshDriveBtn {
-                flex: 0 0 auto;
-                width: 44px;
-                min-height: 44px;
-                padding: 0;
-                justify-content: center;
-            }
-            .search-row #refreshDriveBtn .btn-label { display: none; }
-            .search-row #refreshDriveBtn .btn-icon { font-size: 1.05rem; }
-
-            .results-header { flex-direction: column; align-items: stretch; gap: 0.2rem; }
-            .results-header .stats { font-size: 0.7rem; gap: 0.5rem; }
-
-            .result-list { max-height: 55vh; min-height: 150px; }
-
-            /* --- Vista móvil: tarjetas con 3 filas --- */
-            .result-item {
-                display: flex;
-                flex-direction: column;
-                padding: 0.5rem 0.6rem;
-                border-radius: 12px;
-                gap: 0.15rem;
-                background: var(--input-bg);
-                border: 1px solid var(--card-border);
-                margin-bottom: 0.2rem;
-            }
-
-            /* Ocultar SOLO los hijos directos de .result-item (los de escritorio) */
-            .result-item > .codigo,
-            .result-item > .fabrica,
-            .result-item > .unidad,
-            .result-item > .stock-cajas,
-            .result-item > .stock-unidades,
-            .result-item > .descripcion {
-                display: none !important;
-            }
-
-            /* Fila 1: código, fábrica, unidad */
-            .result-item .row1 {
-                display: flex !important;
-                align-items: center;
-                gap: 0.4rem;
-                width: 100%;
-                flex-wrap: nowrap;
-            }
-            .result-item .row1 .codigo {
-                display: inline !important;  /* Aseguramos visibilidad */
-                font-size: 0.85rem;
-                font-weight: 700;
-                color: var(--heading-color);
-                flex-shrink: 0;
-            }
-            .result-item .row1 .fabrica {
-                display: inline !important;
-                font-size: 0.65rem;
-                color: var(--text-muted);
-                flex-shrink: 0;
-            }
-            .result-item .row1 .unidad {
-                display: inline !important;
-                font-size: 0.55rem;
-                padding: 0.02rem 0.5rem;
-                background: var(--badge-bg);
-                border-radius: 20px;
-                color: var(--badge-text);
-                margin-left: auto;
-                flex-shrink: 0;
-            }
-
-            /* Fila 2: descripción (visible, con wrap y hasta 2 líneas) */
-            .result-item .row2 {
-                display: flex !important;
-                flex-direction: column;
-                align-items: stretch;
-                gap: 0.15rem;
-                width: 100%;
-            }
-            .result-item .row2 .descripcion {
-                display: -webkit-box !important;
-                -webkit-line-clamp: 2;
-                -webkit-box-orient: vertical;
-                overflow: hidden;
-                word-break: break-word;
-                white-space: normal;
-                flex: 1 1 auto;
-                min-width: 0;
-                font-size: 0.75rem;
-                line-height: 1.3;
-                color: var(--text-secondary);
-            }
-
-            /* Fila 3: stock (badge) */
-            .result-item .row2 .stock {
-                display: flex !important;
-                gap: 0.5rem;
-                font-size: 0.7rem;
-                font-weight: 600;
-                background: var(--badge-bg);
-                padding: 0.1rem 0.7rem;
-                border-radius: 30px;
-                flex-shrink: 0;
-                color: var(--heading-color);
-                align-self: flex-start;
-                margin-top: 0.1rem;
-            }
-            .result-item .row2 .stock .cajas { color: var(--heading-color); }
-            .result-item .row2 .stock .unidades { color: var(--text-secondary); }
-
-            /* Cantidades en móvil */
-            .cantidad-row {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 0.4rem;
-                padding-top: 0.6rem;
-                margin-top: 0.6rem;
-            }
-            .cantidad-row .group { justify-content: space-between; }
-            .cantidad-row .group input { width: 55px; }
-            .cantidad-row .acciones {
-                margin-left: 0;
-                justify-content: center;
-            }
-            .cantidad-row .acciones .btn { flex: 1; min-width: 0; padding: 0.3rem 0.5rem; font-size: 0.65rem; }
-
-            .diff-table { font-size: 0.65rem; min-width: 400px; }
-            .diff-table th, .diff-table td { padding: 0.2rem 0.3rem; font-size: 0.6rem; }
-            .diff-totales { font-size: 0.7rem; gap: 0.3rem 0.8rem; padding: 0.3rem 0.5rem; }
-
-            /* En Inventario Físico y Sugerencia de Pedido: tabla oculta,
-               tarjetas por producto visibles. */
-            #diffCardBody .table-wrap,
-            #pedidoCardBody .table-wrap { display: none; }
-            #diffMobileList,
-            #pedidoMobileList {
-                display: flex;
-                flex-direction: column;
-                gap: 0.5rem;
-            }
-
-            .toast { font-size: 0.8rem; padding: 0.5rem 1rem; bottom: 10px; }
-
-            /* ========================================================
-               MODO SELECCIÓN (móvil): al elegir un producto se oculta
-               el buscador y la lista, y aparece una tarjeta grande con
-               los datos del producto, cantidades e info de vencimiento
-               fáciles de tocar con el dedo.
-               ======================================================== */
-            /* Al tener un producto seleccionado en móvil, se oculta también
-               el buscador completo (input + botones + estado del archivo):
-               ya no hace falta, y la tarjeta del producto aprovecha toda
-               la pantalla, igual que en la referencia. */
-            body.modo-seleccion #searchSection { display: none; }
-            body.modo-seleccion #resultsSection .results-header { display: none; }
-            body.modo-seleccion #resultList { display: none; }
-
-            body.modo-seleccion .producto-activo-card {
-                display: block;
-                background: linear-gradient(135deg, #00c2ff 0%, #6c5ce7 55%, #b23ede 100%);
-                border-radius: 20px;
-                padding: 1rem 1.1rem;
-                margin-bottom: 0.9rem;
-                color: #fff;
-                box-shadow: 0 8px 24px rgba(108, 92, 231, 0.4);
-            }
-            body.modo-seleccion .pa-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: flex-start;
-                gap: 0.6rem;
-                margin-bottom: 0.7rem;
-            }
-            body.modo-seleccion .pa-descripcion {
-                font-size: 1.05rem;
-                font-weight: 700;
-                line-height: 1.3;
-            }
-            body.modo-seleccion .pa-codigo {
-                font-size: 0.75rem;
-                color: rgba(255,255,255,0.7);
-                margin-top: 0.2rem;
-                font-family: monospace;
-            }
-            body.modo-seleccion .pa-cambiar-btn {
-                background: rgba(255,255,255,0.15);
-                border: 1px solid rgba(255,255,255,0.28);
-                color: #fff;
-                font-size: 0.68rem;
-                font-weight: 600;
-                padding: 0.4rem 0.8rem;
-                border-radius: 30px;
-                cursor: pointer;
-                white-space: nowrap;
-                flex-shrink: 0;
-                font-family: var(--font);
-                transition: 0.15s;
-            }
-            body.modo-seleccion .pa-cambiar-btn:hover { background: rgba(255,255,255,0.25); }
-            body.modo-seleccion .pa-cambiar-btn:active { transform: scale(0.94); }
-            body.modo-seleccion .pa-meta {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 0.3rem 1.2rem;
-                font-size: 0.7rem;
-                color: rgba(255,255,255,0.85);
-                border-top: 1px solid rgba(255,255,255,0.18);
-                padding-top: 0.6rem;
-            }
-            body.modo-seleccion .pa-meta strong {
-                color: #fff;
-                font-size: 0.85rem;
-                margin-left: 0.2rem;
-            }
-
-            /* Cajas / Unidades como cajas grandes tipo calculadora */
-            body.modo-seleccion .cantidad-row {
-                flex-direction: row;
-                flex-wrap: wrap;
-                gap: 0.6rem;
-                align-items: stretch;
-            }
-            body.modo-seleccion .cantidad-row .group {
-                flex: 1 1 0;
-                flex-direction: column;
-                align-items: stretch;
-                justify-content: flex-start;
-                background: var(--input-bg);
-                border: 1px solid var(--input-border);
-                border-radius: 16px;
-                padding: 0.6rem 0.4rem;
-                gap: 0.35rem;
-            }
-            body.modo-seleccion .cantidad-row .group label {
-                font-size: 0.62rem;
-                font-weight: 700;
-                text-transform: uppercase;
-                letter-spacing: 0.4px;
-                color: var(--text-muted);
-                text-align: center;
-            }
-            body.modo-seleccion .cantidad-row .group input {
-                width: 100%;
-                font-size: 1.7rem;
-                font-weight: 700;
-                padding: 0.5rem 0.2rem;
-                border-radius: 12px;
-                text-align: center;
-            }
-            body.modo-seleccion .cantidad-row .info-text { display: none; }
-            body.modo-seleccion .conversion-hint {
-                font-size: 0.85rem;
-                padding: 0.5rem 0.9rem;
-                justify-content: center;
-                text-align: center;
-            }
-            /* El botón de "Pedido" es para otra función (sugerencia de pedido
-               al proveedor); en la toma de inventario física solo se usa el
-               botón GUARDAR de más abajo, así que aquí se oculta. */
-            body.modo-seleccion .cantidad-row .acciones { display: none; }
-
-            body.modo-seleccion .pa-total-box {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                background: rgba(108, 92, 231, 0.15);
-                border: 1px solid var(--accent);
-                border-radius: 16px;
-                padding: 0.7rem 1rem;
-                margin: 0.7rem 0;
-            }
-            body.modo-seleccion .pa-total-label {
-                font-size: 0.75rem;
-                color: var(--text-secondary);
-                font-weight: 600;
-            }
-            body.modo-seleccion .pa-total-value {
-                font-size: 1.3rem;
-                font-weight: 800;
-                color: var(--heading-color);
-            }
-        }
-
-        /* ============================================================
-           TARJETAS PLEGABLES (Inventario Físico / Sugerencia de Pedido)
-           En escritorio se comportan como tarjetas normales, siempre
-           abiertas. En móvil arrancan cerradas (solo título + contador)
-           para no ocupar tanto espacio, y se abren al tocarlas o solas
-           cuando hay algo nuevo que mostrar.
-           ============================================================ */
-        .card-header.collapsible {
-            cursor: pointer;
-            user-select: none;
-        }
-        .card-toggle {
-            margin-left: auto;
-            width: 26px;
-            height: 26px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-muted);
-            font-size: 0.7rem;
-            flex-shrink: 0;
-            transition: transform 0.25s ease, background 0.2s;
-        }
-        .card-header.collapsible:hover .card-toggle { background: var(--badge-bg); }
-        .card-header.collapsible[aria-expanded="true"] .card-toggle { transform: rotate(180deg); }
-        .card-body-collapsible {
-            display: grid;
-            grid-template-rows: 1fr;
-            transition: grid-template-rows 0.28s ease;
-        }
-        .card-body-collapsible > .card-body-inner { overflow: hidden; }
-        .card-body-collapsible.is-collapsed {
-            grid-template-rows: 0fr;
-        }
-        .card-body-collapsible.is-collapsed > .card-body-inner {
-            padding-top: 0 !important;
-        }
-        .card-actions-row {
-            display: flex;
-            justify-content: flex-end;
-            gap: 0.3rem;
-            flex-wrap: wrap;
-            margin-bottom: 0.6rem;
-        }
-        .card-actions-row .totales-mini {
-            margin-right: auto;
-            display: flex;
-            gap: 0.6rem;
-        }
-
-        /* ============================================================
-           TARJETAS POR PRODUCTO EN MÓVIL
-           En pantallas angostas, las tablas de Inventario Físico y
-           Sugerencia de Pedido se reemplazan por una lista de tarjetas
-           (una por producto), mucho más fácil de leer con el dedo que
-           una tabla con scroll horizontal. En escritorio se sigue
-           usando la tabla de siempre.
-           ============================================================ */
-        .mobile-item-list { display: none; }
-        .mi-card {
-            background: var(--input-bg);
-            border: 1px solid var(--input-border);
-            border-radius: 14px;
-            padding: 0.65rem 0.75rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-        .mi-card-head {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 0.5rem;
-            border-bottom: 1px solid var(--divider);
-            padding-bottom: 0.45rem;
-        }
-        .mi-card-idcol { overflow: hidden; min-width: 0; }
-        .mi-card-idrow {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            flex-wrap: wrap;
-        }
-        .mi-card-num { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); }
-        .mi-card-codigo { font-family: monospace; font-weight: 700; color: var(--heading-color); font-size: 0.85rem; }
-        .mi-card-fabrica { font-family: monospace; font-size: 0.6rem; color: var(--text-muted); }
-        .mi-card-desc {
-            font-size: 0.78rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-top: 0.2rem;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-        .mi-card-del {
-            background: rgba(212, 90, 90, 0.15);
-            color: var(--danger);
-            border: none;
-            border-radius: 10px;
-            width: 34px;
-            height: 34px;
-            flex-shrink: 0;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: 0.15s;
-        }
-        .mi-card-del:hover { background: rgba(212, 90, 90, 0.28); }
-        .mi-card-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
-            gap: 0.4rem;
-            text-align: center;
-            padding: 0.4rem 0.2rem;
-            background: var(--badge-bg);
-            border-radius: 10px;
-        }
-        .mi-stat-label {
-            display: block;
-            font-size: 0.55rem;
-            font-weight: 700;
-            letter-spacing: 0.3px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-        }
-        .mi-stat-value { font-weight: 700; color: var(--heading-color); font-size: 0.85rem; }
-        .mi-stat-value.diff-positivo { color: var(--success); }
-        .mi-stat-value.diff-negativo { color: var(--danger); }
-        .mi-card-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.3rem 0.8rem;
-            font-size: 0.65rem;
-            color: var(--text-muted);
-        }
-
-        /* ============================================================
-           MODAL DE CONFIRMACIÓN PROPIO
-           ============================================================ */
-        .confirm-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.55);
-            backdrop-filter: blur(2px);
-            z-index: 999;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-        }
-        .confirm-overlay.visible { display: flex; }
-        .confirm-box {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 16px;
-            padding: 1.2rem 1.3rem;
-            max-width: 340px;
-            width: 100%;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
-        }
-        .confirm-box p {
-            color: var(--text-primary);
-            font-size: 0.9rem;
-            line-height: 1.4;
-            margin-bottom: 1rem;
-        }
-        .confirm-actions {
-            display: flex;
-            gap: 0.6rem;
-            justify-content: flex-end;
-        }
-        .confirm-actions .btn { min-height: 38px; }
-
-        @media (max-width: 400px) {
-            .header .logo img { height: 26px; }
-            .btn { font-size: 0.6rem; padding: 0.25rem 0.6rem; min-height: 28px; }
-            .search-row input { font-size: 16px; padding: 0.4rem 0.6rem; }
-            .result-item .row1 .codigo { font-size: 0.75rem; }
-            .result-item .row2 .descripcion { font-size: 0.7rem; }
-        }
-
-
-/* ============================================================
-   MEJORAS MÓVIL + BOTÓN IMPORTAR EXCEL (v3 Supabase)
-   ============================================================ */
-
-/* Search row: permitir que Importar Excel se acomode */
-.search-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.45rem;
-    align-items: center;
-}
-
-.search-row .btn,
-.search-row label.btn-drive {
-    flex-shrink: 0;
-}
-
-/* Escritorio: importar con buen contraste */
-label.btn-drive {
-    background: linear-gradient(135deg, #10b981, #059669) !important;
-    color: #fff !important;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.28);
-}
-
-@media (max-width: 640px) {
-    /* Botones táctiles más cómodos (mínimo ~44px) */
-    .btn {
-        min-height: 44px !important;
-        font-size: 0.78rem !important;
-        padding: 0.5rem 0.9rem !important;
+  // ---------- Login ----------
+  async function intentarLogin() {
+    const usuario = loginUsuario.value.trim().toLowerCase();
+    const clave = loginClave.value;
+    if (!usuario || !clave) {
+      loginError.textContent = 'Ingrese usuario y clave.';
+      loginError.classList.remove('hidden');
+      return;
     }
-    .btn-sm {
-        min-height: 36px !important;
-        font-size: 0.68rem !important;
-        padding: 0.3rem 0.65rem !important;
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Verificando...';
+    loginError.classList.add('hidden');
+    try {
+      const { data, error } = await supabaseClient
+        .from('app_usuarios')
+        .select('usuario, nombre, rol, activo')
+        .eq('usuario', usuario)
+        .eq('clave', clave)
+        .eq('activo', true)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) {
+        loginError.textContent = 'Usuario o clave incorrectos.';
+        loginError.classList.remove('hidden');
+        loginClave.value = '';
+        loginClave.focus();
+        return;
+      }
+      usuarioActual = data.usuario;
+      rolActual = data.rol || (data.usuario === 'luis' ? 'admin' : 'usuario');
+      try {
+        localStorage.setItem(SESSION_KEY, JSON.stringify({
+          ts: Date.now(),
+          usuario: data.usuario,
+          rol: rolActual,
+          nombre: data.nombre || data.usuario
+        }));
+      } catch (e) {}
+      await registrarSesionActiva();
+      mostrarApp();
+    } catch (e) {
+      console.error(e);
+      loginError.textContent = 'No se pudo conectar: ' + (e.message || e);
+      loginError.classList.remove('hidden');
+    } finally {
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Entrar';
     }
-    .btn-guardar-grande {
-        min-height: 52px !important;
-        font-size: 1rem !important;
+  }
+
+  loginBtn.addEventListener('click', intentarLogin);
+  loginClave.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') intentarLogin();
+  });
+  loginUsuario.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') loginClave.focus();
+  });
+
+  function cerrarSesion() {
+    if (idSesionActual) {
+      supabaseClient.from('sesiones_activas').delete().eq('id', idSesionActual).then(function () {});
+      idSesionActual = null;
     }
-    .login-btn {
-        min-height: 50px !important;
-        font-size: 1rem !important;
+    usuarioActual = '';
+    rolActual = 'usuario';
+    try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+    app.classList.remove('visible');
+    loginScreen.classList.remove('hidden');
+    loginClave.value = '';
+  }
+
+  btnLogout.addEventListener('click', function () {
+    if (confirm('¿Cerrar sesión?')) cerrarSesion();
+  });
+
+  function mostrarApp() {
+    loginScreen.classList.add('hidden');
+    app.classList.add('visible');
+    headerUser.textContent = usuarioActual + (esAdmin() ? ' · admin' : '');
+    btnAdmin.style.display = esAdmin() ? '' : 'none';
+    btnExportExcel.style.display = esAdmin() ? '' : 'none';
+    btnLimpiar.style.display = esAdmin() ? '' : 'none';
+    loadProductos();
+    loadInventarioLocal();
+    sincronizarDesdeServidor();
+  }
+
+  // ---------- Sesiones ----------
+  async function registrarSesionActiva() {
+    if (!usuarioActual) return;
+    idSesionActual = (usuarioActual + '_' + deviceId).slice(0, 120);
+    try {
+      await supabaseClient.from('sesiones_activas').upsert({
+        id: idSesionActual,
+        usuario: usuarioActual,
+        device_id: deviceId,
+        nombre_dispositivo: (navigator.userAgent || '').slice(0, 80),
+        ultimo_ping: new Date().toISOString(),
+        conectado_en: new Date().toISOString(),
+        forzar_cierre: false
+      });
+    } catch (e) {
+      console.warn('Sesión no registrada (¿falta tabla sesiones_activas?)', e);
+    }
+  }
+
+  setInterval(async function () {
+    if (!usuarioActual || !idSesionActual) return;
+    try {
+      const { data } = await supabaseClient
+        .from('sesiones_activas')
+        .select('forzar_cierre')
+        .eq('id', idSesionActual)
+        .maybeSingle();
+      if (data && data.forzar_cierre) {
+        showToast('El administrador cerró tu sesión.', 'error');
+        cerrarSesion();
+        return;
+      }
+      await supabaseClient.from('sesiones_activas').upsert({
+        id: idSesionActual,
+        usuario: usuarioActual,
+        device_id: deviceId,
+        ultimo_ping: new Date().toISOString(),
+        forzar_cierre: false
+      });
+    } catch (e) {}
+  }, 30000);
+
+  async function cargarSesionesActivas() {
+    listaSesiones.innerHTML = 'Cargando...';
+    const desde = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+    try {
+      const { data, error } = await supabaseClient
+        .from('sesiones_activas')
+        .select('*')
+        .gte('ultimo_ping', desde)
+        .order('ultimo_ping', { ascending: false });
+      if (error) throw error;
+      if (!data || !data.length) {
+        listaSesiones.innerHTML = '<p style="opacity:0.7;font-size:0.85rem;">Nadie conectado ahora.</p>';
+        return;
+      }
+      listaSesiones.innerHTML = data.map(function (s) {
+        const hace = Math.round((Date.now() - new Date(s.ultimo_ping).getTime()) / 1000);
+        return (
+          '<div class="sesion-item">' +
+            '<div><strong>' + escapeHtml(s.usuario) + '</strong>' +
+            '<div class="meta">Hace ' + hace + 's · ' + escapeHtml((s.device_id || '').slice(0, 16)) + '</div></div>' +
+            '<button type="button" class="btn btn-danger btn-cerrar-sesion" data-id="' + escapeHtml(s.id) + '">Cerrar</button>' +
+          '</div>'
+        );
+      }).join('');
+      listaSesiones.querySelectorAll('.btn-cerrar-sesion').forEach(function (btn) {
+        btn.addEventListener('click', async function () {
+          const id = btn.getAttribute('data-id');
+          if (!confirm('¿Cerrar la sesión de este usuario en ese dispositivo?')) return;
+          await supabaseClient.from('sesiones_activas').update({ forzar_cierre: true }).eq('id', id);
+          showToast('Sesión marcada para cierre.', 'success');
+          cargarSesionesActivas();
+        });
+      });
+    } catch (e) {
+      listaSesiones.innerHTML = '<p style="color:var(--danger);font-size:0.85rem;">Error: ' + escapeHtml(e.message || String(e)) +
+        '<br><small>¿Ejecutaste el SQL de sesiones_activas?</small></p>';
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // ---------- Productos ----------
+  function guardarRespaldo(data) {
+    try { localStorage.setItem(BACKUP_KEY, JSON.stringify(data)); } catch (e) {}
+  }
+
+  function useBackupOrLocalData() {
+    try {
+      const raw = localStorage.getItem(BACKUP_KEY);
+      if (raw) {
+        currentData = JSON.parse(raw);
+        fileStatus.textContent = '⚠️ Respaldo local: ' + currentData.length + ' productos';
+        return;
+      }
+    } catch (e) {}
+    currentData = [];
+    fileStatus.textContent = '⚠️ Sin productos. Admin debe importar Excel.';
+  }
+
+  async function loadProductos() {
+    fileStatus.textContent = '⏳ Cargando productos desde Supabase...';
+    try {
+      const { data, error } = await supabaseClient
+        .from('productos')
+        .select('*')
+        .eq('activo', true)
+        .order('codigo');
+      if (error) throw error;
+      if (data && data.length > 0) {
+        currentData = data.map(function (p) {
+          return {
+            Codigo: p.codigo,
+            CodigoFabrica: p.codigo_fabrica || '',
+            Producto: p.descripcion,
+            'Unidad Ref': p.unidad_ref || '',
+            Cantidad: String(p.stock_teorico ?? 0),
+            FactorEmpaque: String(p.factor_empaque ?? 1),
+            Linea: p.linea || '',
+            Marca: p.marca || ''
+          };
+        });
+        guardarRespaldo(currentData);
+        fileStatus.textContent = '✅ ' + currentData.length + ' productos (Supabase)';
+      } else {
+        fileStatus.textContent = '⚠️ Sin productos en Supabase, buscando respaldo...';
+        useBackupOrLocalData();
+      }
+    } catch (err) {
+      console.warn(err);
+      fileStatus.textContent = '⚠️ Sin conexión, buscando respaldo...';
+      useBackupOrLocalData();
+    }
+  }
+
+  function getFactor(row) {
+    const n = Number(row.FactorEmpaque);
+    return (!isNaN(n) && n > 0) ? n : 1;
+  }
+
+  function buscar() {
+    const q = searchInput.value.trim().toLowerCase();
+    if (!q) {
+      filteredData = [];
+      renderResults([]);
+      return;
+    }
+    filteredData = currentData.filter(function (r) {
+      const cod = String(r.Codigo || '').toLowerCase();
+      const fab = String(r.CodigoFabrica || '').toLowerCase();
+      const des = String(r.Producto || '').toLowerCase();
+      return cod.indexOf(q) >= 0 || fab.indexOf(q) >= 0 || des.indexOf(q) >= 0;
+    }).slice(0, 80);
+    renderResults(filteredData);
+  }
+
+  function renderResults(list) {
+    if (!list.length) {
+      resultsList.innerHTML = searchInput.value.trim()
+        ? '<p style="color:var(--muted);font-size:0.85rem;">Sin resultados.</p>'
+        : '';
+      return;
+    }
+    resultsList.innerHTML = list.map(function (r, i) {
+      return (
+        '<div class="result-item" data-i="' + i + '">' +
+          '<div class="codigo">' + escapeHtml(r.Codigo) + '</div>' +
+          '<div class="meta">Stock: ' + escapeHtml(r.Cantidad) + '</div>' +
+          '<div class="desc">' + escapeHtml(r.Producto) + '</div>' +
+          '<div class="meta">' + escapeHtml(r.Linea || '') + ' · Factor ' + escapeHtml(r.FactorEmpaque) + '</div>' +
+        '</div>'
+      );
+    }).join('');
+    resultsList.querySelectorAll('.result-item').forEach(function (el) {
+      el.addEventListener('click', function () {
+        const i = Number(el.getAttribute('data-i'));
+        seleccionarProducto(filteredData[i]);
+      });
+    });
+  }
+
+  function seleccionarProducto(row) {
+    if (!row) return;
+    selectedProduct = row;
+    selectedPanel.classList.remove('hidden');
+    selCodigo.textContent = row.Codigo;
+    selDescripcion.textContent = row.Producto;
+    const factor = getFactor(row);
+    selMeta.textContent = (row.Linea || '') + ' · ' + (row.Marca || '') + ' · Und: ' + (row['Unidad Ref'] || '') + ' · Factor: ' + factor;
+    inputCajas.value = '';
+    inputUnidades.value = '';
+    inputVencimiento.value = '';
+    actualizarHint();
+    inputCajas.focus();
+  }
+
+  function actualizarHint() {
+    if (!selectedProduct) return;
+    const factor = getFactor(selectedProduct);
+    const c = Number(inputCajas.value) || 0;
+    const u = Number(inputUnidades.value) || 0;
+    const total = c * factor + u;
+    hintConv.textContent = factor > 1
+      ? (c + ' cajas × ' + factor + ' + ' + u + ' und = ' + total + ' unidades')
+      : ('Total: ' + total + ' unidades');
+  }
+
+  inputCajas.addEventListener('input', actualizarHint);
+  inputUnidades.addEventListener('input', actualizarHint);
+  btnBuscar.addEventListener('click', buscar);
+  searchInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') buscar();
+  });
+  btnActualizar.addEventListener('click', function () {
+    loadProductos();
+    sincronizarDesdeServidor();
+  });
+
+  // ---------- Conteo / inventario ----------
+  function loadInventarioLocal() {
+    try {
+      const raw = localStorage.getItem(INV_KEY);
+      if (raw) inventarioFisico = JSON.parse(raw) || [];
+    } catch (e) {
+      inventarioFisico = [];
+    }
+    renderInventario();
+  }
+
+  function saveInventario() {
+    try { localStorage.setItem(INV_KEY, JSON.stringify(inventarioFisico)); } catch (e) {}
+  }
+
+  function claveLote(codigo, vencimiento) {
+    return String(codigo) + '||' + normVenc(vencimiento);
+  }
+
+  function nuevoIdLote(codigo, vencimiento) {
+    // ID estable por código+vencimiento → permite sumar entre dispositivos
+    return 'L_' + btoa(unescape(encodeURIComponent(claveLote(codigo, vencimiento))))
+      .replace(/[^a-zA-Z0-9]/g, '')
+      .slice(0, 40);
+  }
+
+  async function guardarConteo() {
+    if (!selectedProduct) return;
+    const factor = getFactor(selectedProduct);
+    const cajas = Number(inputCajas.value) || 0;
+    const unidades = Number(inputUnidades.value) || 0;
+    const cantidad = cajas * factor + unidades;
+    if (cantidad <= 0) {
+      showToast('Ingrese cajas o unidades mayores a 0.', 'error');
+      return;
+    }
+    const vencimiento = normVenc(inputVencimiento.value);
+    const codigo = selectedProduct.Codigo;
+    const id = nuevoIdLote(codigo, vencimiento);
+
+    // Buscar si ya existe local (mismo código + vencimiento) → sumar
+    let existente = inventarioFisico.find(function (x) {
+      return x.codigo === codigo && normVenc(x.vencimiento) === vencimiento;
+    });
+
+    if (existente) {
+      existente.cantidad = Number(existente.cantidad) + cantidad;
+      existente.usuario = usuarioActual;
+      existente.fecha = hoyStr();
+      existente.id = id;
+    } else {
+      existente = {
+        id: id,
+        codigo: codigo,
+        descripcion: selectedProduct.Producto,
+        linea: selectedProduct.Linea || 'SIN LÍNEA',
+        cantidad: cantidad,
+        vencimiento: vencimiento,
+        fecha: hoyStr(),
+        usuario: usuarioActual
+      };
+      inventarioFisico.push(existente);
     }
 
-    /* Fila de búsqueda: input + botones en dos filas si no caben */
-    .search-row {
-        gap: 0.4rem;
+    saveInventario();
+    renderInventario();
+    await sincronizarLoteAlServidor(existente, factor);
+    showToast('Conteo guardado: +' + cantidad + ' (' + codigo + ')', 'success');
+    inputCajas.value = '';
+    inputUnidades.value = '';
+    actualizarHint();
+  }
+
+  btnGuardarConteo.addEventListener('click', guardarConteo);
+
+  async function sincronizarLoteAlServidor(record, factor) {
+    factor = factor || 1;
+    const cajasLote = factor > 1 ? Math.floor(Number(record.cantidad) / factor) : 0;
+    const unidadesLote = factor > 1 ? (Number(record.cantidad) % factor) : Number(record.cantidad);
+    try {
+      // Leer cantidad actual en nube para SUMAR si otro dispositivo ya subió
+      const { data: remoto } = await supabaseClient
+        .from('lotes_conteo')
+        .select('cantidad')
+        .eq('id', record.id)
+        .maybeSingle();
+
+      // Si el remoto tiene más (otro dispositivo sumó), no pisar hacia abajo:
+      // usamos el valor local que ya incluye lo fusionado en sincronizarDesdeServidor
+      const { error } = await supabaseClient.from('lotes_conteo').upsert({
+        id: record.id,
+        codigo: record.codigo,
+        descripcion: record.descripcion,
+        linea: record.linea || 'SIN LÍNEA',
+        cantidad: Number(record.cantidad),
+        cajas: cajasLote,
+        unidades: unidadesLote,
+        vencimiento: record.vencimiento || null,
+        fecha: record.fecha || hoyStr(),
+        usuario: record.usuario || usuarioActual,
+        device_id: deviceId
+      });
+      if (error) console.warn('No se pudo subir lote:', error);
+    } catch (e) {
+      console.warn(e);
     }
-    .search-row input {
-        flex: 1 1 100%;
-        min-height: 46px;
-        font-size: 16px !important; /* evita zoom en iOS */
-        border-radius: 12px;
+  }
+
+  function fusionarRegistroRemoto(r) {
+    const venc = normVenc(r.vencimiento);
+    const id = r.id || nuevoIdLote(r.codigo, venc);
+    let local = inventarioFisico.find(function (x) {
+      return x.id === id || (x.codigo === r.codigo && normVenc(x.vencimiento) === venc);
+    });
+    if (local) {
+      // Tomar el máximo o sumar solo si son de distintas fuentes es complejo;
+      // con ID estable, el servidor tiene el total consolidado por upserts de cada app.
+      // Preferimos el valor del servidor si es más reciente / mayor coherente:
+      if (Number(r.cantidad) !== Number(local.cantidad)) {
+        local.cantidad = Number(r.cantidad);
+        local.usuario = r.usuario || local.usuario;
+        local.fecha = r.fecha || local.fecha;
+        local.descripcion = r.descripcion || local.descripcion;
+        local.id = id;
+      }
+    } else {
+      inventarioFisico.push({
+        id: id,
+        codigo: r.codigo,
+        descripcion: r.descripcion,
+        linea: r.linea,
+        cantidad: Number(r.cantidad),
+        vencimiento: venc,
+        fecha: r.fecha,
+        usuario: r.usuario || ''
+      });
     }
-    .search-row #searchButton {
-        flex: 1 1 auto;
-        min-height: 46px !important;
+  }
+
+  async function sincronizarDesdeServidor() {
+    if (sincronizando) return;
+    sincronizando = true;
+    try {
+      const { data, error } = await supabaseClient
+        .from('lotes_conteo')
+        .select('*')
+        .order('creado_en', { ascending: true });
+      if (error) throw error;
+      const registros = (data || []).map(function (r) {
+        return {
+          id: r.id,
+          codigo: r.codigo,
+          descripcion: r.descripcion,
+          linea: r.linea,
+          cantidad: r.cantidad,
+          vencimiento: r.vencimiento,
+          fecha: r.fecha,
+          usuario: r.usuario || ''
+        };
+      });
+      // Reconstruir desde servidor como fuente de verdad compartida
+      const mapa = {};
+      registros.forEach(function (r) {
+        const k = claveLote(r.codigo, r.vencimiento);
+        mapa[k] = {
+          id: r.id || nuevoIdLote(r.codigo, r.vencimiento),
+          codigo: r.codigo,
+          descripcion: r.descripcion,
+          linea: r.linea,
+          cantidad: Number(r.cantidad),
+          vencimiento: normVenc(r.vencimiento),
+          fecha: r.fecha,
+          usuario: r.usuario || ''
+        };
+      });
+      inventarioFisico = Object.keys(mapa).map(function (k) { return mapa[k]; });
+      saveInventario();
+      renderInventario();
+    } catch (e) {
+      /* offline: se mantiene local */
+    } finally {
+      sincronizando = false;
     }
-    .search-row #refreshDriveBtn {
-        flex: 0 0 46px;
-        width: 46px;
-        min-height: 46px !important;
-        padding: 0 !important;
+  }
+
+  // Realtime
+  try {
+    supabaseClient
+      .channel('conteos-vivos')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'lotes_conteo' }, function () {
+        sincronizarDesdeServidor();
+      })
+      .subscribe();
+  } catch (e) {}
+
+  setInterval(function () {
+    if (usuarioActual) sincronizarDesdeServidor();
+  }, 10000);
+
+  function renderInventario() {
+    invCount.textContent = inventarioFisico.length + ' lote(s)';
+    invCards.innerHTML = inventarioFisico.map(function (r) {
+      return (
+        '<div class="mi-card">' +
+          '<div class="row1"><span>' + escapeHtml(r.codigo) + '</span><span>' + escapeHtml(String(r.cantidad)) + '</span></div>' +
+          '<div class="row2">' + escapeHtml(r.descripcion || '') + '</div>' +
+          '<div class="row3"><span>Vence: ' + escapeHtml(r.vencimiento || 'S/F') + ' · ' + escapeHtml(r.usuario || '') + '</span>' +
+          (esAdmin() ? '<button type="button" class="btn btn-danger" data-del="' + escapeHtml(r.id) + '" style="min-height:36px;padding:0.25rem 0.5rem;">✕</button>' : '') +
+          '</div></div>'
+      );
+    }).join('') || '<p style="color:var(--muted);font-size:0.85rem;">Aún no hay conteos.</p>';
+
+    invCards.querySelectorAll('[data-del]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        eliminarLote(btn.getAttribute('data-del'));
+      });
+    });
+
+    invTableBody.innerHTML = inventarioFisico.map(function (r) {
+      return (
+        '<tr>' +
+          '<td>' + escapeHtml(r.codigo) + '</td>' +
+          '<td>' + escapeHtml(r.descripcion || '') + '</td>' +
+          '<td>' + escapeHtml(String(r.cantidad)) + '</td>' +
+          '<td>' + escapeHtml(r.vencimiento || '') + '</td>' +
+          '<td>' + escapeHtml(r.usuario || '') + '</td>' +
+          '<td>' + (esAdmin() ? '<button type="button" class="btn btn-danger" data-del="' + escapeHtml(r.id) + '" style="min-height:32px;padding:0.2rem 0.4rem;">✕</button>' : '') + '</td>' +
+        '</tr>'
+      );
+    }).join('');
+
+    invTableBody.querySelectorAll('[data-del]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        eliminarLote(btn.getAttribute('data-del'));
+      });
+    });
+  }
+
+  async function eliminarLote(id) {
+    if (!esAdmin()) return;
+    if (!confirm('¿Eliminar este lote?')) return;
+    inventarioFisico = inventarioFisico.filter(function (x) { return x.id !== id; });
+    saveInventario();
+    renderInventario();
+    try {
+      await supabaseClient.from('lotes_conteo').delete().eq('id', id);
+    } catch (e) {}
+  }
+
+  btnEnviarInventario.addEventListener('click', async function () {
+    if (!inventarioFisico.length) {
+      showToast('No hay conteos para enviar.', 'error');
+      return;
     }
-    .search-row #refreshDriveBtn .btn-label { display: none; }
-    .search-row label.btn-drive {
-        flex: 1 1 auto;
-        min-height: 46px !important;
-        justify-content: center;
-        font-size: 0.75rem !important;
-        padding: 0.5rem 0.7rem !important;
+    if (!confirm('¿Confirmar envío del inventario físico a la nube?')) return;
+    showToast('⏳ Enviando...', 'info');
+    let ok = 0;
+    for (let i = 0; i < inventarioFisico.length; i++) {
+      const rec = inventarioFisico[i];
+      const prod = currentData.find(function (p) { return p.Codigo === rec.codigo; });
+      const factor = prod ? getFactor(prod) : 1;
+      await sincronizarLoteAlServidor(rec, factor);
+      ok++;
+    }
+    await sincronizarDesdeServidor();
+    showToast('✅ Inventario enviado (' + ok + '). El administrador ya puede descargarlo.', 'success');
+  });
+
+  function exportarInventarioExcel() {
+    if (!esAdmin()) {
+      showToast('Solo el administrador puede descargar.', 'error');
+      return;
+    }
+    if (!inventarioFisico.length) {
+      showToast('No hay datos para exportar.', 'error');
+      return;
+    }
+    const filas = inventarioFisico.map(function (r) {
+      return {
+        Codigo: r.codigo,
+        Producto: r.descripcion,
+        Linea: r.linea,
+        Cantidad: r.cantidad,
+        Vencimiento: r.vencimiento,
+        Fecha: r.fecha,
+        Usuario: r.usuario
+      };
+    });
+    const ws = XLSX.utils.json_to_sheet(filas);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'InventarioFisico');
+    XLSX.writeFile(wb, 'inventario_fisico_' + hoyStr() + '.xlsx');
+    showToast('Excel descargado.', 'success');
+  }
+
+  btnExportExcel.addEventListener('click', exportarInventarioExcel);
+  btnAdminExportInv.addEventListener('click', exportarInventarioExcel);
+
+  btnLimpiar.addEventListener('click', async function () {
+    if (!esAdmin()) return;
+    if (!confirm('¿Borrar TODO el inventario físico en este dispositivo y en la nube?')) return;
+    inventarioFisico = [];
+    saveInventario();
+    renderInventario();
+    try {
+      await supabaseClient.from('lotes_conteo').delete().neq('id', '');
+    } catch (e) {}
+    showToast('Inventario limpiado.', 'success');
+  });
+
+  // ---------- Admin panel / import Excel ----------
+  btnAdmin.addEventListener('click', function () {
+    if (!esAdmin()) return;
+    adminOverlay.classList.add('open');
+    cargarSesionesActivas();
+  });
+  btnCerrarAdmin.addEventListener('click', function () {
+    adminOverlay.classList.remove('open');
+  });
+  adminOverlay.addEventListener('click', function (e) {
+    if (e.target === adminOverlay) adminOverlay.classList.remove('open');
+  });
+  btnRefrescarSesiones.addEventListener('click', cargarSesionesActivas);
+
+  dropZone.addEventListener('click', function () {
+    importExcelInput.click();
+  });
+  dropZone.addEventListener('dragover', function (e) {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+  dropZone.addEventListener('dragleave', function () {
+    dropZone.classList.remove('dragover');
+  });
+  dropZone.addEventListener('drop', function (e) {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) setArchivoPendiente(f);
+  });
+  importExcelInput.addEventListener('change', function () {
+    const f = this.files && this.files[0];
+    if (f) setArchivoPendiente(f);
+    this.value = '';
+  });
+
+  function setArchivoPendiente(file) {
+    archivoPendiente = file;
+    dropFileName.textContent = file.name + ' (' + Math.round(file.size / 1024) + ' KB)';
+    btnSubirExcel.disabled = false;
+  }
+
+  btnSubirExcel.addEventListener('click', function () {
+    if (!esAdmin()) {
+      showToast('Solo el administrador puede importar.', 'error');
+      return;
+    }
+    if (!archivoPendiente) return;
+    importarExcelASupabase(archivoPendiente, chkSoloCatalogo.checked);
+  });
+
+  function parseFactorDesdeTexto(texto) {
+    if (texto === null || texto === undefined || texto === '') return 1;
+    const n = Number(texto);
+    if (!isNaN(n) && n > 0) return n;
+    const m = String(texto).match(/(\d+)/);
+    return m ? Number(m[1]) : 1;
+  }
+
+  function parseStockSlash(texto, factor) {
+    // "5/0" o "5/18" con factor de empaque
+    const s = String(texto || '').trim();
+    const m = s.match(/^(\d+)\s*\/\s*(\d+)$/);
+    if (m) {
+      const cajas = Number(m[1]);
+      const und = Number(m[2]);
+      return cajas * (factor || 1) + und;
+    }
+    const n = Number(s);
+    return isNaN(n) ? 0 : n;
+  }
+
+  function filaExcelAProducto(row, soloCatalogo) {
+    // Formato inventario valorado (columnas largas)
+    let codigo = String(
+      row['InventarioProductoCodigo'] ?? row['Codigo'] ?? row['codigo'] ?? row['Codigo'] ?? ''
+    ).trim();
+    // Formato existencias a veces tiene el nombre en primera columna sin título claro
+    if (!codigo) {
+      // buscar cualquier key que parezca código
+      Object.keys(row).forEach(function (k) {
+        if (/codigo/i.test(k) && !codigo) codigo = String(row[k] || '').trim();
+      });
+    }
+    if (!codigo) return null;
+
+    let descripcion = String(
+      row['InventarioProductoDescripcion'] ?? row['Producto'] ?? row['descripcion'] ?? row['Descripcion'] ?? ''
+    ).trim();
+    if (!descripcion) {
+      // en existencias a veces la 1ª columna es el nombre
+      const keys = Object.keys(row);
+      if (keys.length && !/codigo|linea|marca|stock|unidad|factor|activo/i.test(keys[0])) {
+        descripcion = String(row[keys[0]] || '').trim();
+      }
+    }
+    if (!descripcion) return null;
+
+    const factorRaw =
+      row['InventarioProductoUnidadReferenciaFactor'] ??
+      row['FactorEmpaque'] ??
+      row['factor_empaque'] ??
+      row['Unidad Ref'] ??
+      row['UnidadRef'] ??
+      1;
+    // Unidad Ref tipo "CJ*12/BAR"
+    let factor = parseFactorDesdeTexto(factorRaw);
+    const undRefStr = String(
+      row['InventarioProductoUnidadReferenciaAbreviacion'] ??
+      row['Unidad Ref'] ??
+      row['unidad_ref'] ??
+      row['UnidadRef'] ??
+      factorRaw ??
+      ''
+    );
+    const mCj = undRefStr.match(/CJ\s*\*\s*(\d+)/i) || undRefStr.match(/\*\s*(\d+)/);
+    if (mCj) factor = Number(mCj[1]) || factor;
+
+    const cantidadRaw =
+      row['InventarioProductoCantidad'] ??
+      row['Cantidad'] ??
+      row['stock_teorico'] ??
+      row['Stock Fisico'] ??
+      row['Stock Físico'] ??
+      row['Stock'] ??
+      0;
+
+    const stock = parseStockSlash(cantidadRaw, factor);
+
+    const prod = {
+      codigo: codigo,
+      codigo_fabrica: String(row['CodigoFabrica'] ?? row['codigo_fabrica'] ?? '').trim() || null,
+      descripcion: descripcion,
+      unidad_ref: undRefStr.trim() || null,
+      factor_empaque: factor,
+      linea: String(
+        row['InventarioProductoCategoriaDescripcion'] ??
+        row['Linea'] ??
+        row['linea'] ??
+        row['Línea'] ??
+        ''
+      ).trim() || null,
+      marca: String(
+        row['InventarioProductoProveedorNombre'] ??
+        row['Marca'] ??
+        row['marca'] ??
+        row['Proveedor'] ??
+        ''
+      ).trim() || null,
+      activo: true,
+      actualizado_en: new Date().toISOString()
+    };
+
+    const activoRaw = row['Activo'] ?? row['activo'];
+    if (activoRaw === false || String(activoRaw).toUpperCase() === 'FALSE') {
+      prod.activo = false;
     }
 
-    /* Header un poco más usable con safe area */
-    .header {
-        padding-top: max(0.4rem, env(safe-area-inset-top, 0));
-        border-radius: 24px !important;
+    if (!soloCatalogo) {
+      prod.stock_teorico = stock;
     }
 
-    /* Cards y resultados más legibles */
-    .result-item {
-        padding: 0.75rem 0.85rem;
-        border-radius: 14px;
+    return prod;
+  }
+
+  async function importarExcelASupabase(file, soloCatalogo) {
+    if (!file) return;
+    showToast('⏳ Leyendo Excel...', 'info');
+    try {
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(buffer, { type: 'array' });
+      const hoja = wb.Sheets[wb.SheetNames[0]];
+      const filas = XLSX.utils.sheet_to_json(hoja, { defval: '' });
+      if (!filas.length) {
+        showToast('El archivo no tiene filas.', 'error');
+        return;
+      }
+      const productos = [];
+      const vistos = new Set();
+      filas.forEach(function (row) {
+        const p = filaExcelAProducto(row, soloCatalogo);
+        if (!p) return;
+        if (vistos.has(p.codigo)) {
+          const idx = productos.findIndex(function (x) { return x.codigo === p.codigo; });
+          if (idx >= 0) productos[idx] = p;
+        } else {
+          vistos.add(p.codigo);
+          productos.push(p);
+        }
+      });
+      if (!productos.length) {
+        showToast('No se encontraron productos con código y descripción.', 'error');
+        return;
+      }
+      showToast('⏳ Subiendo ' + productos.length + ' productos...', 'info');
+      const TAM = 200;
+      let subidos = 0;
+      for (let i = 0; i < productos.length; i += TAM) {
+        const lote = productos.slice(i, i + TAM);
+        // Si solo catálogo, no enviar stock_teorico (undefined se omite en JSON... 
+        // mejor construir objeto limpio)
+        const payload = lote.map(function (p) {
+          const o = {
+            codigo: p.codigo,
+            codigo_fabrica: p.codigo_fabrica,
+            descripcion: p.descripcion,
+            unidad_ref: p.unidad_ref,
+            factor_empaque: p.factor_empaque,
+            linea: p.linea,
+            marca: p.marca,
+            activo: p.activo,
+            actualizado_en: p.actualizado_en
+          };
+          if (!soloCatalogo && p.stock_teorico !== undefined) {
+            o.stock_teorico = p.stock_teorico;
+          }
+          return o;
+        });
+        const { error } = await supabaseClient
+          .from('productos')
+          .upsert(payload, { onConflict: 'codigo' });
+        if (error) throw error;
+        subidos += lote.length;
+      }
+      showToast('✅ ' + subidos + ' productos actualizados' + (soloCatalogo ? ' (solo catálogo)' : '') + '.', 'success');
+      archivoPendiente = null;
+      dropFileName.textContent = '';
+      btnSubirExcel.disabled = true;
+      await loadProductos();
+    } catch (err) {
+      console.error(err);
+      showToast('❌ Error al importar: ' + (err.message || err), 'error');
     }
-    .result-item .row1 .codigo {
-        font-size: 0.9rem;
+  }
+
+  // ---------- Sesión guardada ----------
+  function intentarSesionGuardada() {
+    try {
+      const raw = localStorage.getItem(SESSION_KEY);
+      if (!raw) return false;
+      const s = JSON.parse(raw);
+      // sesión válida 12 horas
+      if (!s || !s.usuario || !s.ts || (Date.now() - s.ts > 12 * 60 * 60 * 1000)) {
+        localStorage.removeItem(SESSION_KEY);
+        return false;
+      }
+      usuarioActual = s.usuario;
+      rolActual = s.rol || (s.usuario === 'luis' ? 'admin' : 'usuario');
+      registrarSesionActiva();
+      mostrarApp();
+      return true;
+    } catch (e) {
+      return false;
     }
-    .result-item .row2 .descripcion {
-        font-size: 0.82rem;
-        line-height: 1.35;
-    }
+  }
 
-    /* Inputs de cantidad grandes al tocar */
-    .cantidad-row input,
-    body.modo-seleccion .cantidad-row .group input {
-        min-height: 48px;
-        font-size: 1.25rem !important;
-    }
-
-    /* Tabla: scroll más cómodo */
-    .table-wrap {
-        max-height: 42vh;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    /* Confirm modal botones */
-    .confirm-actions .btn {
-        min-height: 44px !important;
-        flex: 1;
-    }
-
-    /* Toast un poco más visible en móvil */
-    .toast {
-        left: 0.75rem;
-        right: 0.75rem;
-        bottom: max(1rem, env(safe-area-inset-bottom, 0));
-        width: auto;
-        max-width: none;
-        text-align: center;
-    }
-}
-
-@media (max-width: 400px) {
-    /* En pantallas muy chicas no achicar tanto los botones (antes quedaban a 28px) */
-    .btn {
-        font-size: 0.72rem !important;
-        padding: 0.45rem 0.7rem !important;
-        min-height: 44px !important;
-    }
-    .search-row label.btn-drive {
-        font-size: 0.7rem !important;
-    }
-    .header .logo img { height: 28px; }
-}
-
-/* Reduce motion para accesibilidad */
-@media (prefers-reduced-motion: reduce) {
-    * {
-        transition: none !important;
-        animation: none !important;
-    }
-}
-
-
-/* ============================================================
-   PANEL ADMINISTRADOR (subir Excel)
-   ============================================================ */
-.admin-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-    z-index: 1000;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0));
-}
-.admin-overlay.visible {
-    display: flex;
-}
-.admin-panel {
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 18px;
-    width: 100%;
-    max-width: 420px;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
-    overflow: hidden;
-    backdrop-filter: blur(12px);
-}
-.admin-panel-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1rem 1.15rem;
-    border-bottom: 1px solid var(--divider);
-    background: rgba(108, 92, 231, 0.12);
-}
-.admin-panel-header h2 {
-    margin: 0;
-    font-size: 1.05rem;
-    color: var(--heading-color);
-    font-weight: 700;
-}
-.admin-close {
-    background: transparent;
-    border: none;
-    color: var(--text-secondary);
-    font-size: 1.2rem;
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-.admin-close:hover {
-    background: rgba(255, 84, 112, 0.15);
-    color: var(--danger);
-}
-.admin-panel-body {
-    padding: 1.1rem 1.15rem 1.25rem;
-}
-.admin-lead {
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    line-height: 1.45;
-    margin-bottom: 0.75rem;
-}
-.admin-tips {
-    margin: 0 0 1rem 1.1rem;
-    padding: 0;
-    font-size: 0.78rem;
-    color: var(--text-muted);
-    line-height: 1.55;
-}
-.admin-tips strong {
-    color: var(--text-secondary);
-}
-.admin-dropzone {
-    position: relative;
-    border: 2px dashed rgba(108, 92, 231, 0.45);
-    border-radius: 14px;
-    padding: 1.4rem 1rem;
-    text-align: center;
-    cursor: pointer;
-    background: rgba(108, 92, 231, 0.06);
-    transition: border-color 0.2s, background 0.2s;
-}
-.admin-dropzone:hover,
-.admin-dropzone.dragover {
-    border-color: var(--accent);
-    background: rgba(108, 92, 231, 0.14);
-}
-.admin-drop-icon {
-    font-size: 2rem;
-    margin-bottom: 0.35rem;
-}
-.admin-drop-text {
-    font-size: 0.82rem;
-    color: var(--text-secondary);
-    line-height: 1.4;
-}
-.admin-file-input {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    cursor: pointer;
-    width: 100%;
-    height: 100%;
-}
-.admin-file-name {
-    margin-top: 0.65rem;
-    font-size: 0.8rem;
-    color: var(--heading-color);
-    font-weight: 600;
-    min-height: 1.2em;
-    word-break: break-all;
-}
-.admin-actions {
-    display: flex;
-    gap: 0.6rem;
-    margin-top: 1rem;
-    justify-content: flex-end;
-}
-.admin-actions .btn {
-    min-height: 44px;
-}
-.admin-status {
-    margin-top: 0.7rem;
-    font-size: 0.78rem;
-    color: var(--text-muted);
-    min-height: 1.1em;
-    text-align: center;
-}
-
-#adminPanelBtn {
-    font-size: 1.05rem;
-}
-
-@media (max-width: 640px) {
-    .admin-panel {
-        max-width: 100%;
-        border-radius: 16px;
-    }
-    .admin-actions {
-        flex-direction: column-reverse;
-    }
-    .admin-actions .btn {
-        width: 100%;
-    }
-}
-
-
-.admin-divider {
-    border: none;
-    border-top: 1px solid var(--divider);
-    margin: 1.15rem 0 0.9rem;
-}
-.admin-subtitle {
-    margin: 0 0 0.4rem;
-    font-size: 0.95rem;
-    color: var(--heading-color);
-    font-weight: 700;
-}
-
-
-.admin-check {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-    margin-top: 0.75rem;
-    font-size: 0.78rem;
-    color: var(--text-secondary);
-    line-height: 1.35;
-    cursor: pointer;
-    user-select: none;
-}
-.admin-check input {
-    margin-top: 0.15rem;
-    width: 16px;
-    height: 16px;
-    flex-shrink: 0;
-}
+  // Init
+  if (!intentarSesionGuardada()) {
+    loginScreen.classList.remove('hidden');
+    app.classList.remove('visible');
+  }
+})();
+  </script>
+</body>
+</html>
