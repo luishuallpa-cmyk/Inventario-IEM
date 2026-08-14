@@ -104,8 +104,12 @@
             </div>
             <span class="info-text" id="infoFactor">Factor: 1</span>
             <div class="acciones">
-                <button class="btn btn-success" id="btnAgregar"><span class="btn-icon">🛒</span><span class="btn-label"> Pedido</span></button>
+                <button class="btn btn-success" id="btnAgregar" title="Agregar al pedido de sugerencia"><span class="btn-icon">🛒</span><span class="btn-label"> Al pedido</span></button>
             </div>
+        </div>
+        <div id="modoPedidoBanner" class="modo-pedido-banner hidden" role="status">
+            <span>🛒 <strong>Modo pedido</strong> — busca por código o nombre (catálogo / existencias) y agrega cantidades.</span>
+            <button type="button" class="btn btn-outline btn-sm" id="btnSalirModoPedido">Salir del modo pedido</button>
         </div>
 
         <!-- Aviso de conversión automática: aparece cuando se escriben más
@@ -202,17 +206,21 @@
     </section>
 
     <!-- ============================================================
-    PEDIDO ACTUAL (sugerencia de pedido al proveedor)
+    PEDIDO (opción secundaria: sugerencia al proveedor)
     ============================================================ -->
-    <section class="card">
-        <div class="card-header collapsible" id="pedidoCardHeader" role="button" tabindex="0" aria-expanded="true" aria-controls="pedidoCardBody">
-            <h2>📦 Sugerencia de Pedido</h2>
+    <section class="card card-secundaria" id="pedidoSection">
+        <div class="card-header collapsible" id="pedidoCardHeader" role="button" tabindex="0" aria-expanded="false" aria-controls="pedidoCardBody">
+            <h2>🛒 Sugerencia de pedido</h2>
             <span class="badge" id="pedidoCount">0 productos</span>
             <span class="card-toggle" aria-hidden="true">▾</span>
         </div>
-        <div class="card-body-collapsible" id="pedidoCardBody">
+        <div class="card-body-collapsible is-collapsed" id="pedidoCardBody">
         <div class="card-body-inner">
+        <p class="pedido-help">Opción secundaria: usa el <strong>mismo buscador</strong> y los códigos del catálogo (existencias / Excel). Toca <strong>Armar pedido</strong> para empezar.</p>
         <div class="card-actions-row">
+                <button type="button" class="btn btn-primary btn-sm" id="btnArmarPedido" title="Activa modo pedido y enfoca el buscador">
+                    <span class="btn-icon">🔎</span><span class="btn-label"> Armar pedido</span>
+                </button>
                 <span class="totales-mini">
                     <span style="font-size:0.7rem; color:var(--text-muted);">Cajas <strong id="totalCajasPedido" style="color:var(--heading-color);">0</strong></span>
                     <span style="font-size:0.7rem; color:var(--text-muted);">Unid. <strong id="totalUnidadesPedido" style="color:var(--heading-color);">0</strong></span>
