@@ -1,4 +1,37 @@
     (function() {
+
+        // Tab admin: función global (disponible desde el primer instante)
+        window.cambiarTabAdmin = function (tabId) {
+            try {
+                if (!tabId) return false;
+                document.querySelectorAll('.admin-nav-btn').forEach(function (b) {
+                    var on = b.getAttribute('data-admin-tab') === tabId;
+                    b.classList.toggle('active', on);
+                });
+                document.querySelectorAll('.admin-tab').forEach(function (panel) {
+                    var on = panel.getAttribute('data-admin-panel') === tabId;
+                    if (on) {
+                        panel.removeAttribute('hidden');
+                        panel.hidden = false;
+                        panel.style.setProperty('display', 'block', 'important');
+                        panel.classList.add('active');
+                    } else {
+                        panel.setAttribute('hidden', 'hidden');
+                        panel.hidden = true;
+                        panel.style.setProperty('display', 'none', 'important');
+                        panel.classList.remove('active');
+                    }
+                });
+                if (tabId === 'sesiones' && typeof window.__cargarSesionesActivas === 'function') {
+                    window.__cargarSesionesActivas();
+                }
+            } catch (err) {
+                console.error('cambiarTabAdmin', err);
+            }
+            return false;
+        };
+
+
         // ============================================================
         // CONFIGURACIÓN
         // ============================================================
@@ -132,6 +165,7 @@
         }
 
         async function cargarSesionesActivas() {
+            window.__cargarSesionesActivas = cargarSesionesActivas;
             const cont = document.getElementById('adminListaSesiones');
             if (!cont) return;
             cont.innerHTML = '<p class="admin-sesiones-empty">Cargando...</p>';
@@ -2108,7 +2142,6 @@
             if (adminCancelBtn) adminCancelBtn.addEventListener('click', cerrarPanelAdmin);
 
             // Pestañas admin (también hay delegación global más abajo)
-            window.__mostrarTabAdmin = mostrarTabAdmin;
 
             const adminOverlay = document.getElementById('adminOverlay');
             if (adminOverlay) {
@@ -2310,7 +2343,6 @@
                 cargarSesionesActivas();
             }
         }
-        window.__mostrarTabAdmin = mostrarTabAdmin;
 
         // Clic / toque en menú admin (no depende de init)
         document.addEventListener('click', function (e) {
@@ -2413,7 +2445,7 @@
             if (nameEl) nameEl.textContent = '';
             if (statusEl) statusEl.textContent = '';
             if (importBtn) importBtn.disabled = true;
-            if (typeof window.__mostrarTabAdmin === 'function') window.__mostrarTabAdmin('subir');
+            if (typeof window.cambiarTabAdmin === 'function') window.cambiarTabAdmin('subir');
             else cargarSesionesActivas();
             const body = ov.querySelector('.admin-panel-body');
             if (body) body.scrollTop = 0;
