@@ -1996,3 +1996,54 @@ body.light-theme .card {
         font-size: 0.95rem !important;
     }
 }
+
+/* ============================================================
+   SUGERENCIA DE PEDIDO — opción secundaria + modo pedido
+   ============================================================ */
+.card-secundaria {
+    border-style: dashed;
+    opacity: 0.98;
+}
+.card-secundaria .card-header h2 {
+    font-size: 1.05rem;
+    color: var(--text-secondary);
+}
+.pedido-help {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.45;
+    margin: 0 0 0.75rem;
+}
+.modo-pedido-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 0.75rem;
+    margin-top: 0.65rem;
+    padding: 0.65rem 0.85rem;
+    border-radius: 14px;
+    background: rgba(34, 211, 238, 0.12);
+    border: 1px solid rgba(34, 211, 238, 0.35);
+    color: var(--text-primary);
+    font-size: 0.84rem;
+    line-height: 1.4;
+}
+.modo-pedido-banner.hidden { display: none !important; }
+body.modo-pedido-activo #btnAgregar {
+    box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.45);
+}
+body.modo-pedido-activo .card-secundaria {
+    border-style: solid;
+    border-color: rgba(34, 211, 238, 0.4);
+}
+@media (max-width: 640px) {
+    .modo-pedido-banner {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+    .modo-pedido-banner .btn {
+        width: 100%;
+    }
+}
