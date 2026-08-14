@@ -296,46 +296,40 @@
         }
         .header .theme-toggle:hover { background: rgba(108, 92, 231, 0.25); transform: rotate(10deg); }
 
-        /* Botón salir: texto pequeño "Salir" (más claro que un icono en móvil) */
+        /* Cerrar sesión: icono SVG (se ve en todos los celulares) */
         .btn-logout {
             display: inline-flex !important;
             align-items: center;
             justify-content: center;
-            gap: 0.2rem;
-            width: auto !important;
-            height: 38px;
-            min-height: 38px;
-            padding: 0 0.65rem !important;
-            border-radius: 999px;
+            width: 38px !important;
+            height: 38px !important;
+            min-height: 38px !important;
+            padding: 0 !important;
+            border-radius: 50% !important;
             border: 1px solid var(--card-border);
             background: var(--badge-bg);
             color: var(--text-secondary) !important;
-            font-family: var(--font);
-            font-size: 0.72rem;
-            font-weight: 700;
-            letter-spacing: 0.02em;
             cursor: pointer;
             transition: 0.15s;
             flex-shrink: 0;
             box-shadow: none;
-            line-height: 1;
-            text-transform: none;
+            line-height: 0;
         }
         .btn-logout:hover,
         .btn-logout:active {
-            background: rgba(251, 113, 133, 0.2);
-            border-color: rgba(251, 113, 133, 0.45);
+            background: rgba(251, 113, 133, 0.22);
+            border-color: rgba(251, 113, 133, 0.5);
             color: #fda4af !important;
-            transform: none;
         }
-        .btn-logout-icon {
-            display: none !important; /* solo texto */
+        .btn-logout-svg {
+            display: block !important;
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
         }
+        .btn-logout-icon,
         .btn-logout-label {
-            display: inline !important;
-            color: inherit !important;
-            font-size: inherit;
-            font-weight: inherit;
+            display: none !important;
         }
         body.light-theme .btn-logout:hover {
             background: rgba(225, 29, 72, 0.12);
@@ -343,17 +337,13 @@
         }
         @media (max-width: 640px) {
             .btn-logout {
-                height: 40px !important;
-                min-height: 40px !important;
-                padding: 0 0.7rem !important;
-                font-size: 0.7rem !important;
-                border-radius: 999px !important;
+                width: 42px !important;
+                height: 42px !important;
+                min-height: 42px !important;
             }
-            .btn-logout-label {
-                display: inline !important;
-            }
-            .btn-logout-icon {
-                display: none !important;
+            .btn-logout-svg {
+                width: 22px;
+                height: 22px;
             }
         }
 
