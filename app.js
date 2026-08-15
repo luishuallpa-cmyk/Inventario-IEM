@@ -25,6 +25,14 @@
                 if (tabId === 'sesiones' && typeof window.__cargarSesionesActivas === 'function') {
                     window.__cargarSesionesActivas();
                 }
+                if (tabId === 'catalogo') {
+                    var inp = document.getElementById('adminCatalogInput');
+                    if (inp) { setTimeout(function () { inp.focus(); }, 50); }
+                    if (typeof buscarCatalogoAdmin === 'function') buscarCatalogoAdmin(inp && inp.value);
+                }
+                if (tabId === 'vista' && typeof renderVistaPreviaInventario === 'function') {
+                    renderVistaPreviaInventario();
+                }
             } catch (err) {
                 console.error('cambiarTabAdmin', err);
             }
@@ -591,7 +599,12 @@
             const term = searchInput.value.trim();
             if (!term) {
                 filteredData = [];
-                renderResults([]);
+                resultList.innerHTML = '<div class="empty-message">Escribe un código o nombre para buscar</div>';
+                resultCount.textContent = '0';
+                cajasCount.textContent = '0';
+                unidadesCount.textContent = '0';
+                selectedIndex = -1;
+                limpiarCantidades();
                 return;
             }
             const palabras = term.split(/\s+/).filter(p => p.length > 0);
@@ -1792,27 +1805,38 @@
                 return;
             }
 
-            const grupos = agruparPorLinea(inventarioFisico, d => d.linea);
+            // Excel PLANO: sin agrupar por línea (una fila por producto)
             const filas = [
                 ['#', 'Código', 'Descripción', 'Línea', 'Stock Teórico', 'Stock Físico', 'Diferencia', 'Vencimiento', 'Fecha/Hora', 'Usuario(s)']
             ];
-
-            grupos.forEach(grupo => {
-                filas.push([`LÍNEA: ${grupo.linea}`]);
-                let contador = 1;
-                let subTeorico = 0, subFisico = 0, subDiferencia = 0;
-                grupo.items.forEach(d => {
-                    const detalleLotes = (d.lotes || []).map(l => `${l.vencimiento || 'S/F'}: ${l.cantidad}`).join(' | ');
-                    const usuarios = usuariosDeRegistro(d);
-                    const usuariosTexto = usuarios.length > 1 ? `⚠️ ${usuarios.join(', ')}` : (usuarios.join(', ') || '-');
-                    filas.push([contador++, d.codigo, d.descripcion, d.linea || 'SIN LÍNEA', d.stockTeorico, d.stockFisico, d.diferencia, detalleLotes || (d.vencimiento || '-'), d.fecha, usuariosTexto]);
-                    subTeorico += d.stockTeorico;
-                    subFisico += d.stockFisico;
-                    subDiferencia += d.diferencia;
-                });
-                filas.push(['', '', '', 'Subtotal línea', subTeorico, subFisico, subDiferencia, '', '', '']);
-                filas.push([]);
+            let contador = 1;
+            let totalTeorico = 0, totalFisico = 0, totalDiff = 0;
+            const ordenados = inventarioFisico.slice().sort(function (a, b) {
+                return String(a.codigo || '').localeCompare(String(b.codigo || ''), 'es', { numeric: true });
             });
+            ordenados.forEach(function (d) {
+                const detalleLotes = (d.lotes || []).map(function (l) {
+                    return (l.vencimiento || 'S/F') + ': ' + l.cantidad;
+                }).join(' | ');
+                const usuarios = usuariosDeRegistro(d);
+                const usuariosTexto = usuarios.length > 1 ? usuarios.join(', ') : (usuarios.join(', ') || '-');
+                filas.push([
+                    contador++,
+                    d.codigo,
+                    d.descripcion,
+                    d.linea || 'SIN LÍNEA',
+                    d.stockTeorico,
+                    d.stockFisico,
+                    d.diferencia,
+                    detalleLotes || (d.vencimiento || '-'),
+                    d.fecha,
+                    usuariosTexto
+                ]);
+                totalTeorico += Number(d.stockTeorico) || 0;
+                totalFisico += Number(d.stockFisico) || 0;
+                totalDiff += Number(d.diferencia) || 0;
+            });
+            filas.push(['', '', '', 'TOTAL', totalTeorico, totalFisico, totalDiff, '', '', '']);
 
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.aoa_to_sheet(filas);
@@ -1822,10 +1846,142 @@
             const blob = new Blob([wbout], { type: 'application/octet-stream' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `inventario_fisico_${new Date().toISOString().slice(0,10)}.xlsx`;
+            link.download = 'inventario_fisico_' + new Date().toISOString().slice(0,10) + '.xlsx';
             link.click();
             URL.revokeObjectURL(link.href);
-            showToast('📥 Inventario exportado a Excel.', 'success');
+            showToast('📥 Excel plano exportado (sin agrupar por línea).', 'success');
+        }
+
+        // Vista previa agrupada por línea + PDF elegante (print)
+        function construirHtmlVistaInventario() {
+            if (!inventarioFisico.length) {
+                return '<p class="admin-sesiones-empty">Aún no hay conteo físico registrado.</p>';
+            }
+            const grupos = (typeof agruparPorLinea === 'function')
+                ? agruparPorLinea(inventarioFisico, function (d) { return d.linea; })
+                : [{ linea: 'TODO', items: inventarioFisico }];
+            let totalT = 0, totalF = 0, totalD = 0, n = 0;
+            let html = '<div class="inv-preview-doc">';
+            html += '<header class="inv-preview-head"><h1>IEM GROUP · Inventario físico</h1>';
+            html += '<p class="inv-preview-meta">Fecha: ' + new Date().toLocaleString('es-PE') +
+                ' · Usuario: ' + escapeHtmlSes(usuarioActual || '-') +
+                ' · Productos: ' + inventarioFisico.length + '</p></header>';
+            grupos.forEach(function (grupo) {
+                let subT = 0, subF = 0, subD = 0;
+                html += '<section class="inv-preview-linea"><h2>' + escapeHtmlSes(grupo.linea || 'SIN LÍNEA') + '</h2>';
+                html += '<table class="inv-preview-table"><thead><tr>' +
+                    '<th>#</th><th>Código</th><th>Descripción</th><th>Teórico</th><th>Físico</th><th>Dif.</th><th>Venc.</th></tr></thead><tbody>';
+                (grupo.items || []).forEach(function (d, i) {
+                    n++;
+                    const venc = (d.lotes || []).map(function (l) {
+                        return (l.vencimiento || 'S/F') + ':' + l.cantidad;
+                    }).join(' · ') || (d.vencimiento || '-');
+                    const difClass = (d.diferencia > 0) ? 'diff-pos' : (d.diferencia < 0 ? 'diff-neg' : '');
+                    html += '<tr><td>' + (i + 1) + '</td><td class="mono">' + escapeHtmlSes(d.codigo) +
+                        '</td><td>' + escapeHtmlSes(d.descripcion) +
+                        '</td><td class="num">' + d.stockTeorico +
+                        '</td><td class="num">' + d.stockFisico +
+                        '</td><td class="num ' + difClass + '">' + d.diferencia +
+                        '</td><td class="venc">' + escapeHtmlSes(venc) + '</td></tr>';
+                    subT += Number(d.stockTeorico) || 0;
+                    subF += Number(d.stockFisico) || 0;
+                    subD += Number(d.diferencia) || 0;
+                });
+                html += '</tbody><tfoot><tr><td colspan="3">Subtotal línea</td><td class="num">' + subT +
+                    '</td><td class="num">' + subF + '</td><td class="num">' + subD + '</td><td></td></tr></tfoot></table></section>';
+                totalT += subT; totalF += subF; totalD += subD;
+            });
+            html += '<footer class="inv-preview-foot"><strong>TOTAL</strong> · Teórico: ' + totalT +
+                ' · Físico: ' + totalF + ' · Diferencia: ' + totalD + ' · Ítems: ' + n + '</footer></div>';
+            return html;
+        }
+
+        function renderVistaPreviaInventario() {
+            const box = document.getElementById('adminVistaPreview');
+            if (!box) return;
+            box.innerHTML = construirHtmlVistaInventario();
+        }
+
+        function exportarInventarioPDF() {
+            if (!esAdmin()) {
+                showToast('Solo el administrador puede exportar PDF.', 'error');
+                return;
+            }
+            if (!inventarioFisico.length) {
+                showToast('No hay inventario para el PDF.', 'error');
+                return;
+            }
+            const contenido = construirHtmlVistaInventario();
+            const w = window.open('', '_blank', 'noopener,noreferrer');
+            if (!w) {
+                showToast('Permite ventanas emergentes para generar el PDF.', 'error');
+                return;
+            }
+            w.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Inventario físico IEM</title>');
+            w.document.write('<style>');
+            w.document.write('*{box-sizing:border-box}body{font-family:Inter,Segoe UI,Arial,sans-serif;color:#1a1a2e;margin:0;padding:24px;background:#fff}');
+            w.document.write('.inv-preview-head{border-bottom:3px solid #5b45d6;padding-bottom:12px;margin-bottom:20px}');
+            w.document.write('.inv-preview-head h1{margin:0;font-size:1.35rem;color:#3b2494}');
+            w.document.write('.inv-preview-meta{margin:6px 0 0;color:#555;font-size:0.85rem}');
+            w.document.write('.inv-preview-linea{margin-bottom:22px;page-break-inside:avoid}');
+            w.document.write('.inv-preview-linea h2{margin:0 0 8px;font-size:1rem;color:#5b45d6;border-left:4px solid #22d3ee;padding-left:8px}');
+            w.document.write('.inv-preview-table{width:100%;border-collapse:collapse;font-size:0.78rem}');
+            w.document.write('.inv-preview-table th{background:#eef2ff;text-align:left;padding:6px 8px;border-bottom:2px solid #c7d2fe}');
+            w.document.write('.inv-preview-table td{padding:5px 8px;border-bottom:1px solid #e5e7eb;vertical-align:top}');
+            w.document.write('.inv-preview-table tfoot td{font-weight:700;background:#f8fafc}');
+            w.document.write('.mono{font-family:ui-monospace,monospace;font-weight:600}');
+            w.document.write('.num{text-align:right;font-variant-numeric:tabular-nums}');
+            w.document.write('.diff-pos{color:#059669}.diff-neg{color:#e11d48}');
+            w.document.write('.venc{font-size:0.72rem;color:#555;max-width:140px}');
+            w.document.write('.inv-preview-foot{margin-top:16px;padding-top:12px;border-top:2px solid #5b45d6;font-size:0.9rem}');
+            w.document.write('@media print{body{padding:12px}@page{margin:12mm}}');
+            w.document.write('</style></head><body>');
+            w.document.write(contenido);
+            w.document.write('<script>window.onload=function(){setTimeout(function(){window.print()},300);}<\/script>');
+            w.document.write('</body></html>');
+            w.document.close();
+            showToast('PDF: usa “Guardar como PDF” en el diálogo de impresión.', 'info');
+        }
+
+        // Buscador admin de catálogo completo (existencias)
+        function buscarCatalogoAdmin(term) {
+            const list = document.getElementById('adminCatalogList');
+            const countEl = document.getElementById('adminCatalogCount');
+            if (!list) return;
+            const q = String(term || '').trim().toUpperCase();
+            if (!q) {
+                list.innerHTML = '<p class="admin-sesiones-empty">Escribe para buscar en el catálogo.</p>';
+                if (countEl) countEl.textContent = '0';
+                return;
+            }
+            const palabras = q.split(/\s+/).filter(Boolean);
+            const hits = (currentData || []).filter(function (item) {
+                const campos = [
+                    getCodigo(item), getCodigoFabrica(item), getDescripcion(item),
+                    getLinea(item), getMarca(item), getUnidadRef(item)
+                ].map(function (x) { return String(x || '').toUpperCase(); });
+                return palabras.every(function (p) {
+                    return campos.some(function (c) { return c.indexOf(p) !== -1; });
+                });
+            }).slice(0, 80);
+            if (countEl) countEl.textContent = String(hits.length) + (hits.length >= 80 ? '+' : '');
+            if (!hits.length) {
+                list.innerHTML = '<p class="admin-sesiones-empty">Sin coincidencias en el catálogo.</p>';
+                return;
+            }
+            list.innerHTML = hits.map(function (item) {
+                const cod = escapeHtmlSes(getCodigo(item));
+                const desc = escapeHtmlSes(getDescripcion(item));
+                const lin = escapeHtmlSes(getLinea(item) || '-');
+                const mar = escapeHtmlSes(getMarca(item) || '-');
+                const cant = getCantidad(item);
+                const stockClass = cant <= 0 ? 'stock-cero' : '';
+                return '<div class="admin-catalog-item ' + stockClass + '">' +
+                    '<div class="aci-cod">' + cod + '</div>' +
+                    '<div class="aci-desc">' + desc + '</div>' +
+                    '<div class="aci-meta">Línea: ' + lin + ' · Marca: ' + mar +
+                    ' · Stock: <strong>' + cant + '</strong></div></div>';
+            }).join('');
         }
 
         // ============================================================
@@ -2203,6 +2359,29 @@
                     exportarInventario();
                 });
             }
+            const adminCatalogInput = document.getElementById('adminCatalogInput');
+            if (adminCatalogInput) {
+                let tCat = null;
+                adminCatalogInput.addEventListener('input', function () {
+                    clearTimeout(tCat);
+                    const v = this.value;
+                    tCat = setTimeout(function () { buscarCatalogoAdmin(v); }, 200);
+                });
+            }
+            const adminRefreshVistaBtn = document.getElementById('adminRefreshVistaBtn');
+            if (adminRefreshVistaBtn) {
+                adminRefreshVistaBtn.addEventListener('click', function () {
+                    if (!esAdmin()) return;
+                    renderVistaPreviaInventario();
+                });
+            }
+            const adminPdfInvBtn = document.getElementById('adminPdfInvBtn');
+            if (adminPdfInvBtn) {
+                adminPdfInvBtn.addEventListener('click', function () {
+                    if (!esAdmin()) return;
+                    exportarInventarioPDF();
+                });
+            }
             const adminExportPedidoBtn = document.getElementById('adminExportPedidoBtn');
             if (adminExportPedidoBtn) {
                 adminExportPedidoBtn.addEventListener('click', function () {
@@ -2320,39 +2499,17 @@
         // PESTAÑAS DEL PANEL ADMIN (delegación global = siempre clicables)
         // ============================================================
         function mostrarTabAdmin(tabId) {
-            if (!tabId) return;
-            document.querySelectorAll('.admin-nav-btn').forEach(function (b) {
-                const on = b.getAttribute('data-admin-tab') === tabId;
-                b.classList.toggle('active', on);
-                b.setAttribute('aria-selected', on ? 'true' : 'false');
-            });
-            document.querySelectorAll('.admin-tab').forEach(function (panel) {
-                const on = panel.getAttribute('data-admin-panel') === tabId;
-                if (on) {
-                    panel.hidden = false;
-                    panel.removeAttribute('hidden');
-                    panel.style.display = '';
-                    panel.classList.add('active');
-                } else {
-                    panel.hidden = true;
-                    panel.setAttribute('hidden', '');
-                    panel.style.display = 'none';
-                    panel.classList.remove('active');
-                }
-            });
-            if (tabId === 'sesiones' && typeof cargarSesionesActivas === 'function') {
-                cargarSesionesActivas();
-            }
+            if (typeof window.cambiarTabAdmin === 'function') window.cambiarTabAdmin(tabId);
         }
 
-        // Clic / toque en menú admin (no depende de init)
+        // Clic / toque en menú admin (delega a cambiarTabAdmin)
         document.addEventListener('click', function (e) {
             const btn = e.target && e.target.closest && e.target.closest('.admin-nav-btn');
             if (!btn) return;
             e.preventDefault();
             e.stopPropagation();
             const tab = btn.getAttribute('data-admin-tab');
-            if (tab) mostrarTabAdmin(tab);
+            if (tab) window.cambiarTabAdmin(tab);
         }, true);
 
         // ============================================================
