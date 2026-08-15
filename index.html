@@ -22,8 +22,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=3.22">
-    <link rel="stylesheet" href="admin.css?v=3.22">
+    <link rel="stylesheet" href="style.css?v=3.23">
+    <link rel="stylesheet" href="admin.css?v=3.23">
 </head>
 <body>
 <div class="login-overlay" id="loginOverlay">
@@ -460,21 +460,24 @@
 
                     <div class="admin-tab" id="adminTabClientes" data-admin-panel="clientes" hidden>
                         <h3 class="admin-subtitle">👤 Catálogo de clientes</h3>
-                        <p class="admin-lead">Importa tu Excel de clientes y búscalo aquí (solo admin). No afecta el conteo de inventario.</p>
-                        <div class="admin-actions" style="justify-content:stretch;flex-wrap:wrap;gap:0.5rem;">
-                            <label class="btn btn-success btn-sm" style="flex:1;cursor:pointer;text-align:center;">
-                                <span class="btn-icon">⬆️</span><span class="btn-label"> Subir Excel clientes</span>
-                                <input type="file" id="importClientesInput" accept=".xlsx,.xls,.csv" style="display:none;">
-                            </label>
-                        </div>
-                        <p class="admin-status" id="adminClientesStatus"></p>
-                        <div class="admin-catalog-search" style="margin-top:0.75rem;">
-                            <input type="search" id="adminClienteInput" placeholder="Código, nombre, DNI, distrito, zona..." autocomplete="off">
+                        <p class="admin-lead">Busca clientes del catálogo. No afecta el conteo de inventario.</p>
+                        <div class="admin-catalog-search">
+                            <input type="search" id="adminClienteInput" placeholder="Código, nombre, DNI, distrito, zona..." autocomplete="off" enterkeyhint="search">
                             <span class="admin-catalog-count" id="adminClienteCount">0</span>
                         </div>
+                        <p class="admin-status" id="adminClientesStatus"></p>
                         <div id="adminClienteList" class="admin-catalog-list">
-                            <p class="admin-sesiones-empty">Sube el Excel o escribe para buscar clientes.</p>
+                            <p class="admin-sesiones-empty">Escribe para buscar clientes.</p>
                         </div>
+                        <!-- Subir Excel: acción secundaria, abajo y discreta (solo actualizar base) -->
+                        <details class="admin-import-sec">
+                            <summary>Actualizar base de clientes (Excel)</summary>
+                            <p class="admin-import-sec-hint">Solo cuando necesites reemplazar o actualizar el catálogo en la nube.</p>
+                            <label class="btn btn-outline btn-sm admin-import-sec-btn">
+                                <span class="btn-icon">⬆️</span><span class="btn-label"> Elegir Excel de clientes</span>
+                                <input type="file" id="importClientesInput" accept=".xlsx,.xls,.csv" style="display:none;">
+                            </label>
+                        </details>
                     </div>
 
                     <div class="admin-tab" id="adminTabSesiones" data-admin-panel="sesiones" hidden>
@@ -514,8 +517,8 @@
         </div>
     </div>
 
-<script src="config.js?v=3.22"></script>
-<script src="app.js?v=3.22"></script>
+<script src="config.js?v=3.23"></script>
+<script src="app.js?v=3.23"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {

@@ -905,3 +905,51 @@ body.light-theme .admin-vista-preview {
     font-size: 0.82rem;
     color: var(--heading-color);
 }
+
+/* Acción secundaria: actualizar base (poco visible, evita toques accidentales) */
+.admin-import-sec {
+    margin-top: 1.25rem;
+    padding: 0.55rem 0.7rem;
+    border-radius: 12px;
+    border: 1px dashed var(--card-border);
+    background: rgba(0, 0, 0, 0.12);
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+body.light-theme .admin-import-sec {
+    background: rgba(0, 0, 0, 0.03);
+}
+.admin-import-sec summary {
+    cursor: pointer;
+    font-weight: 650;
+    color: var(--text-secondary);
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    user-select: none;
+}
+.admin-import-sec summary::-webkit-details-marker {
+    display: none;
+}
+.admin-import-sec summary::before {
+    content: '▸';
+    font-size: 0.7rem;
+    opacity: 0.7;
+}
+.admin-import-sec[open] summary::before {
+    content: '▾';
+}
+.admin-import-sec-hint {
+    margin: 0.5rem 0 0.55rem;
+    font-size: 0.72rem;
+    line-height: 1.4;
+    color: var(--text-muted);
+}
+.admin-import-sec-btn {
+    display: inline-flex !important;
+    width: auto !important;
+    max-width: 100%;
+    cursor: pointer;
+    opacity: 0.9;
+}
