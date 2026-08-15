@@ -1883,3 +1883,64 @@ body.light-theme .filtro-tipo-btn.active {
     background: linear-gradient(135deg, #5b45d6, #0891b2);
     color: #fff;
 }
+
+
+/* ========== Vista solo vendedor: sugerencia de pedido ========== */
+body.modo-vendedor #diffCardHeader,
+body.modo-vendedor #diffCardBody,
+body.modo-vendedor #diffCardHeader,
+body.modo-vendedor .card-header#diffCardHeader,
+body.modo-vendedor #vencBlock,
+body.modo-vendedor #btnRegistrarFisico,
+body.modo-vendedor .btn-guardar-grande,
+body.modo-vendedor #headerMenuWrap,
+body.modo-vendedor #scanBarcodeBtn,
+body.modo-vendedor #btnScanProducto,
+body.modo-vendedor #vincularBarrasRow,
+body.modo-vendedor .venc-block,
+body.modo-vendedor #exportDiffBtn,
+body.modo-vendedor #clearDiffBtn,
+body.modo-vendedor #guardarDriveBtn {
+    display: none !important;
+}
+
+/* Ocultar la tarjeta completa de Inventario Físico */
+body.modo-vendedor .card:has(#diffCardHeader),
+body.modo-vendedor .card:has(#diffCardBody) {
+    display: none !important;
+}
+
+/* Pedido siempre visible y abierto */
+body.modo-vendedor #pedidoSection {
+    display: block !important;
+    border: 1px solid rgba(34, 211, 238, 0.35);
+}
+body.modo-vendedor #pedidoCardBody {
+    display: block !important;
+}
+body.modo-vendedor #pedidoCardBody.is-collapsed {
+    display: block !important;
+    max-height: none !important;
+    overflow: visible !important;
+}
+
+/* En modo vendedor el botón principal es Al pedido (ya existe) */
+body.modo-vendedor #btnRegistrarFisico {
+    display: none !important;
+}
+
+/* Banner opcional */
+body.modo-vendedor .vendedor-only-banner {
+    display: block !important;
+}
+.vendedor-only-banner {
+    display: none;
+    margin: 0.5rem 0 0.75rem;
+    padding: 0.55rem 0.85rem;
+    border-radius: 10px;
+    background: rgba(34, 211, 238, 0.12);
+    border: 1px solid rgba(34, 211, 238, 0.3);
+    color: #a5f3fc;
+    font-size: 0.85rem;
+    font-weight: 600;
+}

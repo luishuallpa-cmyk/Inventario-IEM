@@ -3818,6 +3818,16 @@
 
         const SESSION_KEY = 'iem_sesion_activa';
         const AUTH_EMAIL_DOMAIN = 'iem.local'; // luis → luis@iem.local
+
+        // Aplicar clase vendedor desde la URL lo antes posible
+        (function () {
+            try {
+                if (/(?:\?|&)modo=vendedor(?:&|$)/i.test(location.search || '')) {
+                    document.body.classList.add('modo-vendedor');
+                }
+            } catch (e) {}
+        })();
+
         const LOGIN_MAX_INTENTOS = 5;
         const LOGIN_BLOQUEO_MS = 60 * 1000;
         let loginIntentos = 0;
@@ -3880,9 +3890,18 @@
             return String(rolUsuario || '').toLowerCase() === 'admin';
         }
 
+        function esVendedor() {
+            if (String(rolUsuario || '').toLowerCase() === 'vendedor') return true;
+            try {
+                return /(?:\?|&)modo=vendedor(?:&|$)/i.test(location.search || '');
+            } catch (e) { return false; }
+        }
+
         function actualizarUIPorRol() {
             const es = esAdmin();
+            const vend = esVendedor();
             document.body.classList.toggle('es-admin', !!es);
+            document.body.classList.toggle('modo-vendedor', !!vend && !es);
             const menuWrap = document.getElementById('headerMenuWrap');
             if (menuWrap) menuWrap.style.display = es ? '' : 'none';
             ['exportDiffBtn', 'clearDiffBtn', 'guardarDriveBtn', 'exportPedidoBtn'].forEach(id => {
@@ -3896,6 +3915,45 @@
             const scanProd = document.getElementById('btnScanProducto');
             if (scanProd) scanProd.style.display = es ? '' : 'none';
             if (typeof actualizarFilaVincular === 'function') actualizarFilaVincular();
+
+            // Vendedor: solo sugerencia de pedido
+            if (vend && !es) {
+                document.body.classList.add('modo-vendedor');
+                // Ocultar inventario físico (tarjeta completa)
+                const diffHeader = document.getElementById('diffCardHeader');
+                if (diffHeader) {
+                    const card = diffHeader.closest('.card, section');
+                    if (card) card.style.display = 'none';
+                }
+                const diffBody = document.getElementById('diffCardBody');
+                if (diffBody) {
+                    const card2 = diffBody.closest('.card, section');
+                    if (card2) card2.style.display = 'none';
+                }
+                const venc = document.getElementById('vencBlock');
+                if (venc) venc.style.display = 'none';
+                const btnFis = document.getElementById('btnRegistrarFisico');
+                if (btnFis) btnFis.style.display = 'none';
+
+                // Abrir pedido
+                const pedidoSec = document.getElementById('pedidoSection');
+                if (pedidoSec) pedidoSec.style.display = '';
+                const pedidoBody = document.getElementById('pedidoCardBody');
+                if (pedidoBody) {
+                    pedidoBody.classList.remove('is-collapsed');
+                    pedidoBody.style.display = 'block';
+                }
+                if (typeof activarModoPedido === 'function') {
+                    try { activarModoPedido(); } catch (e) {}
+                }
+                // Banner
+                var ban = document.getElementById('vendedorBanner');
+                if (ban) ban.style.display = 'block';
+            } else {
+                document.body.classList.remove('modo-vendedor');
+                var ban2 = document.getElementById('vendedorBanner');
+                if (ban2) ban2.style.display = 'none';
+            }
         }
 
         function abrirAdminEnSeccion(tabId) {
@@ -4012,7 +4070,12 @@
                     return {
                         ok: true,
                         usuario: data.usuario || split_part_email(emailFallback),
-                        rol: String(data.rol || 'usuario').toLowerCase() === 'admin' ? 'admin' : 'usuario'
+                        rol: (function () {
+                        var r = String(data.rol || 'usuario').toLowerCase();
+                        if (r === 'admin') return 'admin';
+                        if (r === 'vendedor') return 'vendedor';
+                        return 'usuario';
+                    })()
                     };
                 }
             } catch (e) {
