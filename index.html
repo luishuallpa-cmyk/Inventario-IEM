@@ -22,8 +22,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=3.18">
-    <link rel="stylesheet" href="admin.css?v=3.18">
+    <link rel="stylesheet" href="style.css?v=3.19">
+    <link rel="stylesheet" href="admin.css?v=3.19">
 </head>
 <body>
 <div class="login-overlay" id="loginOverlay">
@@ -332,28 +332,30 @@
                 <button type="button" class="admin-close" id="adminCloseBtn" title="Cerrar" aria-label="Cerrar">✕</button>
             </div>
             <div class="admin-layout">
-                <nav class="admin-nav" aria-label="Menú administrador">
-                    <button type="button" class="admin-nav-btn active" data-admin-tab="subir" onclick="window.cambiarTabAdmin && window.cambiarTabAdmin('subir'); return false;">📤 Subir Excel</button>
-                    <button type="button" class="admin-nav-btn" data-admin-tab="catalogo" onclick="window.cambiarTabAdmin && window.cambiarTabAdmin('catalogo'); return false;">🔎 Catálogo</button>
-                    <button type="button" class="admin-nav-btn" data-admin-tab="barras" onclick="window.cambiarTabAdmin && window.cambiarTabAdmin('barras'); return false;">🏷️ Barras / QR</button>
-                    <button type="button" class="admin-nav-btn" data-admin-tab="descargas" onclick="window.cambiarTabAdmin && window.cambiarTabAdmin('descargas'); return false;">📊 Descargas</button>
-                    <button type="button" class="admin-nav-btn" data-admin-tab="vista" onclick="window.cambiarTabAdmin && window.cambiarTabAdmin('vista'); return false;">👁️ Vista previa</button>
-                    <button type="button" class="admin-nav-btn" data-admin-tab="clientes" onclick="window.cambiarTabAdmin && window.cambiarTabAdmin('clientes'); return false;">👤 Clientes</button>
-                    <button type="button" class="admin-nav-btn" data-admin-tab="sesiones" onclick="window.cambiarTabAdmin && window.cambiarTabAdmin('sesiones'); return false;">👥 Sesiones</button>
+                <!-- Pestañas: en móvil barra horizontal; en escritorio menú lateral -->
+                <nav class="admin-nav" id="adminNav" aria-label="Secciones del panel" role="tablist">
+                    <button type="button" class="admin-nav-btn active" role="tab" aria-selected="true" data-admin-tab="subir" id="tabBtn-subir">
+                        <span class="tab-ico" aria-hidden="true">📤</span><span class="tab-txt">Subir Excel</span>
+                    </button>
+                    <button type="button" class="admin-nav-btn" role="tab" aria-selected="false" data-admin-tab="catalogo" id="tabBtn-catalogo">
+                        <span class="tab-ico" aria-hidden="true">🔎</span><span class="tab-txt">Catálogo</span>
+                    </button>
+                    <button type="button" class="admin-nav-btn" role="tab" aria-selected="false" data-admin-tab="barras" id="tabBtn-barras">
+                        <span class="tab-ico" aria-hidden="true">🏷️</span><span class="tab-txt">Barras / QR</span>
+                    </button>
+                    <button type="button" class="admin-nav-btn" role="tab" aria-selected="false" data-admin-tab="descargas" id="tabBtn-descargas">
+                        <span class="tab-ico" aria-hidden="true">📊</span><span class="tab-txt">Descargas</span>
+                    </button>
+                    <button type="button" class="admin-nav-btn" role="tab" aria-selected="false" data-admin-tab="vista" id="tabBtn-vista">
+                        <span class="tab-ico" aria-hidden="true">👁️</span><span class="tab-txt">Vista previa</span>
+                    </button>
+                    <button type="button" class="admin-nav-btn" role="tab" aria-selected="false" data-admin-tab="clientes" id="tabBtn-clientes">
+                        <span class="tab-ico" aria-hidden="true">👤</span><span class="tab-txt">Clientes</span>
+                    </button>
+                    <button type="button" class="admin-nav-btn" role="tab" aria-selected="false" data-admin-tab="sesiones" id="tabBtn-sesiones">
+                        <span class="tab-ico" aria-hidden="true">👥</span><span class="tab-txt">Sesiones</span>
+                    </button>
                 </nav>
-                <!-- En móvil: selector compacto (ahorra espacio vs fila de pestañas) -->
-                <div class="admin-nav-mobile">
-                    <label class="admin-nav-mobile-label" for="adminNavSelect">Sección</label>
-                    <select id="adminNavSelect" class="admin-nav-select" aria-label="Sección del panel">
-                        <option value="subir">📤 Subir Excel</option>
-                        <option value="catalogo">🔎 Catálogo</option>
-                        <option value="barras">🏷️ Barras / QR</option>
-                        <option value="descargas">📊 Descargas</option>
-                        <option value="vista">👁️ Vista previa</option>
-                        <option value="clientes">👤 Clientes</option>
-                        <option value="sesiones">👥 Sesiones</option>
-                    </select>
-                </div>
                 <div class="admin-panel-body">
                     <div class="admin-tab active" id="adminTabSubir" data-admin-panel="subir">
                         <p class="admin-lead">Sube el Excel de inventario valorado o existencias. Se actualizará el catálogo y el stock teórico en la nube.</p>
@@ -510,8 +512,8 @@
     </div>
 </div>
 
-<script src="config.js?v=3.18"></script>
-<script src="app.js?v=3.18"></script>
+<script src="config.js?v=3.19"></script>
+<script src="app.js?v=3.19"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {

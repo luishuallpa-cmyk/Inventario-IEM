@@ -4,12 +4,19 @@
         window.cambiarTabAdmin = function (tabId) {
             try {
                 if (!tabId) return false;
+                var activeBtn = null;
                 document.querySelectorAll('.admin-nav-btn').forEach(function (b) {
                     var on = b.getAttribute('data-admin-tab') === tabId;
                     b.classList.toggle('active', on);
+                    b.setAttribute('aria-selected', on ? 'true' : 'false');
+                    if (on) activeBtn = b;
                 });
-                var navSelect = document.getElementById('adminNavSelect');
-                if (navSelect && navSelect.value !== tabId) navSelect.value = tabId;
+                // En móvil: centrar la pestaña activa en la barra horizontal
+                if (activeBtn && activeBtn.scrollIntoView) {
+                    try {
+                        activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                    } catch (e) {}
+                }
                 document.querySelectorAll('.admin-tab').forEach(function (panel) {
                     var on = panel.getAttribute('data-admin-panel') === tabId;
                     if (on) {
@@ -17,6 +24,7 @@
                         panel.hidden = false;
                         panel.style.setProperty('display', 'block', 'important');
                         panel.classList.add('active');
+                        panel.setAttribute('role', 'tabpanel');
                     } else {
                         panel.setAttribute('hidden', 'hidden');
                         panel.hidden = true;
@@ -34,7 +42,7 @@
                 }
                 if (tabId === 'barras') {
                     var binp = document.getElementById('adminBarrasInput');
-                    if (binp) { setTimeout(function () { binp.focus(); }, 50); }
+                    if (binp) { setTimeout(function () { binp.focus(); }, 80); }
                     if (typeof buscarBarrasAdmin === 'function') buscarBarrasAdmin(binp && binp.value);
                     if (typeof renderBarrasAdminSeleccionado === 'function') renderBarrasAdminSeleccionado();
                 }
@@ -3032,14 +3040,6 @@
                 adminCatalogSoloCero.addEventListener('change', function () {
                     const inp = document.getElementById('adminCatalogInput');
                     buscarCatalogoAdmin(inp ? inp.value : '');
-                });
-            }
-            const adminNavSelect = document.getElementById('adminNavSelect');
-            if (adminNavSelect) {
-                adminNavSelect.addEventListener('change', function () {
-                    if (typeof window.cambiarTabAdmin === 'function') {
-                        window.cambiarTabAdmin(this.value);
-                    }
                 });
             }
             // Admin: herramienta códigos de barras / QR
