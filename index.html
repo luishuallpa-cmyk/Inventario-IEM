@@ -294,6 +294,7 @@
                 <nav class="admin-nav" aria-label="Menú administrador">
                     <button type="button" class="admin-nav-btn active" data-admin-tab="subir" onclick="window.cambiarTabAdmin && window.cambiarTabAdmin('subir'); return false;">📤 Subir Excel</button>
                     <button type="button" class="admin-nav-btn" data-admin-tab="catalogo" onclick="window.cambiarTabAdmin && window.cambiarTabAdmin('catalogo'); return false;">🔎 Catálogo</button>
+                    <button type="button" class="admin-nav-btn" data-admin-tab="barras" onclick="window.cambiarTabAdmin && window.cambiarTabAdmin('barras'); return false;">🏷️ Barras / QR</button>
                     <button type="button" class="admin-nav-btn" data-admin-tab="descargas" onclick="window.cambiarTabAdmin && window.cambiarTabAdmin('descargas'); return false;">📊 Descargas</button>
                     <button type="button" class="admin-nav-btn" data-admin-tab="vista" onclick="window.cambiarTabAdmin && window.cambiarTabAdmin('vista'); return false;">👁️ Vista previa</button>
                     <button type="button" class="admin-nav-btn" data-admin-tab="clientes" onclick="window.cambiarTabAdmin && window.cambiarTabAdmin('clientes'); return false;">👤 Clientes</button>
@@ -308,6 +309,7 @@
                             <li>No hace falta renombrar columnas</li>
                             <li>Si el código ya existe, se actualiza (no se duplica)</li>
                             <li>Stock tipo <code>5/0</code> se convierte a unidades (cajas × factor + unid.)</li>
+                            <li>Los <strong>códigos de barras / QR</strong> ya guardados <strong>no se borran</strong> si el Excel no los trae</li>
                         </ul>
                         <div class="admin-dropzone" id="adminDropzone">
                             <div class="admin-drop-icon">📁</div>
@@ -341,6 +343,25 @@
                         </label>
                         <div id="adminCatalogList" class="admin-catalog-list">
                             <p class="admin-sesiones-empty">Escribe para buscar en el catálogo.</p>
+                        </div>
+                    </div>
+
+                    <div class="admin-tab" id="adminTabBarras" data-admin-panel="barras" hidden>
+                        <h3 class="admin-subtitle">🏷️ Asociar códigos de barras / QR</h3>
+                        <p class="admin-lead">Prepara el catálogo antes del conteo: busca un producto, escanea o escribe su código de barras y guárdalo en la nube. No afecta el inventario físico ni requiere fecha de vencimiento.</p>
+                        <div id="adminBarrasSelected" class="admin-barras-selected">
+                            <p class="admin-sesiones-empty">Selecciona un producto de la lista para asociarle un código de barras o QR.</p>
+                        </div>
+                        <div class="admin-catalog-search">
+                            <input type="search" id="adminBarrasInput" placeholder="Código, descripción, marca o EAN..." autocomplete="off">
+                            <span class="admin-catalog-count" id="adminBarrasCount">0</span>
+                        </div>
+                        <label class="admin-check" style="margin-top:0;margin-bottom:0.65rem;">
+                            <input type="checkbox" id="adminBarrasSoloSin">
+                            Solo productos <strong>sin código de barras</strong>
+                        </label>
+                        <div id="adminBarrasList" class="admin-catalog-list">
+                            <p class="admin-sesiones-empty">Escribe para buscar, o marca «solo sin barras» para listar pendientes.</p>
                         </div>
                     </div>
 

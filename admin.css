@@ -695,6 +695,102 @@ body.modo-pedido-activo .card-secundaria {
     margin-top: 0.25rem;
 }
 
+/* Admin: Barras / QR */
+.admin-barras-item {
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+.admin-barras-item:hover,
+.admin-barras-item:focus {
+    border-color: rgba(99, 102, 241, 0.55);
+    outline: none;
+}
+.admin-barras-item.selected {
+    border-color: rgba(99, 102, 241, 0.85);
+    background: rgba(99, 102, 241, 0.12);
+    box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.25);
+}
+.admin-barras-item.sin-barras {
+    border-color: rgba(251, 191, 36, 0.4);
+    background: rgba(251, 191, 36, 0.07);
+}
+.aci-barras {
+    font-weight: 600;
+}
+.aci-barras.ok {
+    color: #34d399;
+}
+.aci-barras.pendiente {
+    color: #fbbf24;
+}
+.admin-barras-selected {
+    margin-bottom: 0.85rem;
+    padding: 0.75rem 0.85rem;
+    border-radius: 14px;
+    border: 1px dashed var(--card-border);
+    background: rgba(0, 0, 0, 0.12);
+}
+.admin-barras-selected.has-product {
+    border-style: solid;
+    border-color: rgba(99, 102, 241, 0.45);
+    background: rgba(99, 102, 241, 0.1);
+}
+body.light-theme .admin-barras-selected {
+    background: rgba(255, 255, 255, 0.65);
+}
+body.light-theme .admin-barras-selected.has-product {
+    background: rgba(99, 102, 241, 0.08);
+}
+.barras-sel-cod {
+    font-family: ui-monospace, monospace;
+    font-weight: 800;
+    font-size: 1.05rem;
+    color: var(--heading-color);
+}
+.barras-sel-desc {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-top: 0.2rem;
+    line-height: 1.35;
+}
+.barras-sel-meta,
+.barras-sel-ean {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+.barras-sel-ean strong {
+    color: var(--heading-color);
+    font-family: ui-monospace, monospace;
+}
+.barras-sel-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+.barras-manual-row {
+    display: flex;
+    gap: 0.45rem;
+    align-items: stretch;
+}
+.barras-manual-input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.5rem 0.7rem;
+    border-radius: 10px;
+    border: 1px solid var(--card-border);
+    background: var(--input-bg);
+    color: var(--text-primary);
+    font-family: ui-monospace, monospace;
+    font-size: 0.9rem;
+}
+.barras-manual-input:focus {
+    outline: none;
+    border-color: rgba(99, 102, 241, 0.7);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
 .admin-vista-preview {
     margin-top: 0.75rem;
     max-height: 58vh;

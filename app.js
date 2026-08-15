@@ -30,6 +30,12 @@
                     if (inp) { setTimeout(function () { inp.focus(); }, 50); }
                     if (typeof buscarCatalogoAdmin === 'function') buscarCatalogoAdmin(inp && inp.value);
                 }
+                if (tabId === 'barras') {
+                    var binp = document.getElementById('adminBarrasInput');
+                    if (binp) { setTimeout(function () { binp.focus(); }, 50); }
+                    if (typeof buscarBarrasAdmin === 'function') buscarBarrasAdmin(binp && binp.value);
+                    if (typeof renderBarrasAdminSeleccionado === 'function') renderBarrasAdminSeleccionado();
+                }
                 if (tabId === 'vista' && typeof renderVistaPreviaInventario === 'function') {
                     renderVistaPreviaInventario();
                 }
@@ -2270,10 +2276,9 @@
                 activo = !(a === 'false' || a === '0' || a === 'no' || a === 'f');
             }
 
-            return {
+            const producto = {
                 codigo: codigo,
                 codigo_fabrica: String(valorColumna(row, ['CodigoFabrica', 'codigo_fabrica', 'Cod. Fabrica'])).trim() || null,
-                codigo_barras: String(valorColumna(row, ['CodigoBarras', 'codigo_barras', 'EAN', 'Barcode', 'CodBarras'])).trim() || null,
                 descripcion: descripcion,
                 unidad_ref: unidadRef || null,
                 factor_empaque: factor,
@@ -2287,6 +2292,13 @@
                 activo: activo,
                 actualizado_en: new Date().toISOString()
             };
+            // Solo incluir codigo_barras si el Excel trae un valor real.
+            // Así no se borran los códigos de barras/QR ya guardados en la nube.
+            const barrasExcel = String(valorColumna(row, [
+                'CodigoBarras', 'codigo_barras', 'EAN', 'Barcode', 'CodBarras', 'CódigoBarras'
+            ])).trim();
+            if (barrasExcel) producto.codigo_barras = barrasExcel;
+            return producto;
         }
 
         async function importarExcelASupabase(file, opciones) {
@@ -2396,8 +2408,13 @@
             const status = document.getElementById('scanStatus');
             if (title) title.textContent = scanModo === 'vincular' ? '🏷️ Vincular código de barras' : '📷 Escanear código';
             if (hint) {
+                let codHint = '';
+                if (scanModo === 'vincular') {
+                    if (barrasAdminSeleccionado) codHint = getCodigo(barrasAdminSeleccionado);
+                    else if (selectedIndex >= 0 && filteredData[selectedIndex]) codHint = getCodigo(filteredData[selectedIndex]);
+                }
                 hint.textContent = scanModo === 'vincular'
-                    ? 'Escanea el código del envase para asociarlo al producto seleccionado (' + (selectedIndex >= 0 && filteredData[selectedIndex] ? getCodigo(filteredData[selectedIndex]) : '') + ').'
+                    ? 'Escanea el código del envase para asociarlo al producto seleccionado' + (codHint ? ' (' + codHint + ')' : '') + '.'
                     : 'Apunta al código de barras o QR. Debe estar guardado en el catálogo para encontrarlo.';
             }
             if (status) status.textContent = 'Iniciando cámara...';
@@ -2450,16 +2467,31 @@
             }
         }
 
-        async function vincularCodigoBarras(ean) {
+        // Producto seleccionado en la herramienta admin de barras (sin pasar por conteo)
+        let barrasAdminSeleccionado = null;
+
+        async function vincularCodigoBarras(ean, codigoForzado) {
             if (!esAdmin()) return;
-            if (selectedIndex < 0 || selectedIndex >= filteredData.length) {
-                showToast('Primero busca y selecciona el producto (ej. 0782).', 'error');
+            let item = null;
+            let codigo = codigoForzado ? String(codigoForzado).trim() : '';
+            if (codigo) {
+                item = (currentData || []).find(function (x) { return getCodigo(x) === codigo; })
+                    || (filteredData || []).find(function (x) { return getCodigo(x) === codigo; });
+            } else if (barrasAdminSeleccionado) {
+                codigo = getCodigo(barrasAdminSeleccionado);
+                item = barrasAdminSeleccionado;
+            } else if (selectedIndex >= 0 && selectedIndex < filteredData.length) {
+                item = filteredData[selectedIndex];
+                codigo = getCodigo(item);
+            }
+            if (!codigo) {
+                showToast('Primero busca y selecciona el producto.', 'error');
                 return;
             }
-            const item = filteredData[selectedIndex];
-            const codigo = getCodigo(item);
-            if (!codigo) return;
-            item.CodigoBarras = ean;
+            if (!item) {
+                item = (currentData || []).find(function (x) { return getCodigo(x) === codigo; });
+            }
+            if (item) item.CodigoBarras = ean;
             // Local backup
             const mapa = cargarBarrasLocal();
             mapa[codigo] = ean;
@@ -2474,12 +2506,20 @@
                 showToast('Barras ' + ean + ' → producto ' + codigo + ' (guardado en nube).', 'success');
             } catch (e) {
                 console.warn(e);
-                showToast('Barras guardado en este dispositivo. Ejecuta el SQL de codigo_barras para guardar en nube: ' + (e.message || ''), 'info');
+                showToast('Barras guardado en este dispositivo. Revisa la columna codigo_barras en Supabase: ' + (e.message || ''), 'info');
             }
             // sync currentData
-            const orig = currentData.find(function (x) { return getCodigo(x) === codigo; });
+            const orig = (currentData || []).find(function (x) { return getCodigo(x) === codigo; });
             if (orig) orig.CodigoBarras = ean;
+            if (barrasAdminSeleccionado && getCodigo(barrasAdminSeleccionado) === codigo) {
+                barrasAdminSeleccionado.CodigoBarras = ean;
+            }
             actualizarFilaVincular();
+            if (typeof renderBarrasAdminSeleccionado === 'function') renderBarrasAdminSeleccionado();
+            if (typeof buscarBarrasAdmin === 'function') {
+                const inp = document.getElementById('adminBarrasInput');
+                buscarBarrasAdmin(inp && inp.value);
+            }
         }
 
         function actualizarFilaVincular() {
@@ -2500,7 +2540,174 @@
             }
         }
 
+        // ============================================================
+        // ADMIN: asociar códigos de barras / QR (sin conteo)
+        // ============================================================
+        function buscarBarrasAdmin(term) {
+            const list = document.getElementById('adminBarrasList');
+            const countEl = document.getElementById('adminBarrasCount');
+            if (!list) return;
+            const soloSin = !!(document.getElementById('adminBarrasSoloSin') && document.getElementById('adminBarrasSoloSin').checked);
+            const q = String(term || '').trim().toUpperCase();
+            let base = (currentData || []).slice();
+            if (soloSin) {
+                base = base.filter(function (item) { return !getCodigoBarras(item); });
+            }
+            if (!q) {
+                if (soloSin) {
+                    const hits0 = base.slice(0, 120);
+                    if (countEl) countEl.textContent = String(base.length);
+                    if (!hits0.length) {
+                        list.innerHTML = '<p class="admin-sesiones-empty">Todos los productos ya tienen código de barras.</p>';
+                        return;
+                    }
+                    list.innerHTML = hits0.map(function (item) { return htmlItemBarrasAdmin(item); }).join('');
+                    return;
+                }
+                list.innerHTML = '<p class="admin-sesiones-empty">Escribe para buscar, o marca «solo sin barras» para listar pendientes.</p>';
+                if (countEl) {
+                    const sin = (currentData || []).filter(function (it) { return !getCodigoBarras(it); }).length;
+                    countEl.textContent = sin + ' sin barras / ' + (currentData || []).length;
+                }
+                return;
+            }
+            const palabras = q.split(/\s+/).filter(Boolean);
+            const hits = base.filter(function (item) {
+                const campos = [
+                    getCodigo(item), getCodigoFabrica(item), getDescripcion(item),
+                    getLinea(item), getMarca(item), getCodigoBarras(item), getUnidadRef(item)
+                ].map(function (x) { return String(x || '').toUpperCase(); });
+                return palabras.every(function (p) {
+                    return campos.some(function (c) { return c.indexOf(p) !== -1; });
+                });
+            }).slice(0, 100);
+            if (countEl) countEl.textContent = String(hits.length) + (hits.length >= 100 ? '+' : '');
+            if (!hits.length) {
+                list.innerHTML = '<p class="admin-sesiones-empty">Sin coincidencias.</p>';
+                return;
+            }
+            list.innerHTML = hits.map(function (item) { return htmlItemBarrasAdmin(item); }).join('');
+        }
 
+        function htmlItemBarrasAdmin(item) {
+            const cod = escapeHtmlSes(getCodigo(item));
+            const desc = escapeHtmlSes(getDescripcion(item));
+            const lin = escapeHtmlSes(getLinea(item) || '-');
+            const mar = escapeHtmlSes(getMarca(item) || '-');
+            const ean = getCodigoBarras(item);
+            const eanHtml = ean
+                ? '<span class="aci-barras ok">🏷️ ' + escapeHtmlSes(ean) + '</span>'
+                : '<span class="aci-barras pendiente">Sin barras</span>';
+            const sel = barrasAdminSeleccionado && getCodigo(barrasAdminSeleccionado) === getCodigo(item) ? ' selected' : '';
+            const sinClass = ean ? '' : ' sin-barras';
+            return '<div class="admin-catalog-item admin-barras-item' + sinClass + sel + '" data-codigo="' + cod + '" role="button" tabindex="0">' +
+                '<div class="aci-cod">' + cod + '</div>' +
+                '<div class="aci-desc">' + desc + '</div>' +
+                '<div class="aci-meta">Línea: ' + lin + ' · Marca: ' + mar + ' · ' + eanHtml + '</div></div>';
+        }
+
+        function seleccionarProductoBarrasAdmin(codigo) {
+            const item = (currentData || []).find(function (x) { return getCodigo(x) === String(codigo); });
+            if (!item) {
+                showToast('Producto no encontrado en el catálogo.', 'error');
+                return;
+            }
+            barrasAdminSeleccionado = item;
+            renderBarrasAdminSeleccionado();
+            const inp = document.getElementById('adminBarrasInput');
+            buscarBarrasAdmin(inp && inp.value);
+            const manual = document.getElementById('adminBarrasManual');
+            if (manual) {
+                manual.value = getCodigoBarras(item) || '';
+                setTimeout(function () { manual.focus(); manual.select(); }, 80);
+            }
+        }
+
+        function renderBarrasAdminSeleccionado() {
+            const box = document.getElementById('adminBarrasSelected');
+            if (!box) return;
+            if (!barrasAdminSeleccionado) {
+                box.innerHTML = '<p class="admin-sesiones-empty">Selecciona un producto de la lista para asociarle un código de barras o QR.</p>';
+                box.classList.remove('has-product');
+                return;
+            }
+            const item = barrasAdminSeleccionado;
+            const cod = escapeHtmlSes(getCodigo(item));
+            const desc = escapeHtmlSes(getDescripcion(item));
+            const fab = escapeHtmlSes(getCodigoFabrica(item) || '-');
+            const ean = getCodigoBarras(item);
+            const eanTxt = ean ? escapeHtmlSes(ean) : '— sin asignar —';
+            box.classList.add('has-product');
+            box.innerHTML =
+                '<div class="barras-sel-info">' +
+                '<div class="barras-sel-cod">' + cod + '</div>' +
+                '<div class="barras-sel-desc">' + desc + '</div>' +
+                '<div class="barras-sel-meta">Cód. fábrica: ' + fab + '</div>' +
+                '<div class="barras-sel-ean">Barras actual: <strong>' + eanTxt + '</strong></div>' +
+                '</div>' +
+                '<div class="barras-sel-actions">' +
+                '<button type="button" class="btn btn-primary btn-sm" id="adminBarrasScanBtn">' +
+                '<span class="btn-icon">📷</span><span class="btn-label"> Escanear QR / barras</span></button>' +
+                '<div class="barras-manual-row">' +
+                '<input type="text" id="adminBarrasManual" class="barras-manual-input" placeholder="O escribe el EAN / QR..." inputmode="numeric" autocomplete="off" value="' + escapeHtmlSes(ean || '') + '">' +
+                '<button type="button" class="btn btn-success btn-sm" id="adminBarrasSaveBtn">Asociar</button>' +
+                '</div>' +
+                (ean ? '<button type="button" class="btn btn-outline btn-sm" id="adminBarrasClearBtn">Quitar código de barras</button>' : '') +
+                '</div>';
+            const scanBtn = document.getElementById('adminBarrasScanBtn');
+            if (scanBtn) scanBtn.addEventListener('click', function () {
+                abrirEscaner('vincular');
+            });
+            const saveBtn = document.getElementById('adminBarrasSaveBtn');
+            if (saveBtn) saveBtn.addEventListener('click', function () {
+                const v = (document.getElementById('adminBarrasManual') || {}).value;
+                const code = String(v || '').trim();
+                if (!code) {
+                    showToast('Escribe o escanea un código de barras / QR.', 'error');
+                    return;
+                }
+                vincularCodigoBarras(code, getCodigo(item));
+            });
+            const clearBtn = document.getElementById('adminBarrasClearBtn');
+            if (clearBtn) clearBtn.addEventListener('click', function () {
+                quitarCodigoBarrasAdmin(getCodigo(item));
+            });
+            const manual = document.getElementById('adminBarrasManual');
+            if (manual) {
+                manual.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (saveBtn) saveBtn.click();
+                    }
+                });
+            }
+        }
+
+        async function quitarCodigoBarrasAdmin(codigo) {
+            if (!esAdmin() || !codigo) return;
+            try {
+                const { error } = await supabaseClient.from('productos').update({
+                    codigo_barras: null,
+                    actualizado_en: new Date().toISOString()
+                }).eq('codigo', codigo);
+                if (error) throw error;
+            } catch (e) {
+                showToast('No se pudo quitar en la nube: ' + (e.message || e), 'error');
+                return;
+            }
+            const mapa = cargarBarrasLocal();
+            delete mapa[codigo];
+            guardarBarrasLocal(mapa);
+            const orig = (currentData || []).find(function (x) { return getCodigo(x) === codigo; });
+            if (orig) orig.CodigoBarras = '';
+            if (barrasAdminSeleccionado && getCodigo(barrasAdminSeleccionado) === codigo) {
+                barrasAdminSeleccionado.CodigoBarras = '';
+            }
+            showToast('Código de barras quitado de ' + codigo + '.', 'success');
+            renderBarrasAdminSeleccionado();
+            const inp = document.getElementById('adminBarrasInput');
+            buscarBarrasAdmin(inp && inp.value);
+        }
 
         // ============================================================
         // CATÁLOGO CLIENTES (solo admin)
@@ -2779,6 +2986,40 @@
                 adminCatalogSoloCero.addEventListener('change', function () {
                     const inp = document.getElementById('adminCatalogInput');
                     buscarCatalogoAdmin(inp ? inp.value : '');
+                });
+            }
+            // Admin: herramienta códigos de barras / QR
+            const adminBarrasInput = document.getElementById('adminBarrasInput');
+            if (adminBarrasInput) {
+                let tBar = null;
+                adminBarrasInput.addEventListener('input', function () {
+                    clearTimeout(tBar);
+                    const v = this.value;
+                    tBar = setTimeout(function () { buscarBarrasAdmin(v); }, 200);
+                });
+            }
+            const adminBarrasSoloSin = document.getElementById('adminBarrasSoloSin');
+            if (adminBarrasSoloSin) {
+                adminBarrasSoloSin.addEventListener('change', function () {
+                    const inp = document.getElementById('adminBarrasInput');
+                    buscarBarrasAdmin(inp ? inp.value : '');
+                });
+            }
+            const adminBarrasList = document.getElementById('adminBarrasList');
+            if (adminBarrasList) {
+                adminBarrasList.addEventListener('click', function (e) {
+                    const row = e.target.closest('.admin-barras-item');
+                    if (!row) return;
+                    const cod = row.getAttribute('data-codigo');
+                    if (cod) seleccionarProductoBarrasAdmin(cod);
+                });
+                adminBarrasList.addEventListener('keydown', function (e) {
+                    if (e.key !== 'Enter' && e.key !== ' ') return;
+                    const row = e.target.closest('.admin-barras-item');
+                    if (!row) return;
+                    e.preventDefault();
+                    const cod = row.getAttribute('data-codigo');
+                    if (cod) seleccionarProductoBarrasAdmin(cod);
                 });
             }
             const adminRefreshVistaBtn = document.getElementById('adminRefreshVistaBtn');
