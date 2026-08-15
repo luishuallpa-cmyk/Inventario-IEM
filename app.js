@@ -510,8 +510,9 @@
             if (!fileStatus) return;
             const total = (currentData || []).length;
             const conStock = contarConStock();
+            const conActivos = (currentData || []).filter(function (x) { return x.activo !== false && x.Activo !== false; }).length;
             // El buscador de inventario solo usa los que tienen stock; el catálogo admin es la referencia completa.
-            fileStatus.textContent = '📦 Inventario: ' + conStock + ' con stock · Catálogo: ' + total + ' (solo consulta admin)';
+            fileStatus.textContent = '📦 Habilitados: ' + conActivos + ' · Con stock: ' + conStock + ' · Catálogo: ' + total;
         }
 
         async function loadFromGoogleSheets() {
@@ -689,7 +690,7 @@
                 filteredData = [];
                 resultList.innerHTML = (typeof modoPedido !== 'undefined' && modoPedido)
                     ? '<div class="empty-message">Escribe un código o nombre · Catálogo completo (existencias)</div>'
-                    : '<div class="empty-message">Escribe un código o nombre · Solo productos con stock</div>';
+                    : '<div class="empty-message">Escribe un código o nombre · Productos habilitados (Laive / activos)</div>';
                 resultCount.textContent = '0';
                 cajasCount.textContent = '0';
                 unidadesCount.textContent = '0';
@@ -713,16 +714,15 @@
                 const matchBarras = bar && (bar === termUpper || bar.indexOf(termUpper) !== -1);
                 const matchCodigoExacto = cod === termUpper || fab === termUpper;
 
-                // Inventario: ocultar productos no habilitados (activo=false), salvo búsqueda exacta
+                // Inventario: solo productos habilitados (activo=true, p.ej. por Excel Laive).
+                // SÍ se muestran aunque stock sea 0 (para poder contarlos).
+                // Catalogo admin / modo pedido: otras reglas.
                 const activoItem = item.activo !== false && item.Activo !== false && item.ACTIVO !== false;
                 if (!enPedido && !activoItem) {
                     if (!(matchBarras || matchCodigoExacto)) return false;
                 }
-
-                if (!enPedido && getCantidad(item) <= 0) {
-                    // Sin stock: solo mostrar si coincide barras o código exacto
-                    if (!(matchBarras || matchCodigoExacto)) return false;
-                }
+                // Ya NO se ocultan los stock 0 en inventario si están habilitados.
+                // (Antes: if (!enPedido && getCantidad(item) <= 0) return false)
 
                 // Filtro Frios / Secos (tipo Laive guardado en linea)
                 if (filtroTipoLaive) {
