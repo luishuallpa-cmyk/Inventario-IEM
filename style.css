@@ -1627,4 +1627,41 @@ label.btn-drive {
 .vincular-barras-row {
     margin-top: 0.45rem;
 }
-#scanBarcodeBtn { display: none; } /* visible solo admin vía JS */
+#scanBarcodeBtn { display: none !important; }
+body.es-admin #scanBarcodeBtn { display: inline-flex !important; align-items: center; }
+
+/* Botón cámara en tarjeta de producto (solo admin) */
+body.modo-seleccion .pa-meta {
+    display: flex !important;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.6rem;
+}
+.pa-meta-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem 1.2rem;
+    flex: 1;
+    min-width: 0;
+}
+.pa-scan-btn {
+    display: none;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.18);
+    color: #fff;
+    font-size: 1.25rem;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+.pa-scan-btn:active { transform: scale(0.94); background: rgba(255,255,255,0.3); }
+body.es-admin.modo-seleccion .pa-scan-btn {
+    display: inline-flex !important;
+}

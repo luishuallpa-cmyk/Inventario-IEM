@@ -2851,6 +2851,16 @@
                 if (!esAdmin()) return;
                 abrirEscaner('vincular');
             });
+            // Cámara en la tarjeta del producto (zona marcada): vincular o buscar
+            const btnScanProducto = document.getElementById('btnScanProducto');
+            if (btnScanProducto) btnScanProducto.addEventListener('click', function () {
+                if (!esAdmin()) return;
+                if (selectedIndex >= 0 && selectedIndex < filteredData.length) {
+                    abrirEscaner('vincular');
+                } else {
+                    abrirEscaner('buscar');
+                }
+            });
 
             searchInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') performSearch(); });
             let debounceTimer;
@@ -3011,19 +3021,21 @@
 
         function actualizarUIPorRol() {
             const es = esAdmin();
+            document.body.classList.toggle('es-admin', !!es);
             const btnAdmin = document.getElementById('adminPanelBtn');
             if (btnAdmin) btnAdmin.style.display = es ? 'inline-flex' : 'none';
-            // Solo admin: Excel/limpiar inventario + Excel del pedido
-            // Nube del pedido: todos pueden (sugerir pedido)
             ['exportDiffBtn', 'clearDiffBtn', 'guardarDriveBtn', 'exportPedidoBtn'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.style.display = es ? '' : 'none';
             });
-            // Escáner y vincular barras: solo admin (hasta cargar gran parte del catálogo)
+            // Escáner en buscador: inline-flex (no '' — si no, el CSS lo vuelve a ocultar)
             const scanBtn = document.getElementById('scanBarcodeBtn');
-            if (scanBtn) scanBtn.style.display = es ? '' : 'none';
+            if (scanBtn) scanBtn.style.setProperty('display', es ? 'inline-flex' : 'none', 'important');
             const vincRow = document.getElementById('vincularBarrasRow');
             if (vincRow && !es) vincRow.style.display = 'none';
+            const scanProd = document.getElementById('btnScanProducto');
+            if (scanProd) scanProd.style.display = es ? '' : 'none';
+            if (typeof actualizarFilaVincular === 'function') actualizarFilaVincular();
         }
 
         let adminSelectedFile = null;
