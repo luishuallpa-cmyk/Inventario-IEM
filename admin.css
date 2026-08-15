@@ -258,19 +258,28 @@ body.light-theme .admin-panel-header {
     .admin-tab[hidden] { display: none !important; }
 }
 
-/* Select móvil oculto por defecto; solo visible en max-width 640 */
+/* Select de secciones: oculto en escritorio; en tablet/móvil es el único menú */
 .admin-nav-mobile {
     display: none;
 }
 
-/* Móvil: selector compacto (el teclado no pelea con una fila de pestañas) */
-@media (max-width: 640px) {
+/* Tablet + móvil: solo desplegable de secciones (sin fila de chips) */
+@media (max-width: 900px) {
     .admin-layout {
         display: flex;
         flex-direction: column;
     }
     .admin-nav {
-        display: none !important; /* en móvil usamos el <select> */
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        overflow: hidden !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+    }
+    .admin-nav-btn {
+        display: none !important;
     }
     .admin-nav-mobile {
         display: flex !important;
@@ -278,13 +287,13 @@ body.light-theme .admin-panel-header {
         gap: 0.55rem;
         padding: 0.55rem 0.85rem;
         border-bottom: 1px solid var(--divider);
-        background: rgba(0, 0, 0, 0.18);
+        background: rgba(0, 0, 0, 0.22);
         position: sticky;
         top: 0;
         z-index: 6;
     }
     body.light-theme .admin-nav-mobile {
-        background: rgba(255, 255, 255, 0.92);
+        background: rgba(255, 255, 255, 0.95);
     }
     .admin-nav-mobile-label {
         font-size: 0.72rem;
@@ -297,20 +306,20 @@ body.light-theme .admin-panel-header {
         min-width: 0;
         appearance: none;
         -webkit-appearance: none;
-        padding: 0.65rem 2.2rem 0.65rem 0.85rem;
+        padding: 0.7rem 2.4rem 0.7rem 0.9rem;
         border-radius: 12px;
-        border: 1px solid var(--card-border);
-        background: var(--input-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2394a3b8' d='M1 1l5 5 5-5'/%3E%3C/svg%3E") no-repeat right 0.85rem center;
+        border: 1px solid rgba(123, 108, 255, 0.45);
+        background: var(--input-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23a5b4fc' d='M1 1l5 5 5-5'/%3E%3C/svg%3E") no-repeat right 0.9rem center;
         color: var(--heading-color);
         font-family: var(--font);
-        font-size: 0.9rem;
+        font-size: 0.95rem;
         font-weight: 650;
-        min-height: 46px;
+        min-height: 48px;
     }
     .admin-nav-select:focus {
         outline: none;
-        border-color: rgba(123, 108, 255, 0.65);
-        box-shadow: 0 0 0 2px rgba(123, 108, 255, 0.2);
+        border-color: rgba(123, 108, 255, 0.85);
+        box-shadow: 0 0 0 2px rgba(123, 108, 255, 0.25);
     }
     .admin-panel-body {
         padding: 0.75rem 0.85rem 2.5rem;
@@ -350,8 +359,8 @@ body.light-theme .admin-panel-header {
     .admin-tab[hidden] { display: none !important; }
 }
 
-/* Desktop / base: ocultar el select móvil (en max-width:640 se muestra con display:flex) */
-@media (min-width: 641px) {
+/* Escritorio ancho: menú lateral de botones; sin select */
+@media (min-width: 901px) {
     .admin-nav-mobile {
         display: none !important;
     }

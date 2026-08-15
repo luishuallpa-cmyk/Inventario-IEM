@@ -2094,12 +2094,8 @@
             } else {
                 document.body.classList.remove('light-theme');
             }
-            // Icono dentro del menú del header
             if (themeToggleBtn) {
-                const icon = themeToggleBtn.querySelector('.hmi-icon');
-                const label = themeToggleBtn.querySelector('.hmi-label');
-                if (icon) icon.textContent = tema === 'light' ? '☀️' : '🌙';
-                if (label) label.textContent = tema === 'light' ? 'Tema oscuro' : 'Tema claro';
+                themeToggleBtn.textContent = tema === 'light' ? '☀️' : '🌙';
             }
         }
 
@@ -2897,19 +2893,26 @@
         function init() {
             cargarTema();
             if (themeToggleBtn) {
-                themeToggleBtn.addEventListener('click', function () {
-                    alternarTema();
-                    cerrarHeaderMenu();
-                });
+                themeToggleBtn.addEventListener('click', alternarTema);
             }
             initCardsPlegables();
 
-            // Menú compacto del header
+            // Menú admin del header (solo opciones administrativas)
             const headerMenuBtn = document.getElementById('headerMenuBtn');
             if (headerMenuBtn) {
                 headerMenuBtn.addEventListener('click', function (e) {
                     e.stopPropagation();
                     toggleHeaderMenu();
+                });
+            }
+            const headerMenuDropdown = document.getElementById('headerMenuDropdown');
+            if (headerMenuDropdown) {
+                headerMenuDropdown.addEventListener('click', function (e) {
+                    const item = e.target.closest('[data-admin-goto]');
+                    if (!item) return;
+                    e.preventDefault();
+                    const tab = item.getAttribute('data-admin-goto') || 'subir';
+                    abrirAdminEnSeccion(tab);
                 });
             }
             document.addEventListener('click', function (e) {
@@ -2931,13 +2934,6 @@
             loadPedido();
             loadFromGoogleSheets();
 
-            const adminPanelBtn = document.getElementById('adminPanelBtn');
-            if (adminPanelBtn) {
-                adminPanelBtn.addEventListener('click', function () {
-                    abrirPanelAdmin();
-                    cerrarHeaderMenu();
-                });
-            }
             const adminCloseBtn = document.getElementById('adminCloseBtn');
             const adminCancelBtn = document.getElementById('adminCancelBtn');
             if (adminCloseBtn) adminCloseBtn.addEventListener('click', cerrarPanelAdmin);
@@ -3321,13 +3317,12 @@
         function actualizarUIPorRol() {
             const es = esAdmin();
             document.body.classList.toggle('es-admin', !!es);
-            const btnAdmin = document.getElementById('adminPanelBtn');
-            if (btnAdmin) btnAdmin.style.display = es ? 'flex' : 'none';
+            const menuWrap = document.getElementById('headerMenuWrap');
+            if (menuWrap) menuWrap.style.display = es ? '' : 'none';
             ['exportDiffBtn', 'clearDiffBtn', 'guardarDriveBtn', 'exportPedidoBtn'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.style.display = es ? '' : 'none';
             });
-            // Escáner en buscador: inline-flex (no '' — si no, el CSS lo vuelve a ocultar)
             const scanBtn = document.getElementById('scanBarcodeBtn');
             if (scanBtn) scanBtn.style.setProperty('display', es ? 'inline-flex' : 'none', 'important');
             const vincRow = document.getElementById('vincularBarrasRow');
@@ -3337,9 +3332,18 @@
             if (typeof actualizarFilaVincular === 'function') actualizarFilaVincular();
         }
 
+        function abrirAdminEnSeccion(tabId) {
+            if (!esAdmin()) {
+                showToast('Solo el administrador puede abrir este panel.', 'error');
+                return;
+            }
+            abrirPanelAdmin(tabId || 'subir');
+            if (typeof cerrarHeaderMenu === 'function') cerrarHeaderMenu();
+        }
+
         let adminSelectedFile = null;
 
-        function abrirPanelAdmin() {
+        function abrirPanelAdmin(tabId) {
             if (!esAdmin()) {
                 showToast('Solo el administrador puede abrir este panel.', 'error');
                 return;
@@ -3356,8 +3360,9 @@
             if (nameEl) nameEl.textContent = '';
             if (statusEl) statusEl.textContent = '';
             if (importBtn) importBtn.disabled = true;
-            if (typeof window.cambiarTabAdmin === 'function') window.cambiarTabAdmin('subir');
-            else cargarSesionesActivas();
+            const tab = tabId || 'subir';
+            if (typeof window.cambiarTabAdmin === 'function') window.cambiarTabAdmin(tab);
+            else if (typeof cargarSesionesActivas === 'function') cargarSesionesActivas();
             const body = ov.querySelector('.admin-panel-body');
             if (body) body.scrollTop = 0;
         }

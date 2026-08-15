@@ -282,20 +282,70 @@
             border-radius: 30px;
         }
 
-        /* Menú compacto del header (admin / tema / salir) */
-        .header-menu-wrap {
+        /* Acciones: tema + salir visibles; engranaje solo admin */
+        .header-actions {
             margin-left: auto;
-            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
             flex-shrink: 0;
         }
-        .header-menu-btn {
-            width: 38px;
-            height: 38px;
+        .header .theme-toggle {
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             background: var(--badge-bg);
             border: 1px solid var(--card-border);
             color: var(--text-secondary);
-            font-size: 1.15rem;
+            font-size: 1.05rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.15s;
+            flex-shrink: 0;
+            padding: 0;
+        }
+        .header .theme-toggle:hover {
+            background: rgba(108, 92, 231, 0.25);
+            transform: rotate(12deg);
+        }
+        .btn-logout {
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            width: 36px !important;
+            height: 36px !important;
+            min-height: 36px !important;
+            padding: 0 !important;
+            border-radius: 50% !important;
+            border: 1px solid var(--card-border);
+            background: var(--badge-bg);
+            color: var(--text-secondary) !important;
+            cursor: pointer;
+            transition: 0.15s;
+            flex-shrink: 0;
+            box-shadow: none;
+            line-height: 0;
+        }
+        .btn-logout:hover,
+        .btn-logout:active {
+            background: rgba(251, 113, 133, 0.22);
+            border-color: rgba(251, 113, 133, 0.5);
+            color: #fda4af !important;
+        }
+        .header-menu-wrap {
+            position: relative;
+            flex-shrink: 0;
+        }
+        .header-menu-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(123, 108, 255, 0.18);
+            border: 1px solid rgba(123, 108, 255, 0.4);
+            color: var(--heading-color);
+            font-size: 1rem;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -306,13 +356,12 @@
         }
         .header-menu-btn:hover,
         .header-menu-btn[aria-expanded="true"] {
-            background: rgba(108, 92, 231, 0.25);
-            border-color: rgba(108, 92, 231, 0.45);
-            color: var(--heading-color);
+            background: rgba(123, 108, 255, 0.32);
+            border-color: rgba(123, 108, 255, 0.6);
         }
         .header-menu-icon {
             display: block;
-            font-size: 1.05rem;
+            font-size: 1rem;
             line-height: 1;
         }
         .header-menu-dropdown {
