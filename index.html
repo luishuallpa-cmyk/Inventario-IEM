@@ -12,6 +12,7 @@
     <meta name="apple-mobile-web-app-title" content="IEM Inventario">
     <meta name="application-name" content="IEM Inventario">
     <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/png" href="logo-iem.png">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon-64.png">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -22,8 +23,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=3.32">
-    <link rel="stylesheet" href="admin.css?v=3.32">
+    <link rel="stylesheet" href="style.css?v=3.33">
+    <link rel="stylesheet" href="admin.css?v=3.33">
 </head>
 <body>
 <div class="login-overlay" id="loginOverlay">
@@ -53,8 +54,7 @@
     ============================================================ -->
     <header class="header">
         <div class="logo" title="IEM GROUP">
-            <img src="logo-iem.png" alt="IEM GROUP · LAIVE" onerror="this.style.display='none'">
-            <div class="logo-text">IEM<span>GROUP</span></div>
+            <img src="logo-iem.png" alt="IEM GROUP · LAIVE">
         </div>
         <span class="badge badge-usuario" id="usuarioBadge" title="Usuario con sesión activa en este dispositivo"><span class="dot-activo"></span><span id="usuarioBadgeTexto">-</span></span>
         <div class="header-actions">
@@ -537,8 +537,8 @@
         </div>
     </div>
 
-<script src="config.js?v=3.32"></script>
-<script src="app.js?v=3.32"></script>
+<script src="config.js?v=3.33"></script>
+<script src="app.js?v=3.33"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {
