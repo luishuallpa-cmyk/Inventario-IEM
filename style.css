@@ -1838,3 +1838,28 @@ body.es-admin.modo-seleccion .pa-scan-btn {
 .admin-nav-btn .ico-scan {
     opacity: 0.95;
 }
+
+
+/* ============================================================
+   MODO VENDEDOR (?modo=vendedor) — solo pedidos
+   ============================================================ */
+body.modo-vendedor .vendedor-oculto,
+body.modo-vendedor .card:has(h2):has(#diffCount),
+body.modo-vendedor #diffCardHeader,
+body.modo-vendedor section.card:has(#diffCardBody) {
+    /* fallback without :has below */
+}
+body.modo-vendedor .vendedor-oculto {
+    display: none !important;
+}
+body.modo-vendedor #btnRegistrarFisico,
+body.modo-vendedor #vencBlock {
+    display: none !important;
+}
+body.modo-vendedor #pedidoSection {
+    border-style: solid;
+    border-color: rgba(34, 211, 238, 0.45);
+}
+body.modo-vendedor #pedidoSection .card-header h2 {
+    color: var(--accent-2);
+}

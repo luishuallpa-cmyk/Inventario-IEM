@@ -679,21 +679,43 @@
             const palabras = term.split(/\s+/).filter(p => p.length > 0);
             const palabrasUpper = palabras.map(p => p.toUpperCase());
 
-            // Inventario: solo con stock. Modo pedido: catálogo completo (existencias, incluso stock 0).
+            // Inventario: solo con stock, EXCEPTO si buscas por código de barras
+            // o código interno exacto (así el escáner encuentra el producto aunque stock sea 0).
             const enPedido = (typeof modoPedido !== 'undefined' && modoPedido);
+            const termUpper = term.toUpperCase();
+            const pareceBarras = /^[0-9]{8,}$/.test(term.replace(/\s/g, ''));
+
             filteredData = currentData.filter(item => {
-                if (!enPedido && getCantidad(item) <= 0) return false;
+                const cod = String(getCodigo(item) || '').toUpperCase();
+                const fab = String(getCodigoFabrica(item) || '').toUpperCase();
+                const bar = String(getCodigoBarras(item) || '').toUpperCase().trim();
+                const matchBarras = bar && (bar === termUpper || bar.indexOf(termUpper) !== -1);
+                const matchCodigoExacto = cod === termUpper || fab === termUpper;
+
+                if (!enPedido && getCantidad(item) <= 0) {
+                    // Sin stock: solo mostrar si coincide barras o código exacto
+                    if (!(matchBarras || matchCodigoExacto)) return false;
+                }
+
                 const campos = [
-                    getCodigo(item).toUpperCase(),
-                    getCodigoFabrica(item).toUpperCase(),
-                    getCodigoBarras(item).toUpperCase(),
+                    cod, fab, bar,
                     getDescripcion(item).toUpperCase(),
                     getUnidadRef(item).toUpperCase(),
                     getLinea(item).toUpperCase(),
                     getMarca(item).toUpperCase()
                 ];
-                return palabrasUpper.every(pal => campos.some(campo => campo.includes(pal)));
+                return palabrasUpper.every(function (pal) {
+                    return campos.some(function (campo) { return campo.indexOf(pal) !== -1; });
+                });
             });
+
+            // Si buscaste un EAN y hay varios, priorizar coincidencia exacta de barras
+            if (pareceBarras && filteredData.length > 1) {
+                const exactos = filteredData.filter(function (item) {
+                    return String(getCodigoBarras(item) || '').trim() === term.replace(/\s/g, '');
+                });
+                if (exactos.length) filteredData = exactos;
+            }
 
             renderResults(filteredData);
         }
@@ -2441,11 +2463,10 @@
         }
         function aplicarBarrasLocalADatos() {
             const mapa = cargarBarrasLocal();
+            if (!mapa) return;
             (currentData || []).forEach(function (item) {
                 const cod = getCodigo(item);
-                if (mapa[cod] && !getCodigoBarras(item)) {
-                    item.CodigoBarras = mapa[cod];
-                }
+                if (mapa[cod]) item.CodigoBarras = mapa[cod];
             });
         }
 
@@ -2529,7 +2550,22 @@
                 searchInput.value = code;
                 performSearch();
                 if (!filteredData.length) {
-                    showToast('Código leído: ' + code + ' — aún no está asociado a un producto. Selecciona el producto y usa «Vincular».', 'info');
+                    // Puede estar en catálogo con stock 0: forzar búsqueda en todo el catálogo
+                    const codeU = code.toUpperCase();
+                    const hit = (currentData || []).find(function (item) {
+                        return String(getCodigoBarras(item) || '').trim() === code
+                            || String(getCodigoBarras(item) || '').toUpperCase().indexOf(codeU) !== -1
+                            || String(getCodigo(item) || '').toUpperCase() === codeU;
+                    });
+                    if (hit) {
+                        filteredData = [hit];
+                        selectedIndex = 0;
+                        renderResults(filteredData);
+                        actualizarCantidades(hit);
+                        showToast('Encontrado (stock 0): ' + getCodigo(hit), 'success');
+                    } else {
+                        showToast('Código ' + code + ' no asociado. En Barras/QR elige el producto y asocia el EAN.', 'info');
+                    }
                 } else {
                     showToast('Encontrado: ' + code, 'success');
                     if (filteredData.length === 1) {
@@ -2548,6 +2584,11 @@
 
         async function vincularCodigoBarras(ean, codigoForzado) {
             if (!esAdmin()) return;
+            ean = String(ean || '').trim();
+            if (!ean) {
+                showToast('Código de barras vacío.', 'error');
+                return;
+            }
             let item = null;
             let codigo = codigoForzado ? String(codigoForzado).trim() : '';
             if (codigo) {
@@ -2567,24 +2608,46 @@
             if (!item) {
                 item = (currentData || []).find(function (x) { return getCodigo(x) === codigo; });
             }
-            if (item) item.CodigoBarras = ean;
-            // Local backup
+
+            // Liberar este EAN de cualquier otro producto (memoria)
+            (currentData || []).forEach(function (x) {
+                if (String(getCodigoBarras(x) || '').trim() === ean && getCodigo(x) !== codigo) {
+                    x.CodigoBarras = '';
+                }
+            });
+            (filteredData || []).forEach(function (x) {
+                if (String(getCodigoBarras(x) || '').trim() === ean && getCodigo(x) !== codigo) {
+                    x.CodigoBarras = '';
+                }
+            });
+
+            // Local: quitar otras claves con el mismo EAN
             const mapa = cargarBarrasLocal();
+            Object.keys(mapa).forEach(function (k) {
+                if (String(mapa[k] || '').trim() === ean && k !== codigo) delete mapa[k];
+            });
             mapa[codigo] = ean;
             guardarBarrasLocal(mapa);
-            // Supabase
+            if (item) item.CodigoBarras = ean;
+
+            // Nube: primero liberar EAN en todos, luego asignar al producto
             try {
+                await supabaseClient.from('productos').update({
+                    codigo_barras: null,
+                    actualizado_en: new Date().toISOString()
+                }).eq('codigo_barras', ean);
+
                 const { error } = await supabaseClient.from('productos').update({
                     codigo_barras: ean,
                     actualizado_en: new Date().toISOString()
                 }).eq('codigo', codigo);
                 if (error) throw error;
-                showToast('Barras ' + ean + ' → producto ' + codigo + ' (guardado en nube).', 'success');
+                showToast('Barras ' + ean + ' → ' + codigo + ' (único en nube).', 'success');
             } catch (e) {
                 console.warn(e);
-                showToast('Barras guardado en este dispositivo. Revisa la columna codigo_barras en Supabase: ' + (e.message || ''), 'info');
+                showToast('Guardado en este dispositivo. Nube: ' + (e.message || e), 'info');
             }
-            // sync currentData
+
             const orig = (currentData || []).find(function (x) { return getCodigo(x) === codigo; });
             if (orig) orig.CodigoBarras = ean;
             if (barrasAdminSeleccionado && getCodigo(barrasAdminSeleccionado) === codigo) {
