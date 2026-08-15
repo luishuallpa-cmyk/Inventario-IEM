@@ -4,6 +4,17 @@
         window.cambiarTabAdmin = function (tabId) {
             try {
                 if (!tabId) return false;
+                var titulos = {
+                    subir: '📤 Subir Excel',
+                    catalogo: '🔎 Catálogo',
+                    barras: '🏷️ Barras / QR',
+                    descargas: '📊 Descargas',
+                    vista: '👁️ Vista previa',
+                    clientes: '👤 Clientes',
+                    sesiones: '👥 Sesiones'
+                };
+                var titleEl = document.getElementById('adminPanelTitle');
+                if (titleEl) titleEl.textContent = titulos[tabId] || '⚙️ Administración';
                 var activeBtn = null;
                 document.querySelectorAll('.admin-nav-btn').forEach(function (b) {
                     var on = b.getAttribute('data-admin-tab') === tabId;
@@ -3232,15 +3243,96 @@
             if (typeof window.cambiarTabAdmin === 'function') window.cambiarTabAdmin(tabId);
         }
 
-        // Clic / toque en menú admin (delega a cambiarTabAdmin)
+        // Clic / toque en menú admin (delega a cambiarTabAdmin + hash)
         document.addEventListener('click', function (e) {
             const btn = e.target && e.target.closest && e.target.closest('.admin-nav-btn');
             if (!btn) return;
             e.preventDefault();
             e.stopPropagation();
             const tab = btn.getAttribute('data-admin-tab');
-            if (tab) window.cambiarTabAdmin(tab);
+            if (tab) {
+                // Actualiza la URL (#/admin/barras) y cambia la vista
+                if (typeof navegarHash === 'function') navegarHash('#/admin/' + tab);
+                else if (typeof window.cambiarTabAdmin === 'function') window.cambiarTabAdmin(tab);
+            }
         }, true);
+
+        // ============================================================
+        // HASH ROUTING — navegación en la misma ventana (sin React)
+        // Ejemplos:
+        //   #/              → inventario (pantalla principal)
+        //   #/admin         → administración (pestaña por defecto)
+        //   #/admin/barras  → sección Barras / QR
+        // El botón "atrás" del navegador también funciona.
+        // ============================================================
+        const ADMIN_TABS = ['subir', 'catalogo', 'barras', 'descargas', 'vista', 'clientes', 'sesiones'];
+        let _hashNavSilent = false;
+
+        function parseHashRuta() {
+            var raw = String(location.hash || '').replace(/^#/, '').trim();
+            if (!raw || raw === '/') return { vista: 'app', tab: null };
+            var parts = raw.replace(/^\//, '').split('/').filter(Boolean);
+            if (parts[0] === 'admin') {
+                var tab = parts[1] && ADMIN_TABS.indexOf(parts[1]) >= 0 ? parts[1] : 'subir';
+                return { vista: 'admin', tab: tab };
+            }
+            return { vista: 'app', tab: null };
+        }
+
+        function navegarHash(hash, replace) {
+            var h = hash || '#/';
+            if (!h.startsWith('#')) h = '#' + h;
+            var current = location.hash || '#/';
+            if (current === h || current === h + '/') {
+                aplicarRutaHash();
+                return;
+            }
+            _hashNavSilent = true;
+            if (replace) {
+                try { history.replaceState(null, '', h); } catch (e) { location.hash = h; }
+            } else {
+                location.hash = h;
+            }
+            aplicarRutaHash();
+            setTimeout(function () { _hashNavSilent = false; }, 50);
+        }
+
+        function aplicarRutaHash() {
+            var ruta = parseHashRuta();
+            if (ruta.vista === 'admin') {
+                if (typeof esAdmin === 'function' && !esAdmin()) {
+                    showToast('Solo el administrador puede entrar aquí.', 'error');
+                    navegarHash('#/', true);
+                    return;
+                }
+                // Abrir panel sin volver a escribir el hash
+                const ov = document.getElementById('adminOverlay');
+                if (ov && !ov.classList.contains('visible')) {
+                    if (typeof abrirPanelAdmin === 'function') {
+                        // abrirPanelAdmin también llama cambiarTabAdmin
+                        _abriendoDesdeHash = true;
+                        abrirPanelAdmin(ruta.tab);
+                        _abriendoDesdeHash = false;
+                    }
+                } else if (typeof window.cambiarTabAdmin === 'function') {
+                    window.cambiarTabAdmin(ruta.tab);
+                }
+            } else {
+                if (typeof cerrarPanelAdmin === 'function') {
+                    _cerrandoDesdeHash = true;
+                    cerrarPanelAdmin();
+                    _cerrandoDesdeHash = false;
+                }
+            }
+        }
+
+        var _abriendoDesdeHash = false;
+        var _cerrandoDesdeHash = false;
+
+        window.addEventListener('hashchange', function () {
+            if (_hashNavSilent) return;
+            aplicarRutaHash();
+        });
 
         // ============================================================
         // INICIO DE SESIÓN — Supabase Auth
@@ -3337,7 +3429,12 @@
                 showToast('Solo el administrador puede abrir este panel.', 'error');
                 return;
             }
-            abrirPanelAdmin(tabId || 'subir');
+            var tab = tabId || 'subir';
+            if (typeof navegarHash === 'function') {
+                navegarHash('#/admin/' + tab);
+            } else {
+                abrirPanelAdmin(tab);
+            }
             if (typeof cerrarHeaderMenu === 'function') cerrarHeaderMenu();
         }
 
@@ -3352,6 +3449,7 @@
             if (!ov) return;
             ov.classList.add('visible');
             ov.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('admin-open');
             document.body.style.overflow = 'hidden';
             adminSelectedFile = null;
             const nameEl = document.getElementById('adminFileName');
@@ -3365,6 +3463,13 @@
             else if (typeof cargarSesionesActivas === 'function') cargarSesionesActivas();
             const body = ov.querySelector('.admin-panel-body');
             if (body) body.scrollTop = 0;
+            // Hash en la misma ventana: #/admin/subir
+            if (!_abriendoDesdeHash && typeof navegarHash === 'function') {
+                var want = '#/admin/' + tab;
+                if (location.hash.replace(/\/$/, '') !== want) {
+                    navegarHash(want, true);
+                }
+            }
         }
 
         function cerrarPanelAdmin() {
@@ -3372,10 +3477,16 @@
             if (!ov) return;
             ov.classList.remove('visible');
             ov.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('admin-open');
             document.body.style.overflow = '';
             adminSelectedFile = null;
             const input = document.getElementById('importExcelInput');
             if (input) input.value = '';
+            if (!_cerrandoDesdeHash && typeof navegarHash === 'function') {
+                if (/^#\/admin/.test(location.hash || '')) {
+                    navegarHash('#/', true);
+                }
+            }
         }
 
         function seleccionarArchivoAdmin(file) {
@@ -3396,6 +3507,10 @@
             if (!appIniciado) {
                 appIniciado = true;
                 init();
+            }
+            // Si la URL ya trae #/admin/..., abrir esa sección
+            if (typeof aplicarRutaHash === 'function') {
+                setTimeout(aplicarRutaHash, 50);
             }
         }
 

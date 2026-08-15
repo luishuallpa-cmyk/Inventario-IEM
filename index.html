@@ -22,8 +22,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=3.19">
-    <link rel="stylesheet" href="admin.css?v=3.19">
+    <link rel="stylesheet" href="style.css?v=3.21">
+    <link rel="stylesheet" href="admin.css?v=3.21">
 </head>
 <body>
 <div class="login-overlay" id="loginOverlay">
@@ -326,10 +326,12 @@
     PANEL ADMINISTRADOR — Importar Excel a Supabase
     ============================================================ -->
     <div class="admin-overlay" id="adminOverlay" aria-hidden="true">
-        <div class="admin-panel admin-panel-window" role="dialog" aria-labelledby="adminPanelTitle">
+        <div class="admin-panel admin-panel-window" role="region" aria-labelledby="adminPanelTitle">
             <div class="admin-panel-header">
-                <h2 id="adminPanelTitle">⚙️ Panel administrador</h2>
-                <button type="button" class="admin-close" id="adminCloseBtn" title="Cerrar" aria-label="Cerrar">✕</button>
+                <h2 id="adminPanelTitle">⚙️ Administración</h2>
+                <button type="button" class="admin-close" id="adminCloseBtn" title="Volver al inventario" aria-label="Volver al inventario">
+                    <span class="admin-close-label">Volver</span><span class="admin-close-x" aria-hidden="true">✕</span>
+                </button>
             </div>
             <div class="admin-layout">
                 <!-- Pestañas: en móvil barra horizontal; en escritorio menú lateral -->
@@ -512,8 +514,8 @@
     </div>
 </div>
 
-<script src="config.js?v=3.19"></script>
-<script src="app.js?v=3.19"></script>
+<script src="config.js?v=3.21"></script>
+<script src="app.js?v=3.21"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {
