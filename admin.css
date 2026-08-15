@@ -8,14 +8,14 @@
     width: 100%;
     height: 100%;
     height: 100dvh;
-    background: #1a233e;
+    background: #0c1220;
     z-index: 3000;
     overflow: hidden;
     padding: 0;
     margin: 0;
 }
 body.light-theme .admin-overlay {
-    background: #eef2ff;
+    background: #f1f5f9;
 }
 .admin-overlay.visible {
     display: flex;
@@ -28,10 +28,10 @@ body.admin-open .login-overlay {
     pointer-events: none !important;
 }
 body.admin-open {
-    background: #1a233e;
+    background: #0c1220;
 }
 body.light-theme.admin-open {
-    background: #eef2ff;
+    background: #f1f5f9;
 }
 .admin-panel,
 .admin-panel-window {
@@ -136,18 +136,18 @@ body.light-theme .admin-panel-header {
 }
 .admin-dropzone {
     position: relative;
-    border: 2px dashed rgba(108, 92, 231, 0.45);
+    border: 2px dashed rgba(37, 99, 235, 0.4);
     border-radius: 14px;
     padding: 1.4rem 1rem;
     text-align: center;
     cursor: pointer;
-    background: rgba(108, 92, 231, 0.06);
+    background: rgba(37, 99, 235, 0.06);
     transition: border-color 0.2s, background 0.2s;
 }
 .admin-dropzone:hover,
 .admin-dropzone.dragover {
     border-color: var(--accent);
-    background: rgba(108, 92, 231, 0.14);
+    background: rgba(37, 99, 235, 0.12);
 }
 
 .admin-drop-icon {
@@ -193,7 +193,7 @@ body.light-theme .admin-panel-header {
 @media (min-width: 901px) {
     .admin-panel-header {
         padding: 0.85rem 1.25rem;
-        background: rgba(108, 92, 231, 0.14);
+        background: rgba(37, 99, 235, 0.12);
     }
     .admin-nav {
         width: 200px;
@@ -218,13 +218,13 @@ body.light-theme .admin-panel-header {
         justify-content: flex-start;
     }
     .admin-nav-btn:hover {
-        background: rgba(123, 108, 255, 0.12);
+        background: rgba(37, 99, 235, 0.12);
         color: var(--text-primary);
     }
     .admin-nav-btn.active,
     .admin-nav-btn[aria-selected="true"] {
-        background: rgba(123, 108, 255, 0.22);
-        border-color: rgba(123, 108, 255, 0.35);
+        background: rgba(37, 99, 235, 0.2);
+        border-color: rgba(37, 99, 235, 0.35);
         color: var(--heading-color);
     }
     .admin-panel-body {
@@ -247,7 +247,7 @@ body.light-theme .admin-panel-header {
     pointer-events: auto !important;
     cursor: pointer !important;
     touch-action: manipulation;
-    -webkit-tap-highlight-color: rgba(123, 108, 255, 0.35);
+    -webkit-tap-highlight-color: rgba(37, 99, 235, 0.35);
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
@@ -311,12 +311,12 @@ body.light-theme .admin-panel-header {
     .admin-nav-btn[aria-selected="true"] {
         background: linear-gradient(135deg, rgba(99, 102, 241, 0.35), rgba(139, 92, 246, 0.25));
         border-color: rgba(129, 140, 248, 0.55);
-        color: #e0e7ff;
+        color: #dbeafe;
         box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25);
     }
     body.light-theme .admin-nav-btn.active,
     body.light-theme .admin-nav-btn[aria-selected="true"] {
-        color: #3730a3;
+        color: #1e40af;
         background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(139, 92, 246, 0.12));
     }
     .admin-panel-body {
@@ -697,7 +697,7 @@ body.modo-pedido-activo .card-secundaria {
 }
 .admin-catalog-search input:focus {
     border-color: var(--input-focus);
-    box-shadow: 0 0 0 3px rgba(123, 108, 255, 0.2);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
 }
 .admin-catalog-count {
     flex-shrink: 0;
@@ -897,7 +897,7 @@ body.light-theme .admin-vista-preview {
 .inv-preview-table .diff-pos { color: var(--success); font-weight: 700; }
 .inv-preview-table .diff-neg { color: var(--danger); font-weight: 700; }
 .inv-preview-table .venc { font-size: 0.68rem; color: var(--text-muted); max-width: 120px; }
-.inv-preview-table tfoot td { font-weight: 700; background: rgba(123, 108, 255, 0.08); }
+.inv-preview-table tfoot td { font-weight: 700; background: rgba(37, 99, 235, 0.08); }
 .inv-preview-foot {
     margin-top: 0.85rem;
     padding-top: 0.65rem;
