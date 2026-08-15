@@ -2312,6 +2312,131 @@
             return '';
         }
 
+
+        /** Lee filas de Excel detectando la fila de encabezados (títulos Laive, existencias, etc.). */
+        function leerFilasExcel(hoja) {
+            const raw = XLSX.utils.sheet_to_json(hoja, { header: 1, defval: '' });
+            if (!raw || !raw.length) return [];
+            let headerIdx = 0;
+            const maxScan = Math.min(20, raw.length);
+            for (let i = 0; i < maxScan; i++) {
+                const cells = (raw[i] || []).map(function (c) {
+                    return String(c || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                });
+                const joined = cells.join('|');
+                if (
+                    joined.indexOf('CODIGO SAP') !== -1 ||
+                    joined.indexOf('CODIGO UNIFLEX') !== -1 ||
+                    joined.indexOf('INVENTARIOPRODUCTOCODIGO') !== -1 ||
+                    (cells.some(function (c) { return c === 'CODIGO' || c === 'CODIGO'; }) &&
+                     cells.some(function (c) { return c.indexOf('DESCRIP') !== -1 || c.indexOf('PRODUCTO') !== -1 || c.indexOf('NOMBRE') !== -1; }))
+                ) {
+                    headerIdx = i;
+                    break;
+                }
+            }
+            const headers = (raw[headerIdx] || []).map(function (h) { return String(h || '').trim(); });
+            const filas = [];
+            for (let r = headerIdx + 1; r < raw.length; r++) {
+                const line = raw[r] || [];
+                const obj = {};
+                let vacia = true;
+                headers.forEach(function (h, j) {
+                    if (!h) return;
+                    const v = line[j];
+                    obj[h] = v;
+                    if (v !== undefined && v !== null && String(v).trim() !== '') vacia = false;
+                });
+                if (!vacia) filas.push(obj);
+            }
+            return filas;
+        }
+
+        function esExcelLaive(filas) {
+            if (!filas || !filas.length) return false;
+            const keys = Object.keys(filas[0] || {}).map(function (k) {
+                return String(k).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            });
+            return keys.some(function (k) {
+                return k.indexOf('CODIGO SAP') !== -1 || k.indexOf('CODIGO UNIFLEX') !== -1 || k === 'CODIGOSAP' || k === 'CODIGOUNIFLEX';
+            });
+        }
+
+        function normalizarCodigoUniflex(c) {
+            c = String(c || '').trim();
+            if (!c) return '';
+            // Solo dígitos: rellenar a 4 (0782)
+            if (/^\d+$/.test(c) && c.length > 0 && c.length < 4) {
+                c = ('0000' + c).slice(-4);
+            }
+            return c;
+        }
+
+        /**
+         * Excel Laive "Reporte de Pedido de Reposición".
+         * Usa CÓDIGO UNIFLEX (puede haber varios separados por coma) o, si no hay, CÓDIGO SAP.
+         * No pisa el stock diario.
+         */
+        function filaLaiveAProductos(row) {
+            const sap = String(valorColumna(row, [
+                'CÓDIGO SAP', 'CODIGO SAP', 'Codigo SAP', 'Código SAP', 'CodigoSAP', 'SAP'
+            ])).trim();
+            const uniflexRaw = String(valorColumna(row, [
+                'CÓDIGO UNIFLEX', 'CODIGO UNIFLEX', 'Codigo Uniflex', 'Código Uniflex',
+                'CodigoUniflex', 'UNIFLEX'
+            ])).trim();
+            const nombre = String(valorColumna(row, [
+                'NOMBRE DE PRODUCTO', 'Nombre de Producto', 'NOMBRE', 'Nombre',
+                'NOMBRE PRODUCTO', 'Descripcion', 'Descripción'
+            ])).trim();
+            const tipo = String(valorColumna(row, [
+                'TIPO DE PRODUCTO', 'Tipo de Producto', 'TIPO', 'Tipo'
+            ])).trim();
+            const um = String(valorColumna(row, [
+                'UM VENTA', 'UM Venta', 'UM', 'Unidad'
+            ])).trim();
+            const bloqueado = String(valorColumna(row, [
+                'BLOQUEADO', 'Bloqueado', 'BLOCKED'
+            ])).trim().toUpperCase();
+            const activo = !(bloqueado === 'SI' || bloqueado === 'SÍ' || bloqueado === 'S' || bloqueado === 'YES' || bloqueado === '1' || bloqueado === 'TRUE');
+
+            if (!nombre && !sap && !uniflexRaw) return [];
+
+            let codigos = uniflexRaw
+                .split(/[,;|/]+/)
+                .map(function (s) { return normalizarCodigoUniflex(s); })
+                .filter(Boolean);
+            // únicos
+            const vistos = {};
+            codigos = codigos.filter(function (c) {
+                if (vistos[c]) return false;
+                vistos[c] = true;
+                return true;
+            });
+            // Si no hay Uniflex, usar SAP como código
+            if (!codigos.length && sap) codigos = [sap];
+            if (!codigos.length) return [];
+
+            const factor = (typeof parseFactorDesdeTexto === 'function')
+                ? (parseFactorDesdeTexto(um) || 1)
+                : 1;
+
+            return codigos.map(function (codigo) {
+                return {
+                    codigo: codigo,
+                    codigo_fabrica: sap || null,
+                    descripcion: nombre || ('Producto ' + codigo),
+                    unidad_ref: um || null,
+                    factor_empaque: factor,
+                    // sin stock_teorico → no se pisa el inventario diario
+                    linea: tipo || null,
+                    marca: 'LAIVE',
+                    activo: activo,
+                    actualizado_en: new Date().toISOString()
+                };
+            });
+        }
+
         function filaExcelAProducto(row) {
             const codigo = String(valorColumna(row, [
                 'InventarioProductoCodigo', 'Codigo', 'codigo', 'CÓDIGO', 'Código'
@@ -2408,26 +2533,55 @@
                 const buffer = await file.arrayBuffer();
                 const wb = XLSX.read(buffer, { type: 'array' });
                 const hoja = wb.Sheets[wb.SheetNames[0]];
-                const filas = XLSX.utils.sheet_to_json(hoja, { defval: '' });
+                // Detecta fila de encabezados (sirve para Laive con título arriba)
+                const filas = (typeof leerFilasExcel === 'function')
+                    ? leerFilasExcel(hoja)
+                    : XLSX.utils.sheet_to_json(hoja, { defval: '' });
                 if (!filas.length) { showToast('El archivo no tiene filas de datos.', 'error'); return; }
+
+                const esLaive = esExcelLaive(filas);
                 const productos = [];
                 const codigosVistos = new Set();
-                filas.forEach(row => {
-                    const p = filaExcelAProducto(row);
-                    if (!p) return;
-                    if (soloCatalogo) {
-                        delete p.stock_teorico;
-                    }
-                    if (codigosVistos.has(p.codigo)) {
-                        const idx = productos.findIndex(x => x.codigo === p.codigo);
-                        if (idx >= 0) productos[idx] = p;
-                    } else {
-                        codigosVistos.add(p.codigo);
-                        productos.push(p);
-                    }
-                });
-                if (!productos.length) { showToast('No se encontraron productos con código y descripción.', 'error'); return; }
-                showToast(`⏳ Subiendo ${productos.length} productos a la nube...`, 'info');
+
+                if (esLaive) {
+                    showToast('📋 Formato Laive detectado (Uniflex / SAP)...', 'info');
+                    filas.forEach(function (row) {
+                        const lista = filaLaiveAProductos(row);
+                        lista.forEach(function (p) {
+                            if (!p || !p.codigo) return;
+                            // Laive nunca pisa stock
+                            delete p.stock_teorico;
+                            if (codigosVistos.has(p.codigo)) {
+                                const idx = productos.findIndex(function (x) { return x.codigo === p.codigo; });
+                                if (idx >= 0) productos[idx] = p;
+                            } else {
+                                codigosVistos.add(p.codigo);
+                                productos.push(p);
+                            }
+                        });
+                    });
+                } else {
+                    filas.forEach(function (row) {
+                        const p = filaExcelAProducto(row);
+                        if (!p) return;
+                        if (soloCatalogo) {
+                            delete p.stock_teorico;
+                        }
+                        if (codigosVistos.has(p.codigo)) {
+                            const idx = productos.findIndex(function (x) { return x.codigo === p.codigo; });
+                            if (idx >= 0) productos[idx] = p;
+                        } else {
+                            codigosVistos.add(p.codigo);
+                            productos.push(p);
+                        }
+                    });
+                }
+
+                if (!productos.length) {
+                    showToast('No se encontraron productos con código (Uniflex/SAP o código interno).', 'error');
+                    return;
+                }
+                showToast('⏳ Subiendo ' + productos.length + ' productos a la nube...', 'info');
                 const TAMANO_LOTE = 200;
                 let subidos = 0;
                 for (let i = 0; i < productos.length; i += TAMANO_LOTE) {
@@ -2436,8 +2590,10 @@
                     if (error) throw error;
                     subidos += lote.length;
                 }
-                const extra = soloCatalogo ? ' (sin cambiar stock)' : '';
-                showToast(`✅ ${subidos} productos actualizados en Supabase` + extra + '.', 'success');
+                const extra = esLaive
+                    ? ' (Laive: Uniflex/SAP, sin tocar stock)'
+                    : (soloCatalogo ? ' (sin cambiar stock)' : '');
+                showToast('✅ ' + subidos + ' productos actualizados en Supabase' + extra + '.', 'success');
                 await loadFromGoogleSheets();
             } catch (err) {
                 console.error(err);

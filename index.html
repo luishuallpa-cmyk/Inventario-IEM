@@ -23,8 +23,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=3.18">
-    <link rel="stylesheet" href="admin.css?v=3.18">
+    <link rel="stylesheet" href="style.css?v=3.19">
+    <link rel="stylesheet" href="admin.css?v=3.19">
 </head>
 <body>
 <div class="login-overlay" id="loginOverlay">
@@ -380,7 +380,7 @@
                 </nav>
                 <div class="admin-panel-body">
                     <div class="admin-tab active" id="adminTabSubir" data-admin-panel="subir">
-                        <p class="admin-lead">Sube el Excel de inventario valorado o existencias. Se actualizará el catálogo y el stock teórico en la nube.</p>
+                        <p class="admin-lead">Sube inventario valorado, existencias o el reporte Laive (CÓDIGO SAP / UNIFLEX). Laive usa Uniflex o SAP y no cambia el stock diario.</p>
                         <ul class="admin-tips">
                             <li>Formato: <strong>.xlsx / .xls / .csv</strong></li>
                             <li>Acepta <strong>inventario valorado</strong> o <strong>existencias</strong> (con Línea/Marca)</li>
@@ -537,8 +537,8 @@
         </div>
     </div>
 
-<script src="config.js?v=3.18"></script>
-<script src="app.js?v=3.18"></script>
+<script src="config.js?v=3.19"></script>
+<script src="app.js?v=3.19"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {
