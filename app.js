@@ -3756,7 +3756,16 @@
             }
         }
 
-        loginBtn.addEventListener('click', intentarLogin);
+        // Solo entra al pulsar Entrar / enviar el formulario (NO auto-login por contraseña guardada)
+        const loginForm = document.getElementById('loginForm');
+        if (loginForm) {
+            loginForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                intentarLogin();
+            });
+        } else if (loginBtn) {
+            loginBtn.addEventListener('click', intentarLogin);
+        }
         loginClave.addEventListener('keyup', (e) => { if (e.key === 'Enter') intentarLogin(); });
         loginUsuario.addEventListener('keyup', (e) => { if (e.key === 'Enter') loginClave.focus(); });
         document.getElementById('logoutBtn').addEventListener('click', function () {
