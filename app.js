@@ -451,6 +451,23 @@
         // ============================================================
         // CARGA DESDE GOOGLE SHEETS
         // ============================================================
+
+        function contarConStock() {
+            let n = 0;
+            (currentData || []).forEach(function (item) {
+                if (getCantidad(item) > 0) n++;
+            });
+            return n;
+        }
+
+        function actualizarEstadoCatalogo() {
+            if (!fileStatus) return;
+            const total = (currentData || []).length;
+            const conStock = contarConStock();
+            // El buscador de inventario solo usa los que tienen stock; el catálogo admin es la referencia completa.
+            fileStatus.textContent = '📦 Inventario: ' + conStock + ' con stock · Catálogo: ' + total + ' (solo consulta admin)';
+        }
+
         async function loadFromGoogleSheets() {
             fileStatus.textContent = '⏳ Cargando productos desde Supabase...';
             try {
@@ -479,7 +496,7 @@
                         InventarioProductoProveedorNombre: p.marca || ''
                     }));
                     guardarRespaldo(currentData);
-                    fileStatus.textContent = `✅ ${currentData.length} productos (Supabase)`;
+                    actualizarEstadoCatalogo();
                     if (!searchInput.value.trim() && selectedIndex === -1) {
                         filteredData = [];
                         renderResults([]);
@@ -504,7 +521,7 @@
             if (respaldo) {
                 currentData = respaldo.data;
                 const fechaTexto = formatearFechaRespaldo(respaldo.fechaISO);
-                fileStatus.textContent = `💾 ${currentData.length} registros del último respaldo (${fechaTexto})`;
+                actualizarEstadoCatalogo(); fileStatus.textContent = (fileStatus.textContent || '') + ' · respaldo ' + fechaTexto;
             } else {
                 useLocalData();
                 return;
@@ -599,7 +616,7 @@
             const term = searchInput.value.trim();
             if (!term) {
                 filteredData = [];
-                resultList.innerHTML = '<div class="empty-message">Escribe un código o nombre para buscar</div>';
+                resultList.innerHTML = '<div class="empty-message">Escribe un código o nombre · Solo productos con stock (catálogo completo solo en Admin)</div>';
                 resultCount.textContent = '0';
                 cajasCount.textContent = '0';
                 unidadesCount.textContent = '0';
@@ -1951,14 +1968,41 @@
             const list = document.getElementById('adminCatalogList');
             const countEl = document.getElementById('adminCatalogCount');
             if (!list) return;
+            const soloCero = !!(document.getElementById('adminCatalogSoloCero') && document.getElementById('adminCatalogSoloCero').checked);
             const q = String(term || '').trim().toUpperCase();
+            // Catálogo admin: TODOS los productos (con o sin stock). Nunca filtra stock salvo "solo sin stock".
+            let base = (currentData || []).slice();
+            if (soloCero) {
+                base = base.filter(function (item) { return getCantidad(item) <= 0; });
+            }
             if (!q) {
-                list.innerHTML = '<p class="admin-sesiones-empty">Escribe para buscar en el catálogo.</p>';
-                if (countEl) countEl.textContent = '0';
+                if (soloCero) {
+                    const hits0 = base.slice(0, 100);
+                    if (countEl) countEl.textContent = String(base.length);
+                    if (!hits0.length) {
+                        list.innerHTML = '<p class="admin-sesiones-empty">No hay productos sin stock.</p>';
+                        return;
+                    }
+                    list.innerHTML = hits0.map(function (item) {
+                        const cod = escapeHtmlSes(getCodigo(item));
+                        const desc = escapeHtmlSes(getDescripcion(item));
+                        const lin = escapeHtmlSes(getLinea(item) || '-');
+                        const mar = escapeHtmlSes(getMarca(item) || '-');
+                        const cant = getCantidad(item);
+                        return '<div class="admin-catalog-item stock-cero">' +
+                            '<div class="aci-cod">' + cod + '</div>' +
+                            '<div class="aci-desc">' + desc + '</div>' +
+                            '<div class="aci-meta">Línea: ' + lin + ' · Marca: ' + mar +
+                            ' · Stock: <strong>' + cant + '</strong></div></div>';
+                    }).join('');
+                    return;
+                }
+                list.innerHTML = '<p class="admin-sesiones-empty">Escribe para buscar. Incluye productos con y sin stock.</p>';
+                if (countEl) countEl.textContent = String((currentData || []).length);
                 return;
             }
             const palabras = q.split(/\s+/).filter(Boolean);
-            const hits = (currentData || []).filter(function (item) {
+            const hits = base.filter(function (item) {
                 const campos = [
                     getCodigo(item), getCodigoFabrica(item), getDescripcion(item),
                     getLinea(item), getMarca(item), getUnidadRef(item)
@@ -2369,6 +2413,13 @@
                     clearTimeout(tCat);
                     const v = this.value;
                     tCat = setTimeout(function () { buscarCatalogoAdmin(v); }, 200);
+                });
+            }
+            const adminCatalogSoloCero = document.getElementById('adminCatalogSoloCero');
+            if (adminCatalogSoloCero) {
+                adminCatalogSoloCero.addEventListener('change', function () {
+                    const inp = document.getElementById('adminCatalogInput');
+                    buscarCatalogoAdmin(inp ? inp.value : '');
                 });
             }
             const adminRefreshVistaBtn = document.getElementById('adminRefreshVistaBtn');
