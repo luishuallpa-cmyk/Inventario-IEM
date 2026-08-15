@@ -1004,7 +1004,7 @@
             color: var(--text-primary);
             font-size: 0.9rem;
             font-weight: 500;
-            z-index: 999;
+            z-index: 6000;
             animation: slideUp 0.3s ease;
             max-width: 90%;
             text-align: center;
@@ -1840,26 +1840,13 @@ body.es-admin.modo-seleccion .pa-scan-btn {
 }
 
 
-/* ============================================================
-   MODO VENDEDOR (?modo=vendedor) — solo pedidos
-   ============================================================ */
-body.modo-vendedor .vendedor-oculto,
-body.modo-vendedor .card:has(h2):has(#diffCount),
-body.modo-vendedor #diffCardHeader,
-body.modo-vendedor section.card:has(#diffCardBody) {
-    /* fallback without :has below */
-}
-body.modo-vendedor .vendedor-oculto {
-    display: none !important;
-}
-body.modo-vendedor #btnRegistrarFisico,
-body.modo-vendedor #vencBlock {
-    display: none !important;
-}
-body.modo-vendedor #pedidoSection {
-    border-style: solid;
-    border-color: rgba(34, 211, 238, 0.45);
-}
-body.modo-vendedor #pedidoSection .card-header h2 {
-    color: var(--accent-2);
+/* toast over admin */
+.toast {
+    z-index: 6000 !important;
+    position: fixed !important;
+    bottom: 1.25rem !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    max-width: min(92vw, 420px) !important;
+    pointer-events: none;
 }

@@ -340,14 +340,25 @@
         // ============================================================
         // TOAST
         // ============================================================
-        function showToast(message, type = 'info') {
+                function showToast(message, type = 'info') {
             const existing = document.querySelector('.toast');
             if (existing) existing.remove();
             const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
+            toast.className = 'toast ' + (type || 'info');
             toast.textContent = message;
             document.body.appendChild(toast);
-            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 400); }, 3500);
+            setTimeout(function () {
+                toast.style.opacity = '0';
+                setTimeout(function () { toast.remove(); }, 400);
+            }, 4500);
+            // También en el panel admin (si está abierto el toast a veces no se veía)
+            try {
+                const st = document.getElementById('adminStatus');
+                if (st) {
+                    st.textContent = message;
+                    st.className = 'admin-status admin-status-' + (type || 'info');
+                }
+            } catch (e) {}
         }
 
         // ============================================================
@@ -3315,19 +3326,34 @@
             const adminImportBtn = document.getElementById('adminImportBtn');
             if (adminImportBtn) {
                 adminImportBtn.addEventListener('click', async function () {
-                    if (!adminSelectedFile) return;
+                    if (!adminSelectedFile) {
+                        showToast('Elige un archivo Excel primero.', 'error');
+                        return;
+                    }
                     adminImportBtn.disabled = true;
                     const statusEl = document.getElementById('adminStatus');
-                    if (statusEl) statusEl.textContent = 'Subiendo...';
+                    if (statusEl) {
+                        statusEl.textContent = 'Subiendo a Supabase... espera unos segundos.';
+                        statusEl.className = 'admin-status admin-status-info';
+                    }
                     try {
                         const solo = document.getElementById('adminSoloCatalogo');
                         await importarExcelASupabase(adminSelectedFile, {
                             soloCatalogo: !!(solo && solo.checked)
                         });
-                        if (statusEl) statusEl.textContent = 'Listo. Puedes cerrar el panel.';
-                        setTimeout(cerrarPanelAdmin, 1200);
+                        if (statusEl) {
+                            statusEl.textContent = 'Listo. Revisa el mensaje arriba o el toast.';
+                            statusEl.className = 'admin-status admin-status-success';
+                        }
+                        adminImportBtn.disabled = false;
                     } catch (e) {
-                        if (statusEl) statusEl.textContent = 'Error: ' + (e.message || e);
+                        console.error(e);
+                        const msg = 'Error: ' + (e && e.message ? e.message : e);
+                        if (statusEl) {
+                            statusEl.textContent = msg;
+                            statusEl.className = 'admin-status admin-status-error';
+                        }
+                        showToast(msg, 'error');
                         adminImportBtn.disabled = false;
                     }
                 });

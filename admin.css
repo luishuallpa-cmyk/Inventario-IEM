@@ -953,3 +953,15 @@ body.light-theme .admin-import-sec {
     cursor: pointer;
     opacity: 0.9;
 }
+
+
+.admin-status {
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    min-height: 1.4em;
+    color: var(--text-muted, #9aa4b2);
+}
+.admin-status-info { color: #7dd3fc; }
+.admin-status-success { color: #4ade80; font-weight: 600; }
+.admin-status-error { color: #f87171; font-weight: 600; }
