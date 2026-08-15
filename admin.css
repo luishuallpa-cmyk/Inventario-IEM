@@ -1,0 +1,762 @@
+/* ============================================================
+   PANEL ADMINISTRADOR — pantalla completa + scroll fiable
+   ============================================================ */
+.admin-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
+    background: #1a233e;
+    z-index: 3000;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding: 0;
+    margin: 0;
+}
+body.light-theme .admin-overlay {
+    background: #eef2ff;
+}
+.admin-overlay.visible {
+    display: block;
+}
+.admin-panel {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    width: 100%;
+    max-width: 100%;
+    min-height: 100%;
+    min-height: 100dvh;
+    box-shadow: none;
+    overflow: visible;
+    display: block;
+    margin: 0;
+    padding: 0;
+}
+.admin-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1rem;
+    padding-top: max(0.85rem, env(safe-area-inset-top, 0px));
+    border-bottom: 1px solid var(--divider);
+    background: rgba(0, 0, 0, 0.25);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+body.light-theme .admin-panel-header {
+    background: rgba(255, 255, 255, 0.92);
+}
+.admin-panel-header h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    color: var(--heading-color);
+    font-weight: 700;
+}
+.admin-close {
+    background: rgba(255, 84, 112, 0.18);
+    border: 1px solid rgba(255, 84, 112, 0.4);
+    color: #ff5470;
+    font-size: 1.15rem;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.admin-close:hover {
+    background: rgba(255, 84, 112, 0.28);
+}
+.admin-panel-body {
+    padding: 1rem 1.1rem 2.5rem;
+    padding-bottom: max(2.5rem, calc(1.5rem + env(safe-area-inset-bottom, 0px)));
+    overflow: visible;
+}
+.admin-lead {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
+    margin-bottom: 0.75rem;
+}
+.admin-tips {
+    margin: 0 0 1rem 1.1rem;
+    padding: 0;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.55;
+}
+.admin-tips strong {
+    color: var(--text-secondary);
+}
+.admin-dropzone {
+    position: relative;
+    border: 2px dashed rgba(108, 92, 231, 0.45);
+    border-radius: 14px;
+    padding: 1.4rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    background: rgba(108, 92, 231, 0.06);
+    transition: border-color 0.2s, background 0.2s;
+}
+.admin-dropzone:hover,
+.admin-dropzone.dragover {
+    border-color: var(--accent);
+    background: rgba(108, 92, 231, 0.14);
+}
+.admin-drop-icon {
+    font-size: 2rem;
+    margin-bottom: 0.35rem;
+}
+.admin-drop-text {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+.admin-file-input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+}
+.admin-file-name {
+    margin-top: 0.65rem;
+    font-size: 0.8rem;
+    color: var(--heading-color);
+    font-weight: 600;
+    min-height: 1.2em;
+    word-break: break-all;
+}
+.admin-actions {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 1rem;
+    justify-content: flex-end;
+}
+.admin-actions .btn {
+    min-height: 44px;
+}
+.admin-status {
+    margin-top: 0.7rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    min-height: 1.1em;
+    text-align: center;
+}
+
+#adminPanelBtn {
+    font-size: 1.05rem;
+}
+
+@media (max-width: 640px) {
+    .admin-actions {
+        flex-direction: column-reverse;
+    }
+    .admin-actions .btn {
+        width: 100%;
+        min-height: 48px !important;
+    }
+    .admin-dropzone {
+        padding: 1.6rem 1rem;
+        min-height: 120px;
+    }
+}
+
+/* Escritorio: ventana ancha con menú lateral */
+@media (min-width: 641px) {
+    .admin-overlay {
+        display: none;
+        background: rgba(0, 0, 0, 0.55);
+        backdrop-filter: blur(4px);
+        padding: 1.5rem;
+    }
+    .admin-overlay.visible {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: auto;
+    }
+    .admin-panel,
+    .admin-panel-window {
+        max-width: 820px;
+        width: min(820px, 94vw);
+        min-height: 480px;
+        max-height: 88vh;
+        border-radius: 18px;
+        border: 1px solid var(--card-border);
+        box-shadow: 0 20px 56px rgba(0, 0, 0, 0.5);
+        background: var(--card-bg);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+    .admin-panel-header {
+        position: relative;
+        top: auto;
+        border-radius: 18px 18px 0 0;
+        padding: 1rem 1.25rem;
+        background: rgba(108, 92, 231, 0.14);
+        flex-shrink: 0;
+    }
+    .admin-layout {
+        display: flex;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+    }
+    .admin-nav {
+        width: 180px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        padding: 1rem 0.75rem;
+        border-right: 1px solid var(--divider);
+        background: rgba(0, 0, 0, 0.15);
+    }
+    .admin-nav-btn {
+        text-align: left;
+        padding: 0.7rem 0.85rem;
+        border-radius: 12px;
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--text-secondary);
+        font-family: var(--font);
+        font-size: 0.88rem;
+        font-weight: 650;
+        cursor: pointer;
+        transition: 0.15s;
+    }
+    .admin-nav-btn:hover {
+        background: rgba(123, 108, 255, 0.12);
+        color: var(--text-primary);
+    }
+    .admin-nav-btn.active {
+        background: rgba(123, 108, 255, 0.22);
+        border-color: rgba(123, 108, 255, 0.35);
+        color: var(--heading-color);
+    }
+    .admin-panel-body {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        flex: 1 1 auto;
+        padding: 1.15rem 1.35rem 1.4rem;
+        max-height: none;
+    }
+    .admin-tab[hidden] { display: none !important; }
+}
+
+/* Móvil: menú en fila arriba */
+@media (max-width: 640px) {
+    .admin-layout {
+        display: flex;
+        flex-direction: column;
+    }
+    .admin-nav {
+        display: flex;
+        flex-direction: row;
+        gap: 0.35rem;
+        padding: 0.65rem 0.75rem;
+        border-bottom: 1px solid var(--divider);
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .admin-nav-btn {
+        flex: 1 0 auto;
+        white-space: nowrap;
+        padding: 0.55rem 0.7rem;
+        border-radius: 999px;
+        border: 1px solid var(--card-border);
+        background: rgba(255,255,255,0.05);
+        color: var(--text-secondary);
+        font-family: var(--font);
+        font-size: 0.78rem;
+        font-weight: 650;
+        cursor: pointer;
+    }
+    .admin-nav-btn.active {
+        background: rgba(123, 108, 255, 0.25);
+        border-color: rgba(123, 108, 255, 0.45);
+        color: var(--heading-color);
+    }
+    .admin-tab[hidden] { display: none !important; }
+}
+
+/* Menú admin siempre clicable */
+.admin-nav {
+    position: relative;
+    z-index: 20;
+    pointer-events: auto;
+}
+.admin-nav-btn {
+    position: relative;
+    z-index: 21;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(123, 108, 255, 0.35);
+}
+.admin-tab[hidden],
+.admin-tab[hidden=""] {
+    display: none !important;
+}
+.admin-tab.active:not([hidden]) {
+    display: block !important;
+}
+
+.admin-divider {
+    border: none;
+    border-top: 1px solid var(--divider);
+    margin: 1.15rem 0 0.9rem;
+}
+.admin-subtitle {
+    margin: 0 0 0.4rem;
+    font-size: 0.95rem;
+    color: var(--heading-color);
+    font-weight: 700;
+}
+
+
+.admin-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    line-height: 1.35;
+    cursor: pointer;
+    user-select: none;
+}
+.admin-check input {
+    margin-top: 0.15rem;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+/* ============================================================
+   SESIONES ACTIVAS (panel admin)
+   ============================================================ */
+.admin-sesiones-list {
+    margin-top: 0.35rem;
+    max-height: 220px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.admin-sesion-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.55rem 0.2rem;
+    border-bottom: 1px solid var(--divider);
+    font-size: 0.82rem;
+}
+.admin-sesion-item:last-child { border-bottom: none; }
+.admin-sesion-item .ses-user {
+    font-weight: 700;
+    color: var(--heading-color);
+}
+.admin-sesion-item .ses-meta {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 0.1rem;
+}
+.admin-sesion-item .btn {
+    min-height: 36px;
+    padding: 0.3rem 0.65rem;
+    font-size: 0.72rem;
+    flex-shrink: 0;
+}
+.admin-sesiones-empty {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    padding: 0.4rem 0;
+}
+
+/* ============================================================
+   LEGIBILIDAD v4 — contraste, tipografía y tamaños
+   ============================================================ */
+
+/* Texto secundario / muted un poco más legible */
+.result-item .descripcion,
+.mi-card-desc,
+.admin-lead,
+.admin-tips,
+.file-status,
+#fileStatus {
+    color: var(--text-secondary) !important;
+    letter-spacing: 0.01em;
+}
+
+/* Códigos más legibles (mono + peso) */
+.result-item .codigo,
+.mi-card-codigo,
+.pa-codigo {
+    letter-spacing: 0.03em;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Inputs: tamaño mínimo 16px evita zoom iOS y se lee mejor */
+input[type="text"],
+input[type="search"],
+input[type="number"],
+input[type="password"],
+select,
+textarea {
+    font-size: 16px !important;
+    color: var(--text-primary);
+}
+
+input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.9;
+}
+
+/* Títulos de sección */
+.card-header h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+/* Badges más contrastados */
+.badge {
+    font-size: 0.72rem;
+    font-weight: 650;
+    letter-spacing: 0.02em;
+}
+
+/* Resultados de búsqueda */
+.result-item {
+    font-size: 0.88rem;
+}
+.result-item .codigo {
+    font-size: 0.92rem;
+}
+.result-item .descripcion {
+    font-size: 0.84rem;
+    line-height: 1.35;
+}
+
+/* Tablas */
+.diff-table th {
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+.diff-table td {
+    font-size: 0.82rem;
+    color: var(--text-primary);
+}
+
+/* Login */
+.login-card h2 {
+    letter-spacing: -0.02em;
+}
+.login-field label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.3rem;
+    display: block;
+}
+
+/* Botones: un poco más de peso visual */
+.btn {
+    letter-spacing: 0.01em;
+    font-weight: 650;
+}
+.btn-primary,
+.btn-success,
+.btn-danger,
+.btn-warning,
+.btn-drive {
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.12);
+}
+
+/* Tarjetas móviles de inventario */
+.mi-card-desc {
+    font-size: 0.84rem !important;
+    line-height: 1.4;
+}
+.mi-stat-value {
+    font-size: 0.95rem !important;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Admin: textos claros */
+.admin-subtitle {
+    font-size: 1rem !important;
+    letter-spacing: -0.01em;
+}
+.admin-sesion-item .ses-user {
+    font-size: 0.92rem;
+}
+.admin-sesion-item .ses-meta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Selección de producto (móvil) — texto blanco bien visible */
+body.modo-seleccion .producto-activo-card,
+body.modo-seleccion .pa-descripcion,
+body.modo-seleccion .pa-codigo,
+body.modo-seleccion .pa-meta {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+body.modo-seleccion .pa-descripcion {
+    font-size: 1.1rem !important;
+    line-height: 1.35;
+}
+
+/* Hint de conversión más visible */
+.conversion-hint {
+    font-weight: 650;
+    font-size: 0.85rem !important;
+}
+
+/* Focus visible para teclado / accesibilidad */
+:focus-visible {
+    outline: 2px solid var(--accent-2);
+    outline-offset: 2px;
+}
+
+/* Tema claro: inputs con borde más marcado */
+body.light-theme input,
+body.light-theme select {
+    border-color: var(--input-border);
+    background: #fff;
+}
+body.light-theme .card {
+    background: rgba(255, 255, 255, 0.96);
+}
+
+/* Contraste en números de stock */
+.result-item .stock-cajas,
+.mi-stat-value {
+    font-weight: 750;
+}
+
+@media (max-width: 640px) {
+    body {
+        font-size: 15px;
+    }
+    .card-header h2 {
+        font-size: 1.05rem;
+    }
+    .result-item .row2 .descripcion {
+        font-size: 0.86rem !important;
+        line-height: 1.4 !important;
+        color: var(--text-secondary) !important;
+    }
+    .result-item .row1 .codigo {
+        font-size: 0.95rem !important;
+    }
+}
+
+/* ============================================================
+   SUGERENCIA DE PEDIDO — opción secundaria + modo pedido
+   ============================================================ */
+.card-secundaria {
+    border-style: dashed;
+    opacity: 0.98;
+}
+.card-secundaria .card-header h2 {
+    font-size: 1.05rem;
+    color: var(--text-secondary);
+}
+.pedido-help {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.45;
+    margin: 0 0 0.75rem;
+}
+.modo-pedido-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 0.75rem;
+    margin-top: 0.65rem;
+    padding: 0.65rem 0.85rem;
+    border-radius: 14px;
+    background: rgba(34, 211, 238, 0.12);
+    border: 1px solid rgba(34, 211, 238, 0.35);
+    color: var(--text-primary);
+    font-size: 0.84rem;
+    line-height: 1.4;
+}
+.modo-pedido-banner.hidden { display: none !important; }
+body.modo-pedido-activo #btnAgregar {
+    box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.45);
+}
+body.modo-pedido-activo .card-secundaria {
+    border-style: solid;
+    border-color: rgba(34, 211, 238, 0.4);
+}
+@media (max-width: 640px) {
+    .modo-pedido-banner {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+    .modo-pedido-banner .btn {
+        width: 100%;
+    }
+}
+
+
+/* ============================================================
+   v3.3 — catálogo admin, vista previa, header móvil
+   ============================================================ */
+@media (max-width: 640px) {
+    .header .version { display: none !important; }
+}
+
+.admin-catalog-search {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+.admin-catalog-search input {
+    flex: 1;
+    min-height: 44px;
+    padding: 0.55rem 0.9rem;
+    border-radius: 12px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--text-primary);
+    font-size: 16px;
+    font-family: var(--font);
+    outline: none;
+}
+.admin-catalog-search input:focus {
+    border-color: var(--input-focus);
+    box-shadow: 0 0 0 3px rgba(123, 108, 255, 0.2);
+}
+.admin-catalog-count {
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--badge-text);
+    background: var(--badge-bg);
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+}
+.admin-catalog-list {
+    max-height: 52vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+.admin-catalog-item {
+    padding: 0.55rem 0.7rem;
+    border-radius: 12px;
+    border: 1px solid var(--card-border);
+    background: var(--input-bg);
+}
+.admin-catalog-item.stock-cero {
+    border-color: rgba(251, 113, 133, 0.35);
+    background: rgba(251, 113, 133, 0.08);
+}
+.admin-catalog-item .aci-cod {
+    font-family: ui-monospace, monospace;
+    font-weight: 700;
+    color: var(--heading-color);
+    font-size: 0.9rem;
+}
+.admin-catalog-item .aci-desc {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-top: 0.15rem;
+    line-height: 1.35;
+}
+.admin-catalog-item .aci-meta {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+
+.admin-vista-preview {
+    margin-top: 0.75rem;
+    max-height: 58vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0.75rem;
+    border-radius: 14px;
+    border: 1px solid var(--card-border);
+    background: rgba(0, 0, 0, 0.15);
+}
+body.light-theme .admin-vista-preview {
+    background: rgba(255, 255, 255, 0.7);
+}
+.inv-preview-head h1 {
+    font-size: 1.05rem;
+    margin: 0;
+    color: var(--heading-color);
+}
+.inv-preview-meta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+.inv-preview-linea {
+    margin-top: 1rem;
+}
+.inv-preview-linea h2 {
+    font-size: 0.88rem;
+    color: var(--accent-2);
+    margin: 0 0 0.4rem;
+    padding-left: 0.5rem;
+    border-left: 3px solid var(--accent-2);
+}
+.inv-preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.72rem;
+    color: var(--text-primary);
+}
+.inv-preview-table th {
+    text-align: left;
+    padding: 0.35rem 0.4rem;
+    background: var(--table-header-bg);
+    color: var(--text-muted);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+}
+.inv-preview-table td {
+    padding: 0.3rem 0.4rem;
+    border-bottom: 1px solid var(--divider);
+    vertical-align: top;
+}
+.inv-preview-table .mono { font-family: ui-monospace, monospace; font-weight: 700; }
+.inv-preview-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.inv-preview-table .diff-pos { color: var(--success); font-weight: 700; }
+.inv-preview-table .diff-neg { color: var(--danger); font-weight: 700; }
+.inv-preview-table .venc { font-size: 0.68rem; color: var(--text-muted); max-width: 120px; }
+.inv-preview-table tfoot td { font-weight: 700; background: rgba(123, 108, 255, 0.08); }
+.inv-preview-foot {
+    margin-top: 0.85rem;
+    padding-top: 0.65rem;
+    border-top: 1px solid var(--divider);
+    font-size: 0.82rem;
+    color: var(--heading-color);
+}
