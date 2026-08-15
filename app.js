@@ -510,9 +510,18 @@
             if (!fileStatus) return;
             const total = (currentData || []).length;
             const conStock = contarConStock();
-            const conActivos = (currentData || []).filter(function (x) { return x.activo !== false && x.Activo !== false; }).length;
-            // El buscador de inventario solo usa los que tienen stock; el catálogo admin es la referencia completa.
-            fileStatus.textContent = '📦 Habilitados: ' + conActivos + ' · Con stock: ' + conStock + ' · Catálogo: ' + total;
+            // Detalle de habilitados / catálogo solo para administrador
+            if (typeof esAdmin === 'function' && esAdmin()) {
+                const conActivos = (currentData || []).filter(function (x) {
+                    return x.activo !== false && x.Activo !== false;
+                }).length;
+                fileStatus.textContent = '📦 Habilitados: ' + conActivos + ' · Con stock: ' + conStock + ' · Catálogo: ' + total;
+                fileStatus.style.display = '';
+            } else {
+                // Usuarios / vendedores: no mostrar esos números
+                fileStatus.textContent = '';
+                fileStatus.style.display = 'none';
+            }
         }
 
         async function loadFromGoogleSheets() {
