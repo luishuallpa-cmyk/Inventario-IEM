@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="style.css?v=3.3">
+    <link rel="stylesheet" href="style.css?v=3.6">
 </head>
 <body>
 <div class="login-overlay" id="loginOverlay">
@@ -50,7 +50,7 @@
                 <path fill="currentColor" d="M10 3a1 1 0 0 1 1 1v8a1 1 0 1 1-2 0V5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h3a1 1 0 1 1 0 2H6a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4h4zm7.7 5.3a1 1 0 0 1 1.4 0l3 3a1 1 0 0 1 0 1.4l-3 3a1 1 0 1 1-1.4-1.4L18.58 13H11a1 1 0 1 1 0-2h7.58l-1.3-1.3a1 1 0 0 1 0-1.4z"/>
             </svg>
         </button>
-        <span class="version">v3.3 · Supabase</span>
+        <span class="version">v3.6 · Supabase</span>
     </header>
 
     <!-- ============================================================
@@ -314,11 +314,15 @@
 
                     <div class="admin-tab" id="adminTabCatalogo" data-admin-panel="catalogo" hidden>
                         <h3 class="admin-subtitle">🔎 Buscar en catálogo completo</h3>
-                        <p class="admin-lead">Todos los códigos de existencias (aunque el stock sea 0). Útil para ubicar productos fuera de stock.</p>
+                        <p class="admin-lead">Catálogo de consulta: todos los códigos de existencias, con o sin stock. No es el conteo de inventario; solo sirve para ubicar productos.</p>
                         <div class="admin-catalog-search">
                             <input type="search" id="adminCatalogInput" placeholder="Código, descripción, línea o marca..." autocomplete="off">
                             <span class="admin-catalog-count" id="adminCatalogCount">0</span>
                         </div>
+                        <label class="admin-check" style="margin-top:0;margin-bottom:0.65rem;">
+                            <input type="checkbox" id="adminCatalogSoloCero">
+                            Solo productos <strong>sin stock</strong> (stock 0)
+                        </label>
                         <div id="adminCatalogList" class="admin-catalog-list">
                             <p class="admin-sesiones-empty">Escribe para buscar en el catálogo.</p>
                         </div>
@@ -379,7 +383,7 @@
     </div>
 </div>
 
-<script src="app.js?v=3.3"></script>
+<script src="app.js?v=3.6"></script>
 
 </body>
 </html>
