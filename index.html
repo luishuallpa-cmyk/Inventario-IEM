@@ -23,8 +23,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=3.20">
-    <link rel="stylesheet" href="admin.css?v=3.20">
+    <link rel="stylesheet" href="style.css?v=3.23">
+    <link rel="stylesheet" href="admin.css?v=3.23">
 </head>
 <body>
 <div class="login-overlay" id="loginOverlay">
@@ -105,6 +105,11 @@
     <section class="card" id="searchSection">
         <div class="search-row">
             <input type="text" id="searchInput" placeholder="Buscar por código, descripción, marca o barras..." autofocus>
+            <div class="filtro-tipo-row" role="group" aria-label="Filtro Frios o Secos">
+                <button type="button" class="filtro-tipo-btn active" data-filtro-tipo="">Todos</button>
+                <button type="button" class="filtro-tipo-btn" data-filtro-tipo="FRIOS">❄️ Frios</button>
+                <button type="button" class="filtro-tipo-btn" data-filtro-tipo="SECOS">📦 Secos</button>
+            </div>
             <button class="btn btn-primary" id="searchButton" type="button" title="Buscar"><span class="btn-icon">🔎</span><span class="btn-label"> Buscar</span></button>
             <button class="btn btn-outline btn-scan" id="scanBarcodeBtn" type="button" title="Escanear código de barras o QR" aria-label="Escanear código de barras o QR">
                 <span class="btn-icon btn-scan-ico ico-scan" aria-hidden="true">
@@ -380,7 +385,7 @@
                 </nav>
                 <div class="admin-panel-body">
                     <div class="admin-tab active" id="adminTabSubir" data-admin-panel="subir">
-                        <p class="admin-lead">Sube inventario valorado, existencias o el reporte Laive (CÓDIGO SAP / UNIFLEX). Laive usa Uniflex o SAP y no cambia el stock diario.</p>
+                        <p class="admin-lead">Sube inventario valorado, existencias o el reporte Laive (CÓDIGO SAP / UNIFLEX). Laive solo habilita en inventario los Uniflex que coinciden con tus existencias (códigos principales), asigna Frios/Secos y desactiva el resto. No crea códigos de otras distribuidoras ni cambia stock.</p>
                         <ul class="admin-tips">
                             <li>Formato: <strong>.xlsx / .xls / .csv</strong></li>
                             <li>Acepta <strong>inventario valorado</strong> o <strong>existencias</strong> (con Línea/Marca)</li>
@@ -537,8 +542,8 @@
         </div>
     </div>
 
-<script src="config.js?v=3.20"></script>
-<script src="app.js?v=3.20"></script>
+<script src="config.js?v=3.23"></script>
+<script src="app.js?v=3.23"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {

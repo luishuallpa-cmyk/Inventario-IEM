@@ -673,6 +673,16 @@
         // ============================================================
         // BÚSQUEDA Y RENDER
         // ============================================================
+        
+        function setFiltroTipoLaive(tipo) {
+            filtroTipoLaive = (tipo || '').toUpperCase();
+            document.querySelectorAll('[data-filtro-tipo]').forEach(function (btn) {
+                const t = (btn.getAttribute('data-filtro-tipo') || '').toUpperCase();
+                btn.classList.toggle('active', t === filtroTipoLaive || (filtroTipoLaive === '' && t === ''));
+            });
+            if (typeof performSearch === 'function') performSearch();
+        }
+
         function performSearch() {
             const term = searchInput.value.trim();
             if (!term) {
@@ -703,9 +713,22 @@
                 const matchBarras = bar && (bar === termUpper || bar.indexOf(termUpper) !== -1);
                 const matchCodigoExacto = cod === termUpper || fab === termUpper;
 
+                // Inventario: ocultar productos no habilitados (activo=false), salvo búsqueda exacta
+                const activoItem = item.activo !== false && item.Activo !== false && item.ACTIVO !== false;
+                if (!enPedido && !activoItem) {
+                    if (!(matchBarras || matchCodigoExacto)) return false;
+                }
+
                 if (!enPedido && getCantidad(item) <= 0) {
                     // Sin stock: solo mostrar si coincide barras o código exacto
                     if (!(matchBarras || matchCodigoExacto)) return false;
+                }
+
+                // Filtro Frios / Secos (tipo Laive guardado en linea)
+                if (filtroTipoLaive) {
+                    const lin = String(getLinea(item) || '').toUpperCase();
+                    if (filtroTipoLaive === 'FRIOS' && lin.indexOf('FRIO') === -1) return false;
+                    if (filtroTipoLaive === 'SECOS' && lin.indexOf('SECO') === -1) return false;
                 }
 
                 const campos = [
@@ -1044,6 +1067,7 @@
         // PEDIDO (modo secundario + mismo buscador / catálogo existencias)
         // ============================================================
         let modoPedido = false;
+        let filtroTipoLaive = ''; // '' | 'FRIOS' | 'SECOS'
 
         function activarModoPedido() {
             modoPedido = true;
@@ -2555,22 +2579,101 @@
                 const codigosVistos = new Set();
 
                 if (esLaive) {
-                    showToast('📋 Formato Laive detectado (Uniflex / SAP)...', 'info');
+                    showToast('📋 Laive: habilitando solo códigos que ya están en existencias...', 'info');
+                    // Códigos que YA existen en tu catálogo (existencias = códigos principales)
+                    const codigosExistentes = new Set();
+                    (currentData || []).forEach(function (item) {
+                        const c = String(getCodigo(item) || '').trim();
+                        if (c) codigosExistentes.add(c);
+                    });
+                    if (!codigosExistentes.size) {
+                        try {
+                            const { data: existentes } = await supabaseClient
+                                .from('productos')
+                                .select('codigo');
+                            (existentes || []).forEach(function (p) {
+                                const c = String(p.codigo || '').trim();
+                                if (c) codigosExistentes.add(c);
+                            });
+                        } catch (eLoad) {
+                            console.warn(eLoad);
+                        }
+                    }
+                    if (!codigosExistentes.size) {
+                        showToast('No hay catálogo cargado. Sube primero existencias y luego el Excel Laive.', 'error');
+                        return;
+                    }
+
+                    // Set de códigos habilitados por este Excel (coinciden con existencias)
+                    const habilitados = new Set();
+                    let omitidosOtros = 0;
+                    let bloqueados = 0;
+
                     filas.forEach(function (row) {
                         const lista = filaLaiveAProductos(row);
                         lista.forEach(function (p) {
                             if (!p || !p.codigo) return;
-                            // Laive nunca pisa stock
-                            delete p.stock_teorico;
+                            // Solo códigos principales que ya tienes
+                            if (!codigosExistentes.has(p.codigo)) {
+                                omitidosOtros++;
+                                return;
+                            }
+                            // No pisar stock; solo habilitar + Frios/Secos + SAP
+                            const rowUp = {
+                                codigo: p.codigo,
+                                codigo_fabrica: p.codigo_fabrica || null,
+                                descripcion: p.descripcion,
+                                unidad_ref: p.unidad_ref || null,
+                                factor_empaque: p.factor_empaque || 1,
+                                linea: p.linea || null, // Frios / Secos
+                                marca: p.marca || 'LAIVE',
+                                activo: p.activo !== false, // BLOQUEADO=SI → false
+                                actualizado_en: new Date().toISOString()
+                            };
+                            if (!rowUp.activo) bloqueados++;
+                            habilitados.add(p.codigo);
                             if (codigosVistos.has(p.codigo)) {
                                 const idx = productos.findIndex(function (x) { return x.codigo === p.codigo; });
-                                if (idx >= 0) productos[idx] = p;
+                                if (idx >= 0) productos[idx] = rowUp;
                             } else {
                                 codigosVistos.add(p.codigo);
-                                productos.push(p);
+                                productos.push(rowUp);
                             }
                         });
                     });
+
+                    // Desactivar en catálogo los que NO vinieron en este Excel Laive
+                    // (solo afecta activo; no borra ni cambia stock)
+                    const desactivarOtros = [];
+                    codigosExistentes.forEach(function (c) {
+                        if (!habilitados.has(c)) desactivarOtros.push(c);
+                    });
+
+                    if (omitidosOtros > 0) {
+                        showToast('Omitidos ' + omitidosOtros + ' Uniflex de otras distribuidoras (no están en existencias).', 'info');
+                    }
+
+                    // Guardar lista de habilitados y desactivar el resto por lotes
+                    if (desactivarOtros.length) {
+                        showToast('Deshabilitando ' + desactivarOtros.length + ' productos que no están en el Excel Laive...', 'info');
+                        const TAM = 200;
+                        for (let i = 0; i < desactivarOtros.length; i += TAM) {
+                            const lote = desactivarOtros.slice(i, i + TAM);
+                            const { error: errDis } = await supabaseClient
+                                .from('productos')
+                                .update({ activo: false, actualizado_en: new Date().toISOString() })
+                                .in('codigo', lote);
+                            if (errDis) console.warn(errDis);
+                        }
+                    }
+
+                    // Memo para mensaje final
+                    window.__laiveImportStats = {
+                        habilitados: habilitados.size,
+                        omitidos: omitidosOtros,
+                        desactivados: desactivarOtros.length,
+                        bloqueados: bloqueados
+                    };
                 } else {
                     filas.forEach(function (row) {
                         const p = filaExcelAProducto(row);
@@ -2589,7 +2692,12 @@
                 }
 
                 if (!productos.length) {
-                    showToast('No se encontraron productos con código (Uniflex/SAP o código interno).', 'error');
+                    showToast(
+                        esLaive
+                            ? 'Ningún Uniflex del Excel coincide con tu catálogo. Primero sube existencias; Laive solo actualiza códigos que ya tienes.'
+                            : 'No se encontraron productos con código (Uniflex/SAP o código interno).',
+                        'error'
+                    );
                     return;
                 }
                 showToast('⏳ Subiendo ' + productos.length + ' productos a la nube...', 'info');
@@ -2601,9 +2709,14 @@
                     if (error) throw error;
                     subidos += lote.length;
                 }
-                const extra = esLaive
-                    ? ' (Laive: Uniflex/SAP, sin tocar stock)'
-                    : (soloCatalogo ? ' (sin cambiar stock)' : '');
+                let extra = soloCatalogo ? ' (sin cambiar stock)' : '';
+                if (esLaive) {
+                    const st = window.__laiveImportStats || {};
+                    extra = ' (Laive: ' + (st.habilitados || subidos) + ' habilitados'
+                        + (st.desactivados ? ', ' + st.desactivados + ' fuera de lista' : '')
+                        + (st.omitidos ? ', ' + st.omitidos + ' otras distrib.' : '')
+                        + ', sin tocar stock)';
+                }
                 showToast('✅ ' + subidos + ' productos actualizados en Supabase' + extra + '.', 'success');
                 await loadFromGoogleSheets();
             } catch (err) {
