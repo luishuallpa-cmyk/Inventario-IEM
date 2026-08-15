@@ -616,7 +616,9 @@
             const term = searchInput.value.trim();
             if (!term) {
                 filteredData = [];
-                resultList.innerHTML = '<div class="empty-message">Escribe un código o nombre · Solo productos con stock (catálogo completo solo en Admin)</div>';
+                resultList.innerHTML = (typeof modoPedido !== 'undefined' && modoPedido)
+                    ? '<div class="empty-message">Escribe un código o nombre · Catálogo completo (existencias)</div>'
+                    : '<div class="empty-message">Escribe un código o nombre · Solo productos con stock</div>';
                 resultCount.textContent = '0';
                 cajasCount.textContent = '0';
                 unidadesCount.textContent = '0';
@@ -627,10 +629,10 @@
             const palabras = term.split(/\s+/).filter(p => p.length > 0);
             const palabrasUpper = palabras.map(p => p.toUpperCase());
 
-            // Buscador principal: solo productos CON stock (> 0).
-            // Los de stock 0 se buscan en el panel admin → Catálogo.
+            // Inventario: solo con stock. Modo pedido: catálogo completo (existencias, incluso stock 0).
+            const enPedido = (typeof modoPedido !== 'undefined' && modoPedido);
             filteredData = currentData.filter(item => {
-                if (getCantidad(item) <= 0) return false;
+                if (!enPedido && getCantidad(item) <= 0) return false;
                 const campos = [
                     getCodigo(item).toUpperCase(),
                     getCodigoFabrica(item).toUpperCase(),
@@ -1197,6 +1199,10 @@
         }
 
         function exportarPedido() {
+            if (!esAdmin()) {
+                showToast('Solo el administrador puede descargar el Excel del pedido.', 'error');
+                return;
+            }
             if (pedido.length === 0) {
                 showToast('No hay productos en el pedido.', 'error');
                 return;
@@ -2642,7 +2648,9 @@
             const es = esAdmin();
             const btnAdmin = document.getElementById('adminPanelBtn');
             if (btnAdmin) btnAdmin.style.display = es ? 'inline-flex' : 'none';
-            ['exportDiffBtn', 'clearDiffBtn', 'guardarDriveBtn'].forEach(id => {
+            // Solo admin: Excel/limpiar inventario + Excel del pedido
+            // Nube del pedido: todos pueden (sugerir pedido)
+            ['exportDiffBtn', 'clearDiffBtn', 'guardarDriveBtn', 'exportPedidoBtn'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.style.display = es ? '' : 'none';
             });
