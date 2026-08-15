@@ -22,8 +22,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=3.21">
-    <link rel="stylesheet" href="admin.css?v=3.21">
+    <link rel="stylesheet" href="style.css?v=3.22">
+    <link rel="stylesheet" href="admin.css?v=3.22">
 </head>
 <body>
 <div class="login-overlay" id="loginOverlay">
@@ -64,7 +64,7 @@
             <!-- Solo admin: menú con opciones administrativas -->
             <div class="header-menu-wrap" id="headerMenuWrap" style="display:none;">
                 <button type="button" class="header-menu-btn" id="headerMenuBtn" title="Administración" aria-label="Menú administración" aria-expanded="false" aria-haspopup="true" aria-controls="headerMenuDropdown">
-                    <span class="header-menu-icon" aria-hidden="true">⚙️</span>
+                    <span class="header-menu-icon" aria-hidden="true">☰</span>
                 </button>
                 <div class="header-menu-dropdown" id="headerMenuDropdown" role="menu" hidden>
                     <button type="button" class="header-menu-item" role="menuitem" data-admin-goto="subir">
@@ -321,7 +321,8 @@
 
     <!-- Modal de confirmación propio (no depende de confirm() del navegador,
          que en algunos WebViews/apps embebidas no se muestra). -->
-    
+</div>
+
     <!-- ============================================================
     PANEL ADMINISTRADOR — Importar Excel a Supabase
     ============================================================ -->
@@ -512,10 +513,9 @@
             </div>
         </div>
     </div>
-</div>
 
-<script src="config.js?v=3.21"></script>
-<script src="app.js?v=3.21"></script>
+<script src="config.js?v=3.22"></script>
+<script src="app.js?v=3.22"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {
