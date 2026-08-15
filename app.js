@@ -2222,10 +2222,32 @@
             return solo ? Number(solo[0].replace(',', '.')) || 0 : 0;
         }
 
+        function normalizarClaveCol(s) {
+            return String(s || '')
+                .trim()
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '') // quita tildes
+                .replace(/[\s._\-]+/g, '');
+        }
+
         function valorColumna(row, nombres) {
+            if (!row || typeof row !== 'object') return '';
+            // Coincidencia exacta
             for (const n of nombres) {
                 if (row[n] !== undefined && row[n] !== null && String(row[n]).trim() !== '') {
                     return row[n];
+                }
+            }
+            // Coincidencia sin importar mayúsculas / tildes / espacios
+            const mapa = {};
+            Object.keys(row).forEach(function (k) {
+                mapa[normalizarClaveCol(k)] = k;
+            });
+            for (const n of nombres) {
+                const real = mapa[normalizarClaveCol(n)];
+                if (real !== undefined && row[real] !== undefined && row[real] !== null && String(row[real]).trim() !== '') {
+                    return row[real];
                 }
             }
             // Columnas sin nombre (primera columna = descripción en existencias)
@@ -2749,32 +2771,41 @@
 
         function filaExcelACliente(row) {
             const codigo = String(valorColumna(row, [
-                'Codigo', 'codigo', 'Código', 'CodCliente', 'Cod. Cliente'
+                'Codigo', 'codigo', 'Código', 'CÓDIGO', 'CodCliente', 'Cod. Cliente',
+                'CodigoCliente', 'Código Cliente', 'Cod', 'ID', 'IdCliente', 'ClienteCodigo'
             ])).trim();
             if (!codigo) return null;
             const nombre = String(valorColumna(row, [
-                'Nombre', 'nombre', 'RazonSocial', 'Razón Social', 'Cliente'
+                'Nombre', 'nombre', 'RazonSocial', 'Razón Social', 'Cliente',
+                'NombreCliente', 'Razon Social', 'Descripcion', 'Descripción'
             ])).trim();
             if (!nombre) return null;
             return {
                 codigo: codigo,
                 nombre: nombre,
-                categoria: String(valorColumna(row, ['CategoriaCliente', 'Categoria', 'categoría', 'CategoriaCli'])).trim() || null,
-                tipo_cliente: String(valorColumna(row, ['TipoCliente', 'Tipo', 'tipo_cliente'])).trim() || null,
-                tipo_doc: String(valorColumna(row, ['TipoDocidentidad', 'TipoDoc', 'Tipo Documento'])).trim() || null,
-                doc_identidad: String(valorColumna(row, ['Docidentidad', 'DocIdentidad', 'DNI', 'RUC', 'Documento'])).trim() || null,
-                direccion: String(valorColumna(row, ['Direccion', 'Dirección', 'direccion'])).trim() || null,
+                categoria: String(valorColumna(row, ['CategoriaCliente', 'Categoria', 'categoría', 'CategoriaCli', 'Categoria Cliente'])).trim() || null,
+                tipo_cliente: String(valorColumna(row, ['TipoCliente', 'Tipo', 'tipo_cliente', 'Tipo Cliente'])).trim() || null,
+                tipo_doc: String(valorColumna(row, ['TipoDocidentidad', 'TipoDoc', 'Tipo Documento', 'TipoDocIdentidad'])).trim() || null,
+                doc_identidad: String(valorColumna(row, ['Docidentidad', 'DocIdentidad', 'DNI', 'RUC', 'Documento', 'NroDocumento', 'Doc'])).trim() || null,
+                direccion: String(valorColumna(row, ['Direccion', 'Dirección', 'direccion', 'Dir'])).trim() || null,
                 distrito: String(valorColumna(row, ['Distrito', 'distrito'])).trim() || null,
-                codigo_zona: String(valorColumna(row, ['CodigoZona', 'CódigoZona', 'CodZona', 'Zona'])).trim() || null,
-                descripcion_zona: String(valorColumna(row, ['DescripcionZona', 'Descripcion1', 'Descripcion', 'ZonaDesc'])).trim() || null,
+                codigo_zona: String(valorColumna(row, ['CodigoZona', 'CódigoZona', 'CodZona', 'Zona', 'Codigo Zona'])).trim() || null,
+                descripcion_zona: String(valorColumna(row, ['DescripcionZona', 'Descripcion1', 'ZonaDesc', 'Descripcion Zona'])).trim() || null,
                 linea_credito: (function () {
-                    const v = valorColumna(row, ['LineaCredito', 'Linea de Credito', 'Credito']);
+                    const v = valorColumna(row, ['LineaCredito', 'Linea de Credito', 'Credito', 'Línea Crédito', 'LineaCredito']);
                     if (v === '' || v === undefined || v === null) return null;
-                    const n = Number(String(v).replace(',', '.'));
+                    const n = Number(String(v).replace(/[^\d.,\-]/g, '').replace(',', '.'));
                     return isNaN(n) ? null : n;
                 })(),
                 actualizado_en: new Date().toISOString()
             };
+        }
+
+        function setClientesImportMsg(msg) {
+            const st = document.getElementById('adminClientesStatus');
+            const st2 = document.getElementById('adminClientesImportStatus');
+            if (st) st.textContent = msg;
+            if (st2) st2.textContent = msg;
         }
 
         async function importarClientesExcel(file) {
@@ -2783,13 +2814,21 @@
                 return;
             }
             if (!file) return;
-            const st = document.getElementById('adminClientesStatus');
-            if (st) st.textContent = 'Leyendo Excel...';
+            if (typeof XLSX === 'undefined') {
+                showToast('No se cargó la librería Excel. Recarga la página.', 'error');
+                return;
+            }
+            const box = document.getElementById('adminClientesImportBox');
+            if (box) box.open = true;
+            setClientesImportMsg('Leyendo ' + file.name + '...');
             try {
                 const buffer = await file.arrayBuffer();
                 const wb = XLSX.read(buffer, { type: 'array' });
+                if (!wb.SheetNames || !wb.SheetNames.length) {
+                    throw new Error('El archivo no tiene hojas.');
+                }
                 const hoja = wb.Sheets[wb.SheetNames[0]];
-                const filas = XLSX.utils.sheet_to_json(hoja, { defval: '' });
+                const filas = XLSX.utils.sheet_to_json(hoja, { defval: '', raw: false });
                 const lista = [];
                 const vistos = new Set();
                 filas.forEach(function (row) {
@@ -2804,27 +2843,37 @@
                     }
                 });
                 if (!lista.length) {
-                    if (st) st.textContent = 'No se encontraron clientes (Código + Nombre).';
-                    showToast('Excel sin clientes válidos.', 'error');
+                    const cols = filas[0] ? Object.keys(filas[0]).join(', ') : '(vacío)';
+                    setClientesImportMsg('No se leyeron clientes. Columnas del Excel: ' + cols);
+                    showToast('Excel sin filas con Código + Nombre.', 'error');
                     return;
                 }
-                if (st) st.textContent = 'Subiendo ' + lista.length + ' clientes...';
-                const TAM = 200;
+                setClientesImportMsg('Subiendo ' + lista.length + ' clientes a Supabase...');
+                const TAM = 150;
                 let n = 0;
                 for (let i = 0; i < lista.length; i += TAM) {
                     const lote = lista.slice(i, i + TAM);
-                    const { error } = await supabaseClient.from('clientes').upsert(lote, { onConflict: 'codigo' });
-                    if (error) throw error;
+                    const { error } = await supabaseClient
+                        .from('clientes')
+                        .upsert(lote, { onConflict: 'codigo' });
+                    if (error) {
+                        const detalle = (error.message || '') + (error.details ? ' — ' + error.details : '') + (error.hint ? ' — ' + error.hint : '');
+                        throw new Error(detalle || JSON.stringify(error));
+                    }
                     n += lote.length;
+                    setClientesImportMsg('Subidos ' + n + ' / ' + lista.length + '...');
                 }
-                clientesData = lista;
-                if (st) st.textContent = '✅ ' + n + ' clientes en la nube.';
-                showToast('✅ ' + n + ' clientes importados.', 'success');
-                buscarClientesAdmin(document.getElementById('adminClienteInput') && document.getElementById('adminClienteInput').value);
+                // Volver a leer desde la nube para confirmar que sí quedaron guardados
+                setClientesImportMsg('Verificando en la nube...');
+                await cargarClientesDesdeNube();
+                const enNube = (clientesData && clientesData.length) || 0;
+                setClientesImportMsg('✅ Guardados ' + n + ' del Excel. En nube ahora: ' + enNube + '.');
+                showToast('✅ ' + n + ' clientes guardados en Supabase.', 'success');
             } catch (e) {
-                console.error(e);
-                if (st) st.textContent = 'Error: ' + (e.message || e);
-                showToast('Error al importar clientes. ¿Ejecutaste el SQL de clientes?', 'error');
+                console.error('importarClientesExcel', e);
+                const msg = (e && e.message) ? e.message : String(e);
+                setClientesImportMsg('Error: ' + msg);
+                showToast('Error al guardar clientes: ' + msg, 'error');
             }
         }
 
@@ -2839,7 +2888,9 @@
                     .limit(5000);
                 if (error) throw error;
                 clientesData = data || [];
-                if (st) st.textContent = clientesData.length ? (clientesData.length + ' clientes cargados') : 'Sin clientes. Sube el Excel.';
+                if (st) st.textContent = clientesData.length
+                    ? ('✅ ' + clientesData.length + ' clientes en la nube.')
+                    : 'Sin clientes en la nube. Usa “Actualizar base” abajo.';
                 const inp = document.getElementById('adminClienteInput');
                 buscarClientesAdmin(inp ? inp.value : '');
             } catch (e) {
@@ -3029,6 +3080,12 @@
                 });
             }
             const importClientesInput = document.getElementById('importClientesInput');
+            const adminClientesImportBtn = document.getElementById('adminClientesImportBtn');
+            if (adminClientesImportBtn && importClientesInput) {
+                adminClientesImportBtn.addEventListener('click', function () {
+                    importClientesInput.click();
+                });
+            }
             if (importClientesInput) {
                 importClientesInput.addEventListener('change', function () {
                     const f = this.files && this.files[0];

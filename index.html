@@ -22,8 +22,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=3.23">
-    <link rel="stylesheet" href="admin.css?v=3.23">
+    <link rel="stylesheet" href="style.css?v=3.24">
+    <link rel="stylesheet" href="admin.css?v=3.24">
 </head>
 <body>
 <div class="login-overlay" id="loginOverlay">
@@ -469,14 +469,15 @@
                         <div id="adminClienteList" class="admin-catalog-list">
                             <p class="admin-sesiones-empty">Escribe para buscar clientes.</p>
                         </div>
-                        <!-- Subir Excel: acción secundaria, abajo y discreta (solo actualizar base) -->
-                        <details class="admin-import-sec">
+                        <!-- Subir Excel: acción secundaria. Botón explícito = más fiable en móvil -->
+                        <details class="admin-import-sec" id="adminClientesImportBox">
                             <summary>Actualizar base de clientes (Excel)</summary>
-                            <p class="admin-import-sec-hint">Solo cuando necesites reemplazar o actualizar el catálogo en la nube.</p>
-                            <label class="btn btn-outline btn-sm admin-import-sec-btn">
-                                <span class="btn-icon">⬆️</span><span class="btn-label"> Elegir Excel de clientes</span>
-                                <input type="file" id="importClientesInput" accept=".xlsx,.xls,.csv" style="display:none;">
-                            </label>
+                            <p class="admin-import-sec-hint">Solo para actualizar el catálogo en la nube. Necesita columnas de código y nombre.</p>
+                            <button type="button" class="btn btn-outline btn-sm admin-import-sec-btn" id="adminClientesImportBtn">
+                                <span class="btn-icon">⬆️</span><span class="btn-label"> Elegir archivo Excel</span>
+                            </button>
+                            <input type="file" id="importClientesInput" accept=".xlsx,.xls,.csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+                            <p class="admin-status" id="adminClientesImportStatus" style="margin-top:0.45rem;"></p>
                         </details>
                     </div>
 
@@ -517,8 +518,8 @@
         </div>
     </div>
 
-<script src="config.js?v=3.23"></script>
-<script src="app.js?v=3.23"></script>
+<script src="config.js?v=3.24"></script>
+<script src="app.js?v=3.24"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {
