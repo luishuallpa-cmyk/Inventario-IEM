@@ -46,14 +46,16 @@
                 if (tabId === 'sesiones' && typeof window.__cargarSesionesActivas === 'function') {
                     window.__cargarSesionesActivas();
                 }
+                // En móvil no forzar focus (abre el teclado y tapa la UI)
+                var esEscritorio = window.matchMedia && window.matchMedia('(min-width: 901px)').matches;
                 if (tabId === 'catalogo') {
                     var inp = document.getElementById('adminCatalogInput');
-                    if (inp) { setTimeout(function () { inp.focus(); }, 50); }
+                    if (inp && esEscritorio) { setTimeout(function () { inp.focus(); }, 50); }
                     if (typeof buscarCatalogoAdmin === 'function') buscarCatalogoAdmin(inp && inp.value);
                 }
                 if (tabId === 'barras') {
                     var binp = document.getElementById('adminBarrasInput');
-                    if (binp) { setTimeout(function () { binp.focus(); }, 80); }
+                    if (binp && esEscritorio) { setTimeout(function () { binp.focus(); }, 80); }
                     if (typeof buscarBarrasAdmin === 'function') buscarBarrasAdmin(binp && binp.value);
                     if (typeof renderBarrasAdminSeleccionado === 'function') renderBarrasAdminSeleccionado();
                 }
@@ -63,7 +65,7 @@
                 if (tabId === 'clientes') {
                     if (typeof cargarClientesDesdeNube === 'function') cargarClientesDesdeNube();
                     var cin = document.getElementById('adminClienteInput');
-                    if (cin) setTimeout(function () { cin.focus(); }, 50);
+                    if (cin && esEscritorio) setTimeout(function () { cin.focus(); }, 50);
                 }
             } catch (err) {
                 console.error('cambiarTabAdmin', err);
@@ -1482,10 +1484,24 @@
             if (sincronizando) return;
             sincronizando = true;
             try {
-                const { data, error } = await supabaseClient
-                    .from('lotes_conteo').select('*').order('creado_en', { ascending: true });
-                if (error) throw error;
-                const registros = (data || []).map(r => ({
+                // Paginar por si hay más de ~1000 lotes de conteo
+                const PAGE = 1000;
+                let all = [];
+                let from = 0;
+                for (;;) {
+                    const { data, error } = await supabaseClient
+                        .from('lotes_conteo')
+                        .select('*')
+                        .order('creado_en', { ascending: true })
+                        .range(from, from + PAGE - 1);
+                    if (error) throw error;
+                    if (!data || !data.length) break;
+                    all = all.concat(data);
+                    if (data.length < PAGE) break;
+                    from += PAGE;
+                    if (from >= 50000) break;
+                }
+                const registros = all.map(r => ({
                     id: r.id, codigo: r.codigo, descripcion: r.descripcion, linea: r.linea,
                     cantidad: r.cantidad, vencimiento: r.vencimiento, fecha: r.fecha, usuario: r.usuario || ''
                 }));
@@ -3016,7 +3032,12 @@
                 if (!wrap.contains(e.target)) cerrarHeaderMenu();
             });
             document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape') cerrarHeaderMenu();
+                if (e.key !== 'Escape') return;
+                cerrarHeaderMenu();
+                const ov = document.getElementById('adminOverlay');
+                if (ov && ov.classList.contains('visible') && typeof cerrarPanelAdmin === 'function') {
+                    cerrarPanelAdmin();
+                }
             });
 
             poblarSelectDia();
