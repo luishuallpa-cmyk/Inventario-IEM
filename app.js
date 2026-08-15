@@ -33,6 +33,11 @@
                 if (tabId === 'vista' && typeof renderVistaPreviaInventario === 'function') {
                     renderVistaPreviaInventario();
                 }
+                if (tabId === 'clientes') {
+                    if (typeof cargarClientesDesdeNube === 'function') cargarClientesDesdeNube();
+                    var cin = document.getElementById('adminClienteInput');
+                    if (cin) setTimeout(function () { cin.focus(); }, 50);
+                }
             } catch (err) {
                 console.error('cambiarTabAdmin', err);
             }
@@ -365,6 +370,7 @@
         }
         function getCodigo(item) { return getField(item, 'Codigo', 'Código', 'Cod. Producto', 'InventarioProductoCodigo', 'Cod'); }
         function getCodigoFabrica(item) { return getField(item, 'CodigoFabrica', 'CódigoFábrica', 'Cod. Fabrica', 'CodigoFabrica', 'CodFabrica'); }
+        function getCodigoBarras(item) { return getField(item, 'CodigoBarras', 'codigo_barras', 'EAN', 'Barcode', 'CodBarras', 'CódigoBarras'); }
         function getDescripcion(item) { return getField(item, 'Producto', 'Descripción', 'InventarioProductoDescripcion', 'Descripcion', 'Nombre'); }
         function getUnidadRef(item) { return getField(item, 'Unidad Ref', 'Uni. Ref.', 'Unidad', 'InventarioProductoUnidadReferenciaAbreviacion', 'UnidadRef'); }
         function getCantidad(item) {
@@ -481,6 +487,7 @@
                     currentData = data.map(p => ({
                         Codigo: p.codigo,
                         CodigoFabrica: p.codigo_fabrica || '',
+                        CodigoBarras: p.codigo_barras || '',
                         Producto: p.descripcion,
                         'Unidad Ref': p.unidad_ref || '',
                         Cantidad: String(p.stock_teorico ?? 0),
@@ -496,6 +503,7 @@
                         InventarioProductoProveedorNombre: p.marca || ''
                     }));
                     guardarRespaldo(currentData);
+                    aplicarBarrasLocalADatos();
                     actualizarEstadoCatalogo();
                     if (!searchInput.value.trim() && selectedIndex === -1) {
                         filteredData = [];
@@ -636,6 +644,7 @@
                 const campos = [
                     getCodigo(item).toUpperCase(),
                     getCodigoFabrica(item).toUpperCase(),
+                    getCodigoBarras(item).toUpperCase(),
                     getDescripcion(item).toUpperCase(),
                     getUnidadRef(item).toUpperCase(),
                     getLinea(item).toUpperCase(),
@@ -709,6 +718,7 @@
                     selectedIndex = idx;
                     if (selectedIndex < filteredData.length) {
                         actualizarCantidades(filteredData[selectedIndex]);
+                        if (typeof actualizarFilaVincular === 'function') actualizarFilaVincular();
                     }
                 });
             });
@@ -2263,6 +2273,7 @@
             return {
                 codigo: codigo,
                 codigo_fabrica: String(valorColumna(row, ['CodigoFabrica', 'codigo_fabrica', 'Cod. Fabrica'])).trim() || null,
+                codigo_barras: String(valorColumna(row, ['CodigoBarras', 'codigo_barras', 'EAN', 'Barcode', 'CodBarras'])).trim() || null,
                 descripcion: descripcion,
                 unidad_ref: unidadRef || null,
                 factor_empaque: factor,
@@ -2326,6 +2337,330 @@
                 showToast('❌ Error al importar: ' + (err.message || err), 'error');
             }
         }
+
+
+        // ============================================================
+        // ESCÁNER CÓDIGO DE BARRAS / QR (solo admin por ahora)
+        // ============================================================
+        let html5QrCode = null;
+        let scanModo = 'buscar'; // 'buscar' | 'vincular'
+        const BARRAS_LOCAL_KEY = 'iem_codigo_barras_local';
+
+        function cargarBarrasLocal() {
+            try {
+                return JSON.parse(localStorage.getItem(BARRAS_LOCAL_KEY) || '{}') || {};
+            } catch (e) { return {}; }
+        }
+        function guardarBarrasLocal(mapa) {
+            try { localStorage.setItem(BARRAS_LOCAL_KEY, JSON.stringify(mapa)); } catch (e) {}
+        }
+        function aplicarBarrasLocalADatos() {
+            const mapa = cargarBarrasLocal();
+            (currentData || []).forEach(function (item) {
+                const cod = getCodigo(item);
+                if (mapa[cod] && !getCodigoBarras(item)) {
+                    item.CodigoBarras = mapa[cod];
+                }
+            });
+        }
+
+        async function detenerEscaner() {
+            try {
+                if (html5QrCode) {
+                    const running = html5QrCode.isScanning;
+                    if (running) await html5QrCode.stop();
+                    await html5QrCode.clear();
+                }
+            } catch (e) {}
+            html5QrCode = null;
+            const ov = document.getElementById('scanOverlay');
+            if (ov) {
+                ov.classList.remove('visible');
+                ov.setAttribute('aria-hidden', 'true');
+            }
+        }
+
+        async function abrirEscaner(modo) {
+            if (!esAdmin()) {
+                showToast('El escáner está disponible solo para el administrador por ahora.', 'error');
+                return;
+            }
+            if (typeof Html5Qrcode === 'undefined') {
+                showToast('No se cargó el lector. Revisa tu conexión.', 'error');
+                return;
+            }
+            scanModo = modo || 'buscar';
+            const ov = document.getElementById('scanOverlay');
+            const title = document.getElementById('scanTitle');
+            const hint = document.getElementById('scanHint');
+            const status = document.getElementById('scanStatus');
+            if (title) title.textContent = scanModo === 'vincular' ? '🏷️ Vincular código de barras' : '📷 Escanear código';
+            if (hint) {
+                hint.textContent = scanModo === 'vincular'
+                    ? 'Escanea el código del envase para asociarlo al producto seleccionado (' + (selectedIndex >= 0 && filteredData[selectedIndex] ? getCodigo(filteredData[selectedIndex]) : '') + ').'
+                    : 'Apunta al código de barras o QR. Debe estar guardado en el catálogo para encontrarlo.';
+            }
+            if (status) status.textContent = 'Iniciando cámara...';
+            if (ov) {
+                ov.classList.add('visible');
+                ov.setAttribute('aria-hidden', 'false');
+            }
+            try {
+                await detenerEscaner();
+                if (ov) {
+                    ov.classList.add('visible');
+                    ov.setAttribute('aria-hidden', 'false');
+                }
+                html5QrCode = new Html5Qrcode('scanReader');
+                await html5QrCode.start(
+                    { facingMode: 'environment' },
+                    { fps: 8, qrbox: { width: 260, height: 140 } },
+                    onScanSuccess,
+                    function () {}
+                );
+                if (status) status.textContent = 'Cámara lista. Apunta al código...';
+            } catch (e) {
+                console.error(e);
+                if (status) status.textContent = 'No se pudo abrir la cámara. Revisa permisos.';
+                showToast('Sin acceso a la cámara.', 'error');
+            }
+        }
+
+        async function onScanSuccess(decodedText) {
+            const code = String(decodedText || '').trim();
+            if (!code) return;
+            try { await detenerEscaner(); } catch (e) {}
+            if (scanModo === 'vincular') {
+                await vincularCodigoBarras(code);
+            } else {
+                searchInput.value = code;
+                performSearch();
+                if (!filteredData.length) {
+                    showToast('Código leído: ' + code + ' — aún no está asociado a un producto. Selecciona el producto y usa «Vincular».', 'info');
+                } else {
+                    showToast('Encontrado: ' + code, 'success');
+                    if (filteredData.length === 1) {
+                        selectedIndex = 0;
+                        document.querySelectorAll('.result-item').forEach(function (el, i) {
+                            el.classList.toggle('selected', i === 0);
+                        });
+                        actualizarCantidades(filteredData[0]);
+                    }
+                }
+            }
+        }
+
+        async function vincularCodigoBarras(ean) {
+            if (!esAdmin()) return;
+            if (selectedIndex < 0 || selectedIndex >= filteredData.length) {
+                showToast('Primero busca y selecciona el producto (ej. 0782).', 'error');
+                return;
+            }
+            const item = filteredData[selectedIndex];
+            const codigo = getCodigo(item);
+            if (!codigo) return;
+            item.CodigoBarras = ean;
+            // Local backup
+            const mapa = cargarBarrasLocal();
+            mapa[codigo] = ean;
+            guardarBarrasLocal(mapa);
+            // Supabase
+            try {
+                const { error } = await supabaseClient.from('productos').update({
+                    codigo_barras: ean,
+                    actualizado_en: new Date().toISOString()
+                }).eq('codigo', codigo);
+                if (error) throw error;
+                showToast('Barras ' + ean + ' → producto ' + codigo + ' (guardado en nube).', 'success');
+            } catch (e) {
+                console.warn(e);
+                showToast('Barras guardado en este dispositivo. Ejecuta el SQL de codigo_barras para guardar en nube: ' + (e.message || ''), 'info');
+            }
+            // sync currentData
+            const orig = currentData.find(function (x) { return getCodigo(x) === codigo; });
+            if (orig) orig.CodigoBarras = ean;
+            actualizarFilaVincular();
+        }
+
+        function actualizarFilaVincular() {
+            const row = document.getElementById('vincularBarrasRow');
+            if (!row) return;
+            if (!esAdmin() || selectedIndex < 0 || selectedIndex >= filteredData.length) {
+                row.style.display = 'none';
+                return;
+            }
+            row.style.display = 'block';
+            const item = filteredData[selectedIndex];
+            const ean = getCodigoBarras(item);
+            const btn = document.getElementById('btnVincularBarras');
+            if (btn) {
+                btn.innerHTML = ean
+                    ? '<span class="btn-icon">🏷️</span><span class="btn-label"> Barras: ' + ean + ' (cambiar)</span>'
+                    : '<span class="btn-icon">🏷️</span><span class="btn-label"> Vincular código de barras a este producto</span>';
+            }
+        }
+
+
+
+        // ============================================================
+        // CATÁLOGO CLIENTES (solo admin)
+        // ============================================================
+        let clientesData = [];
+
+        function escapeCli(s) {
+            return String(s || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function filaExcelACliente(row) {
+            const codigo = String(valorColumna(row, [
+                'Codigo', 'codigo', 'Código', 'CodCliente', 'Cod. Cliente'
+            ])).trim();
+            if (!codigo) return null;
+            const nombre = String(valorColumna(row, [
+                'Nombre', 'nombre', 'RazonSocial', 'Razón Social', 'Cliente'
+            ])).trim();
+            if (!nombre) return null;
+            return {
+                codigo: codigo,
+                nombre: nombre,
+                categoria: String(valorColumna(row, ['CategoriaCliente', 'Categoria', 'categoría', 'CategoriaCli'])).trim() || null,
+                tipo_cliente: String(valorColumna(row, ['TipoCliente', 'Tipo', 'tipo_cliente'])).trim() || null,
+                tipo_doc: String(valorColumna(row, ['TipoDocidentidad', 'TipoDoc', 'Tipo Documento'])).trim() || null,
+                doc_identidad: String(valorColumna(row, ['Docidentidad', 'DocIdentidad', 'DNI', 'RUC', 'Documento'])).trim() || null,
+                direccion: String(valorColumna(row, ['Direccion', 'Dirección', 'direccion'])).trim() || null,
+                distrito: String(valorColumna(row, ['Distrito', 'distrito'])).trim() || null,
+                codigo_zona: String(valorColumna(row, ['CodigoZona', 'CódigoZona', 'CodZona', 'Zona'])).trim() || null,
+                descripcion_zona: String(valorColumna(row, ['DescripcionZona', 'Descripcion1', 'Descripcion', 'ZonaDesc'])).trim() || null,
+                linea_credito: (function () {
+                    const v = valorColumna(row, ['LineaCredito', 'Linea de Credito', 'Credito']);
+                    if (v === '' || v === undefined || v === null) return null;
+                    const n = Number(String(v).replace(',', '.'));
+                    return isNaN(n) ? null : n;
+                })(),
+                actualizado_en: new Date().toISOString()
+            };
+        }
+
+        async function importarClientesExcel(file) {
+            if (!esAdmin()) {
+                showToast('Solo el administrador puede importar clientes.', 'error');
+                return;
+            }
+            if (!file) return;
+            const st = document.getElementById('adminClientesStatus');
+            if (st) st.textContent = 'Leyendo Excel...';
+            try {
+                const buffer = await file.arrayBuffer();
+                const wb = XLSX.read(buffer, { type: 'array' });
+                const hoja = wb.Sheets[wb.SheetNames[0]];
+                const filas = XLSX.utils.sheet_to_json(hoja, { defval: '' });
+                const lista = [];
+                const vistos = new Set();
+                filas.forEach(function (row) {
+                    const c = filaExcelACliente(row);
+                    if (!c) return;
+                    if (vistos.has(c.codigo)) {
+                        const i = lista.findIndex(function (x) { return x.codigo === c.codigo; });
+                        if (i >= 0) lista[i] = c;
+                    } else {
+                        vistos.add(c.codigo);
+                        lista.push(c);
+                    }
+                });
+                if (!lista.length) {
+                    if (st) st.textContent = 'No se encontraron clientes (Código + Nombre).';
+                    showToast('Excel sin clientes válidos.', 'error');
+                    return;
+                }
+                if (st) st.textContent = 'Subiendo ' + lista.length + ' clientes...';
+                const TAM = 200;
+                let n = 0;
+                for (let i = 0; i < lista.length; i += TAM) {
+                    const lote = lista.slice(i, i + TAM);
+                    const { error } = await supabaseClient.from('clientes').upsert(lote, { onConflict: 'codigo' });
+                    if (error) throw error;
+                    n += lote.length;
+                }
+                clientesData = lista;
+                if (st) st.textContent = '✅ ' + n + ' clientes en la nube.';
+                showToast('✅ ' + n + ' clientes importados.', 'success');
+                buscarClientesAdmin(document.getElementById('adminClienteInput') && document.getElementById('adminClienteInput').value);
+            } catch (e) {
+                console.error(e);
+                if (st) st.textContent = 'Error: ' + (e.message || e);
+                showToast('Error al importar clientes. ¿Ejecutaste el SQL de clientes?', 'error');
+            }
+        }
+
+        async function cargarClientesDesdeNube() {
+            if (!esAdmin()) return;
+            const st = document.getElementById('adminClientesStatus');
+            try {
+                const { data, error } = await supabaseClient
+                    .from('clientes')
+                    .select('*')
+                    .order('nombre')
+                    .limit(5000);
+                if (error) throw error;
+                clientesData = data || [];
+                if (st) st.textContent = clientesData.length ? (clientesData.length + ' clientes cargados') : 'Sin clientes. Sube el Excel.';
+                const inp = document.getElementById('adminClienteInput');
+                buscarClientesAdmin(inp ? inp.value : '');
+            } catch (e) {
+                if (st) st.textContent = 'No se pudo cargar (¿tabla clientes?).';
+                console.warn(e);
+            }
+        }
+
+        function buscarClientesAdmin(term) {
+            const list = document.getElementById('adminClienteList');
+            const countEl = document.getElementById('adminClienteCount');
+            if (!list) return;
+            const q = String(term || '').trim().toUpperCase();
+            if (!clientesData.length) {
+                list.innerHTML = '<p class="admin-sesiones-empty">No hay clientes cargados. Sube el Excel.</p>';
+                if (countEl) countEl.textContent = '0';
+                return;
+            }
+            let hits = clientesData;
+            if (q) {
+                const palabras = q.split(/\s+/).filter(Boolean);
+                hits = clientesData.filter(function (c) {
+                    const campos = [
+                        c.codigo, c.nombre, c.categoria, c.tipo_cliente,
+                        c.doc_identidad, c.direccion, c.distrito,
+                        c.codigo_zona, c.descripcion_zona
+                    ].map(function (x) { return String(x || '').toUpperCase(); });
+                    return palabras.every(function (p) {
+                        return campos.some(function (f) { return f.indexOf(p) !== -1; });
+                    });
+                });
+            }
+            if (countEl) countEl.textContent = String(hits.length);
+            const show = hits.slice(0, 60);
+            if (!show.length) {
+                list.innerHTML = '<p class="admin-sesiones-empty">Sin coincidencias.</p>';
+                return;
+            }
+            list.innerHTML = show.map(function (c) {
+                return '<div class="admin-catalog-item">' +
+                    '<div class="aci-cod">' + escapeCli(c.codigo) + ' · ' + escapeCli(c.nombre) + '</div>' +
+                    '<div class="aci-desc">' + escapeCli(c.direccion || '-') +
+                    (c.distrito ? ' — ' + escapeCli(c.distrito) : '') + '</div>' +
+                    '<div class="aci-meta">' +
+                    escapeCli(c.tipo_doc || '') + ' ' + escapeCli(c.doc_identidad || '') +
+                    ' · ' + escapeCli(c.categoria || c.tipo_cliente || '') +
+                    ' · Zona: ' + escapeCli(c.codigo_zona || '-') +
+                    (c.descripcion_zona ? ' ' + escapeCli(c.descripcion_zona) : '') +
+                    (c.linea_credito != null ? ' · Crédito: ' + c.linea_credito : '') +
+                    '</div></div>';
+            }).join('');
+        }
+
 
         function init() {
             cargarTema();
@@ -2421,6 +2756,24 @@
                     tCat = setTimeout(function () { buscarCatalogoAdmin(v); }, 200);
                 });
             }
+            const importClientesInput = document.getElementById('importClientesInput');
+            if (importClientesInput) {
+                importClientesInput.addEventListener('change', function () {
+                    const f = this.files && this.files[0];
+                    if (f) importarClientesExcel(f);
+                    this.value = '';
+                });
+            }
+            const adminClienteInput = document.getElementById('adminClienteInput');
+            if (adminClienteInput) {
+                let tCli = null;
+                adminClienteInput.addEventListener('input', function () {
+                    clearTimeout(tCli);
+                    const v = this.value;
+                    tCli = setTimeout(function () { buscarClientesAdmin(v); }, 200);
+                });
+            }
+
             const adminCatalogSoloCero = document.getElementById('adminCatalogSoloCero');
             if (adminCatalogSoloCero) {
                 adminCatalogSoloCero.addEventListener('change', function () {
@@ -2487,6 +2840,18 @@
             });
 
             searchButton.addEventListener('click', performSearch);
+            const scanBarcodeBtn = document.getElementById('scanBarcodeBtn');
+            if (scanBarcodeBtn) scanBarcodeBtn.addEventListener('click', function () { abrirEscaner('buscar'); });
+            const scanCloseBtn = document.getElementById('scanCloseBtn');
+            const scanCancelBtn = document.getElementById('scanCancelBtn');
+            if (scanCloseBtn) scanCloseBtn.addEventListener('click', detenerEscaner);
+            if (scanCancelBtn) scanCancelBtn.addEventListener('click', detenerEscaner);
+            const btnVincularBarras = document.getElementById('btnVincularBarras');
+            if (btnVincularBarras) btnVincularBarras.addEventListener('click', function () {
+                if (!esAdmin()) return;
+                abrirEscaner('vincular');
+            });
+
             searchInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') performSearch(); });
             let debounceTimer;
             searchInput.addEventListener('input', () => {
@@ -2654,6 +3019,11 @@
                 const el = document.getElementById(id);
                 if (el) el.style.display = es ? '' : 'none';
             });
+            // Escáner y vincular barras: solo admin (hasta cargar gran parte del catálogo)
+            const scanBtn = document.getElementById('scanBarcodeBtn');
+            if (scanBtn) scanBtn.style.display = es ? '' : 'none';
+            const vincRow = document.getElementById('vincularBarrasRow');
+            if (vincRow && !es) vincRow.style.display = 'none';
         }
 
         let adminSelectedFile = null;

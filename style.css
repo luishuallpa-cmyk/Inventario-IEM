@@ -1570,3 +1570,61 @@ label.btn-drive {
         animation: none !important;
     }
 }
+
+
+/* Escáner barras/QR */
+.scan-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 4500;
+    background: rgba(0,0,0,0.85);
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+.scan-overlay.visible { display: flex; }
+.scan-panel {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
+    width: 100%;
+    max-width: 420px;
+    padding: 1rem;
+    max-height: 92vh;
+    overflow-y: auto;
+}
+.scan-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+.scan-panel-header h2 {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--heading-color);
+}
+.scan-hint {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 0.6rem;
+    line-height: 1.4;
+}
+.scan-reader {
+    width: 100%;
+    min-height: 220px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #000;
+}
+.scan-status {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+    text-align: center;
+}
+.vincular-barras-row {
+    margin-top: 0.45rem;
+}
+#scanBarcodeBtn { display: none; } /* visible solo admin vía JS */
