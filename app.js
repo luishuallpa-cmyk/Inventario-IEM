@@ -8,6 +8,8 @@
                     var on = b.getAttribute('data-admin-tab') === tabId;
                     b.classList.toggle('active', on);
                 });
+                var navSelect = document.getElementById('adminNavSelect');
+                if (navSelect && navSelect.value !== tabId) navSelect.value = tabId;
                 document.querySelectorAll('.admin-tab').forEach(function (panel) {
                     var on = panel.getAttribute('data-admin-panel') === tabId;
                     if (on) {
@@ -2621,10 +2623,13 @@
             renderBarrasAdminSeleccionado();
             const inp = document.getElementById('adminBarrasInput');
             buscarBarrasAdmin(inp && inp.value);
-            const manual = document.getElementById('adminBarrasManual');
-            if (manual) {
-                manual.value = getCodigoBarras(item) || '';
-                setTimeout(function () { manual.focus(); manual.select(); }, 80);
+            // No forzar focus al input (abre teclado y tapa la pantalla).
+            // Solo desplazar la tarjeta del producto a la zona visible.
+            const box = document.getElementById('adminBarrasSelected');
+            if (box && box.scrollIntoView) {
+                setTimeout(function () {
+                    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 50);
             }
         }
 
@@ -3031,6 +3036,14 @@
                 adminCatalogSoloCero.addEventListener('change', function () {
                     const inp = document.getElementById('adminCatalogInput');
                     buscarCatalogoAdmin(inp ? inp.value : '');
+                });
+            }
+            const adminNavSelect = document.getElementById('adminNavSelect');
+            if (adminNavSelect) {
+                adminNavSelect.addEventListener('change', function () {
+                    if (typeof window.cambiarTabAdmin === 'function') {
+                        window.cambiarTabAdmin(this.value);
+                    }
                 });
             }
             // Admin: herramienta códigos de barras / QR

@@ -316,6 +316,19 @@
                     <button type="button" class="admin-nav-btn" data-admin-tab="clientes" onclick="window.cambiarTabAdmin && window.cambiarTabAdmin('clientes'); return false;">👤 Clientes</button>
                     <button type="button" class="admin-nav-btn" data-admin-tab="sesiones" onclick="window.cambiarTabAdmin && window.cambiarTabAdmin('sesiones'); return false;">👥 Sesiones</button>
                 </nav>
+                <!-- En móvil: selector compacto (ahorra espacio vs fila de pestañas) -->
+                <div class="admin-nav-mobile">
+                    <label class="admin-nav-mobile-label" for="adminNavSelect">Sección</label>
+                    <select id="adminNavSelect" class="admin-nav-select" aria-label="Sección del panel">
+                        <option value="subir">📤 Subir Excel</option>
+                        <option value="catalogo">🔎 Catálogo</option>
+                        <option value="barras">🏷️ Barras / QR</option>
+                        <option value="descargas">📊 Descargas</option>
+                        <option value="vista">👁️ Vista previa</option>
+                        <option value="clientes">👤 Clientes</option>
+                        <option value="sesiones">👥 Sesiones</option>
+                    </select>
+                </div>
                 <div class="admin-panel-body">
                     <div class="admin-tab active" id="adminTabSubir" data-admin-panel="subir">
                         <p class="admin-lead">Sube el Excel de inventario valorado o existencias. Se actualizará el catálogo y el stock teórico en la nube.</p>
@@ -364,18 +377,21 @@
 
                     <div class="admin-tab" id="adminTabBarras" data-admin-panel="barras" hidden>
                         <h3 class="admin-subtitle">🏷️ Asociar códigos de barras / QR</h3>
-                        <p class="admin-lead">Prepara el catálogo antes del conteo: busca un producto, escanea o escribe su código de barras y guárdalo en la nube. No afecta el inventario físico ni requiere fecha de vencimiento.</p>
+                        <p class="admin-lead admin-lead-compact">Busca → elige producto → escanea o escribe el código. No afecta el conteo.</p>
+                        <!-- Buscador arriba: en móvil el teclado no tapa la lista ni las acciones -->
+                        <div class="admin-sticky-search" id="adminBarrasSearchWrap">
+                            <div class="admin-catalog-search">
+                                <input type="search" id="adminBarrasInput" placeholder="Código, descripción, marca o EAN..." autocomplete="off" enterkeyhint="search">
+                                <span class="admin-catalog-count" id="adminBarrasCount">0</span>
+                            </div>
+                            <label class="admin-check admin-check-compact">
+                                <input type="checkbox" id="adminBarrasSoloSin">
+                                Solo <strong>sin código de barras</strong>
+                            </label>
+                        </div>
                         <div id="adminBarrasSelected" class="admin-barras-selected">
                             <p class="admin-sesiones-empty">Selecciona un producto de la lista para asociarle un código de barras o QR.</p>
                         </div>
-                        <div class="admin-catalog-search">
-                            <input type="search" id="adminBarrasInput" placeholder="Código, descripción, marca o EAN..." autocomplete="off">
-                            <span class="admin-catalog-count" id="adminBarrasCount">0</span>
-                        </div>
-                        <label class="admin-check" style="margin-top:0;margin-bottom:0.65rem;">
-                            <input type="checkbox" id="adminBarrasSoloSin">
-                            Solo productos <strong>sin código de barras</strong>
-                        </label>
                         <div id="adminBarrasList" class="admin-catalog-list">
                             <p class="admin-sesiones-empty">Escribe para buscar, o marca «solo sin barras» para listar pendientes.</p>
                         </div>
