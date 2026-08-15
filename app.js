@@ -2089,10 +2089,15 @@
         function aplicarTema(tema) {
             if (tema === 'light') {
                 document.body.classList.add('light-theme');
-                themeToggleBtn.textContent = '☀️';
             } else {
                 document.body.classList.remove('light-theme');
-                themeToggleBtn.textContent = '🌙';
+            }
+            // Icono dentro del menú del header
+            if (themeToggleBtn) {
+                const icon = themeToggleBtn.querySelector('.hmi-icon');
+                const label = themeToggleBtn.querySelector('.hmi-label');
+                if (icon) icon.textContent = tema === 'light' ? '☀️' : '🌙';
+                if (label) label.textContent = tema === 'light' ? 'Tema oscuro' : 'Tema claro';
             }
         }
 
@@ -2869,10 +2874,47 @@
         }
 
 
+        function cerrarHeaderMenu() {
+            const btn = document.getElementById('headerMenuBtn');
+            const dd = document.getElementById('headerMenuDropdown');
+            if (dd) dd.hidden = true;
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+        }
+        function toggleHeaderMenu() {
+            const btn = document.getElementById('headerMenuBtn');
+            const dd = document.getElementById('headerMenuDropdown');
+            if (!dd || !btn) return;
+            const open = dd.hidden;
+            dd.hidden = !open;
+            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+
         function init() {
             cargarTema();
-            themeToggleBtn.addEventListener('click', alternarTema);
+            if (themeToggleBtn) {
+                themeToggleBtn.addEventListener('click', function () {
+                    alternarTema();
+                    cerrarHeaderMenu();
+                });
+            }
             initCardsPlegables();
+
+            // Menú compacto del header
+            const headerMenuBtn = document.getElementById('headerMenuBtn');
+            if (headerMenuBtn) {
+                headerMenuBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    toggleHeaderMenu();
+                });
+            }
+            document.addEventListener('click', function (e) {
+                const wrap = document.getElementById('headerMenuWrap');
+                if (!wrap) return;
+                if (!wrap.contains(e.target)) cerrarHeaderMenu();
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') cerrarHeaderMenu();
+            });
 
             poblarSelectDia();
             poblarSelectMes();
@@ -2886,7 +2928,10 @@
 
             const adminPanelBtn = document.getElementById('adminPanelBtn');
             if (adminPanelBtn) {
-                adminPanelBtn.addEventListener('click', abrirPanelAdmin);
+                adminPanelBtn.addEventListener('click', function () {
+                    abrirPanelAdmin();
+                    cerrarHeaderMenu();
+                });
             }
             const adminCloseBtn = document.getElementById('adminCloseBtn');
             const adminCancelBtn = document.getElementById('adminCancelBtn');
@@ -3264,7 +3309,7 @@
             const es = esAdmin();
             document.body.classList.toggle('es-admin', !!es);
             const btnAdmin = document.getElementById('adminPanelBtn');
-            if (btnAdmin) btnAdmin.style.display = es ? 'inline-flex' : 'none';
+            if (btnAdmin) btnAdmin.style.display = es ? 'flex' : 'none';
             ['exportDiffBtn', 'clearDiffBtn', 'guardarDriveBtn', 'exportPedidoBtn'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.style.display = es ? '' : 'none';
@@ -3478,7 +3523,10 @@
         loginBtn.addEventListener('click', intentarLogin);
         loginClave.addEventListener('keyup', (e) => { if (e.key === 'Enter') intentarLogin(); });
         loginUsuario.addEventListener('keyup', (e) => { if (e.key === 'Enter') loginClave.focus(); });
-        document.getElementById('logoutBtn').addEventListener('click', cerrarSesion);
+        document.getElementById('logoutBtn').addEventListener('click', function () {
+            if (typeof cerrarHeaderMenu === 'function') cerrarHeaderMenu();
+            cerrarSesion();
+        });
 
         // Arranque: si hay sesión Auth válida + meta del día, entrar
         (async function arrancarSesion() {
