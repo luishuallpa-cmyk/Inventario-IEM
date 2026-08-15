@@ -1809,14 +1809,26 @@ body.modo-seleccion .pa-meta {
     flex: 1;
     min-width: 0;
 }
+/* Icono unificado barras + QR */
+.ico-scan {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+    vertical-align: middle;
+}
+.ico-scan svg {
+    display: block;
+    flex-shrink: 0;
+}
 .pa-scan-btn {
     display: none;
     flex-shrink: 0;
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    border: 1px solid rgba(255,255,255,0.4);
-    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.45);
+    background: rgba(37, 99, 235, 0.55);
     color: #fff;
     font-size: 1.25rem;
     cursor: pointer;
@@ -1825,8 +1837,26 @@ body.modo-seleccion .pa-meta {
     line-height: 1;
     padding: 0;
     -webkit-tap-highlight-color: transparent;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
-.pa-scan-btn:active { transform: scale(0.94); background: rgba(255,255,255,0.3); }
+.pa-scan-btn .ico-scan { color: #fff; }
+.pa-scan-btn:active { transform: scale(0.94); background: rgba(37, 99, 235, 0.75); }
 body.es-admin.modo-seleccion .pa-scan-btn {
     display: inline-flex !important;
+}
+.scan-panel-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+.scan-panel-header h2 .ico-scan {
+    color: var(--accent-light, #60a5fa);
+}
+.admin-subtitle .ico-scan {
+    margin-right: 0.25rem;
+    color: var(--accent);
+}
+.header-menu-item .ico-scan,
+.admin-nav-btn .ico-scan {
+    opacity: 0.95;
 }

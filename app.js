@@ -7,7 +7,7 @@
                 var titulos = {
                     subir: '📤 Subir Excel',
                     catalogo: '🔎 Catálogo',
-                    barras: '🏷️ Barras / QR',
+                    barras: 'Barras / QR',
                     descargas: '📊 Descargas',
                     vista: '👁️ Vista previa',
                     clientes: '👤 Clientes',
@@ -2479,7 +2479,10 @@
             const title = document.getElementById('scanTitle');
             const hint = document.getElementById('scanHint');
             const status = document.getElementById('scanStatus');
-            if (title) title.textContent = scanModo === 'vincular' ? '🏷️ Vincular código de barras' : '📷 Escanear código';
+            if (title) {
+                var ico = '<span class="ico-scan" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M2 7h1.5v10H2V7zm2.5 0H6v10H4.5V7zM7 7h1.2v10H7V7zm2.2 0h2v10h-2V7zm3 0h1.2v10H12.2V7z"/><path fill="currentColor" d="M15 7h3.5v3.5H15V7zm1 1v1.5h1.5V8H16zm2.5 4.5H22V15h-1.5v1.5H18v-1.5h-.5v-1.5H18v-1.5h-.5zM15 15h2v2h-2v-2z"/><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M3 5h3M3 5v3M21 5h-3M21 5v3M3 19h3M3 19v-3M21 19h-3M21 19v-3"/></svg></span> ';
+                title.innerHTML = ico + (scanModo === 'vincular' ? 'Vincular código de barras' : 'Escanear código');
+            }
             if (hint) {
                 let codHint = '';
                 if (scanModo === 'vincular') {
@@ -2722,8 +2725,9 @@
                 '<div class="barras-sel-ean">Barras actual: <strong>' + eanTxt + '</strong></div>' +
                 '</div>' +
                 '<div class="barras-sel-actions">' +
-                '<button type="button" class="btn btn-primary btn-sm" id="adminBarrasScanBtn">' +
-                '<span class="btn-icon">📷</span><span class="btn-label"> Escanear QR / barras</span></button>' +
+                '<button type="button" class="btn btn-primary btn-sm btn-scan" id="adminBarrasScanBtn">' +
+                '<span class="btn-icon btn-scan-ico ico-scan" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M2 7h1.5v10H2V7zm2.5 0H6v10H4.5V7zM7 7h1.2v10H7V7zm2.2 0h2v10h-2V7zm3 0h1.2v10H12.2V7z"/><path fill="currentColor" d="M15 7h3.5v3.5H15V7zm1 1v1.5h1.5V8H16zm2.5 4.5H22V15h-1.5v1.5H18v-1.5h-.5v-1.5H18v-1.5h-.5zM15 15h2v2h-2v-2z"/></svg></span>' +
+                '<span class="btn-label"> Escanear QR / barras</span></button>' +
                 '<div class="barras-manual-row">' +
                 '<input type="text" id="adminBarrasManual" class="barras-manual-input" placeholder="O escribe el EAN / QR..." inputmode="numeric" autocomplete="off" value="' + escapeHtmlSes(ean || '') + '">' +
                 '<button type="button" class="btn btn-success btn-sm" id="adminBarrasSaveBtn">Asociar</button>' +

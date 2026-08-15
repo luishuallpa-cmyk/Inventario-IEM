@@ -22,8 +22,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=3.31">
-    <link rel="stylesheet" href="admin.css?v=3.31">
+    <link rel="stylesheet" href="style.css?v=3.32">
+    <link rel="stylesheet" href="admin.css?v=3.32">
 </head>
 <body>
 <div class="login-overlay" id="loginOverlay">
@@ -77,7 +77,7 @@
                         <span class="hmi-icon">🔎</span><span class="hmi-label">Catálogo</span>
                     </button>
                     <button type="button" class="header-menu-item" role="menuitem" data-admin-goto="barras">
-                        <span class="hmi-icon">🏷️</span><span class="hmi-label">Barras / QR</span>
+                        <span class="hmi-icon ico-scan" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M2 7h1.5v10H2V7zm2.5 0H6v10H4.5V7zM7 7h1.2v10H7V7zm2.2 0h2v10h-2V7zm3 0h1.2v10H12.2V7z"/><path fill="currentColor" d="M15 7h3.5v3.5H15V7zm1 1v1.5h1.5V8H16zm2.5 4.5H22V15h-1.5v1.5H18v-1.5h-.5v-1.5H18v-1.5h-.5zM15 15h2v2h-2v-2z"/></svg></span><span class="hmi-label">Barras / QR</span>
                     </button>
                     <button type="button" class="header-menu-item" role="menuitem" data-admin-goto="descargas">
                         <span class="hmi-icon">📊</span><span class="hmi-label">Descargas</span>
@@ -107,9 +107,14 @@
             <input type="text" id="searchInput" placeholder="Buscar por código, descripción, marca o barras..." autofocus>
             <button class="btn btn-primary" id="searchButton" type="button" title="Buscar"><span class="btn-icon">🔎</span><span class="btn-label"> Buscar</span></button>
             <button class="btn btn-outline btn-scan" id="scanBarcodeBtn" type="button" title="Escanear código de barras o QR" aria-label="Escanear código de barras o QR">
-                <span class="btn-icon btn-scan-ico" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="20" height="20" focusable="false">
-                        <path fill="currentColor" d="M3 5h2v14H3V5zm4 0h1v14H7V5zm3 0h2v14h-2V5zm4 0h1v14h-1V5zm3 0h2v14h-2V5zm4 0h1v14h-1V5zM4 3h4V1H2v6h2V3zm16 0v2h2V1h-6v2h4zM4 21v-2H2v6h6v-2H4zm16 0h-4v2h6v-6h-2v4z"/>
+                <span class="btn-icon btn-scan-ico ico-scan" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="22" height="22" focusable="false">
+                        <!-- Barras -->
+                        <path fill="currentColor" d="M2 7h1.5v10H2V7zm2.5 0H6v10H4.5V7zM7 7h1.2v10H7V7zm2.2 0h2v10h-2V7zm3 0h1.2v10H12.2V7z"/>
+                        <!-- QR -->
+                        <path fill="currentColor" d="M15 7h3.5v3.5H15V7zm1 1v1.5h1.5V8H16zm2.5 4.5H22V15h-1.5v1.5H18v-1.5h-.5v-1.5H18v-1.5h-.5zM15 15h2v2h-2v-2z"/>
+                        <!-- Marco de escaneo -->
+                        <path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M3 5h3M3 5v3M21 5h-3M21 5v3M3 19h3M3 19v-3M21 19h-3M21 19v-3"/>
                     </svg>
                 </span>
                 <span class="btn-label"> Escanear código</span>
@@ -154,8 +159,14 @@
                     <span>Empaque: <strong id="paFactor">-</strong></span>
                     <span>Stock: <strong id="paStock">-</strong></span>
                 </div>
-                <button type="button" class="pa-scan-btn" id="btnScanProducto" title="Escanear / vincular código de barras" style="display:none;" aria-label="Escanear código">
-                    📷
+                <button type="button" class="pa-scan-btn" id="btnScanProducto" title="Escanear / vincular código de barras o QR" style="display:none;" aria-label="Escanear código de barras o QR">
+                    <span class="ico-scan" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="22" height="22" focusable="false">
+                            <path fill="currentColor" d="M2 7h1.5v10H2V7zm2.5 0H6v10H4.5V7zM7 7h1.2v10H7V7zm2.2 0h2v10h-2V7zm3 0h1.2v10H12.2V7z"/>
+                            <path fill="currentColor" d="M15 7h3.5v3.5H15V7zm1 1v1.5h1.5V8H16zm2.5 4.5H22V15h-1.5v1.5H18v-1.5h-.5v-1.5H18v-1.5h-.5zM15 15h2v2h-2v-2z"/>
+                            <path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M3 5h3M3 5v3M21 5h-3M21 5v3M3 19h3M3 19v-3M21 19h-3M21 19v-3"/>
+                        </svg>
+                    </span>
                 </button>
             </div>
         </div>
@@ -352,7 +363,7 @@
                         <span class="tab-ico" aria-hidden="true">🔎</span><span class="tab-txt">Catálogo</span>
                     </button>
                     <button type="button" class="admin-nav-btn" role="tab" aria-selected="false" data-admin-tab="barras" id="tabBtn-barras">
-                        <span class="tab-ico" aria-hidden="true">🏷️</span><span class="tab-txt">Barras / QR</span>
+                        <span class="tab-ico ico-scan" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M2 7h1.5v10H2V7zm2.5 0H6v10H4.5V7zM7 7h1.2v10H7V7zm2.2 0h2v10h-2V7zm3 0h1.2v10H12.2V7z"/><path fill="currentColor" d="M15 7h3.5v3.5H15V7zm1 1v1.5h1.5V8H16zm2.5 4.5H22V15h-1.5v1.5H18v-1.5h-.5v-1.5H18v-1.5h-.5zM15 15h2v2h-2v-2z"/></svg></span><span class="tab-txt">Barras / QR</span>
                     </button>
                     <button type="button" class="admin-nav-btn" role="tab" aria-selected="false" data-admin-tab="descargas" id="tabBtn-descargas">
                         <span class="tab-ico" aria-hidden="true">📊</span><span class="tab-txt">Descargas</span>
@@ -414,7 +425,7 @@
                     </div>
 
                     <div class="admin-tab" id="adminTabBarras" data-admin-panel="barras" hidden>
-                        <h3 class="admin-subtitle">🏷️ Asociar códigos de barras / QR</h3>
+                        <h3 class="admin-subtitle"><span class="ico-scan" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M2 7h1.5v10H2V7zm2.5 0H6v10H4.5V7zM7 7h1.2v10H7V7zm2.2 0h2v10h-2V7zm3 0h1.2v10H12.2V7z"/><path fill="currentColor" d="M15 7h3.5v3.5H15V7zm1 1v1.5h1.5V8H16zm2.5 4.5H22V15h-1.5v1.5H18v-1.5h-.5v-1.5H18v-1.5h-.5zM15 15h2v2h-2v-2z"/></svg></span> Asociar códigos de barras / QR</h3>
                         <p class="admin-lead admin-lead-compact">Busca → elige producto → escanea o escribe el código. No afecta el conteo.</p>
                         <!-- Buscador arriba: en móvil el teclado no tapa la lista ni las acciones -->
                         <div class="admin-sticky-search" id="adminBarrasSearchWrap">
@@ -506,7 +517,7 @@
     <div class="scan-overlay" id="scanOverlay" aria-hidden="true">
         <div class="scan-panel">
             <div class="scan-panel-header">
-                <h2 id="scanTitle">📷 Escanear código</h2>
+                <h2 id="scanTitle"><span class="ico-scan" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M2 7h1.5v10H2V7zm2.5 0H6v10H4.5V7zM7 7h1.2v10H7V7zm2.2 0h2v10h-2V7zm3 0h1.2v10H12.2V7z"/><path fill="currentColor" d="M15 7h3.5v3.5H15V7zm1 1v1.5h1.5V8H16zm2.5 4.5H22V15h-1.5v1.5H18v-1.5h-.5v-1.5H18v-1.5h-.5zM15 15h2v2h-2v-2z"/><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M3 5h3M3 5v3M21 5h-3M21 5v3M3 19h3M3 19v-3M21 19h-3M21 19v-3"/></svg></span> Escanear código</h2>
                 <button type="button" class="admin-close" id="scanCloseBtn" aria-label="Cerrar">✕</button>
             </div>
             <p class="scan-hint" id="scanHint">Apunta al código de barras o QR del producto.</p>
@@ -526,8 +537,8 @@
         </div>
     </div>
 
-<script src="config.js?v=3.31"></script>
-<script src="app.js?v=3.31"></script>
+<script src="config.js?v=3.32"></script>
+<script src="app.js?v=3.32"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {
