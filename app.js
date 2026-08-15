@@ -2881,20 +2881,32 @@
             if (!esAdmin()) return;
             const st = document.getElementById('adminClientesStatus');
             try {
-                const { data, error } = await supabaseClient
-                    .from('clientes')
-                    .select('*')
-                    .order('nombre')
-                    .limit(5000);
-                if (error) throw error;
-                clientesData = data || [];
+                // Supabase/PostgREST limita ~1000 filas por petición: hay que paginar
+                const PAGE = 1000;
+                let all = [];
+                let from = 0;
+                for (;;) {
+                    const { data, error } = await supabaseClient
+                        .from('clientes')
+                        .select('*')
+                        .order('nombre', { ascending: true })
+                        .range(from, from + PAGE - 1);
+                    if (error) throw error;
+                    if (!data || !data.length) break;
+                    all = all.concat(data);
+                    if (data.length < PAGE) break;
+                    from += PAGE;
+                    // Tope de seguridad
+                    if (from >= 50000) break;
+                }
+                clientesData = all;
                 if (st) st.textContent = clientesData.length
                     ? ('✅ ' + clientesData.length + ' clientes en la nube.')
                     : 'Sin clientes en la nube. Usa “Actualizar base” abajo.';
                 const inp = document.getElementById('adminClienteInput');
                 buscarClientesAdmin(inp ? inp.value : '');
             } catch (e) {
-                if (st) st.textContent = 'No se pudo cargar (¿tabla clientes?).';
+                if (st) st.textContent = 'No se pudo cargar (¿tabla clientes?). ' + (e.message || '');
                 console.warn(e);
             }
         }
