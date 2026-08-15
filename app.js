@@ -504,14 +504,27 @@
         async function loadFromGoogleSheets() {
             fileStatus.textContent = '⏳ Cargando productos desde Supabase...';
             try {
-                const { data, error } = await supabaseClient
-                    .from('productos')
-                    .select('*')
-                    .eq('activo', true)
-                    .order('codigo');
-                if (error) throw error;
-                if (data && data.length > 0) {
-                    currentData = data.map(p => ({
+                // PostgREST limita ~1000 filas por request: paginar hasta traer todo
+                const PAGE = 1000;
+                let all = [];
+                let from = 0;
+                for (;;) {
+                    const { data, error } = await supabaseClient
+                        .from('productos')
+                        .select('*')
+                        .eq('activo', true)
+                        .order('codigo', { ascending: true })
+                        .range(from, from + PAGE - 1);
+                    if (error) throw error;
+                    if (!data || !data.length) break;
+                    all = all.concat(data);
+                    if (data.length < PAGE) break;
+                    from += PAGE;
+                    if (from >= 100000) break;
+                    fileStatus.textContent = '⏳ Cargando productos... ' + all.length;
+                }
+                if (all.length > 0) {
+                    currentData = all.map(p => ({
                         Codigo: p.codigo,
                         CodigoFabrica: p.codigo_fabrica || '',
                         CodigoBarras: p.codigo_barras || '',
