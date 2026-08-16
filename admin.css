@@ -899,11 +899,33 @@ body.light-theme .inv-report-tipo-titulo.otros {
 .filtro-tipo-reporte {
     margin-top: 0.35rem;
 }
+.inv-preview-linea {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
 .inv-preview-table {
     width: 100%;
+    min-width: 520px;
     border-collapse: collapse;
     font-size: 0.72rem;
     color: var(--text-primary);
+}
+@media (max-width: 640px) {
+    .admin-vista-preview {
+        max-height: 65vh;
+        padding: 0.5rem;
+    }
+    .inv-preview-table {
+        font-size: 0.65rem;
+        min-width: 480px;
+    }
+    .inv-preview-table th,
+    .inv-preview-table td {
+        padding: 0.25rem 0.3rem;
+    }
+    .inv-report-tipo-titulo {
+        font-size: 0.85rem;
+    }
 }
 .inv-preview-table th {
     text-align: left;

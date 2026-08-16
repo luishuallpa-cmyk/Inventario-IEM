@@ -2172,46 +2172,108 @@
             box.innerHTML = construirHtmlVistaInventario();
         }
 
-        /** Abre HTML listo para imprimir / Guardar como PDF (Blob = no se queda en about:blank). */
+        /** Abre el reporte como hojas A4 en el navegador + descarga PDF real (móvil/escritorio). */
         function abrirHtmlParaImprimir(titulo, estilosExtra, contenidoHtml) {
-            const estilosBase =
-                '*{box-sizing:border-box}body{font-family:Arial,Segoe UI,sans-serif;color:#111;margin:0;padding:18px;background:#fff;font-size:11px}' +
+            const nombreArchivo = String(titulo || 'reporte')
+                .replace(/[^\w\-áéíóúñÁÉÍÓÚÑ ]+/g, '')
+                .replace(/\s+/g, '_')
+                .slice(0, 60) || 'reporte_inventario';
+            const estilos =
+                '*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}' +
+                'html,body{margin:0;padding:0;background:#525659;font-family:Arial,Segoe UI,sans-serif;color:#111}' +
+                '.pdf-toolbar{position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;' +
+                'padding:10px 12px;background:#1e293b;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.25)}' +
+                '.pdf-toolbar button{border:0;border-radius:8px;padding:10px 14px;font-weight:700;font-size:14px;cursor:pointer}' +
+                '.pdf-toolbar .btn-pdf{background:#2563eb;color:#fff}' +
+                '.pdf-toolbar .btn-print{background:#e2e8f0;color:#0f172a}' +
+                '.pdf-toolbar .btn-close{background:transparent;color:#cbd5e1;border:1px solid #64748b}' +
+                '.pdf-toolbar .hint{font-size:12px;color:#94a3b8;width:100%;text-align:center}' +
+                '.pdf-stage{padding:16px 12px 32px;display:flex;flex-direction:column;align-items:center;gap:16px}' +
+                '.pdf-page{background:#fff;width:210mm;max-width:100%;min-height:297mm;padding:14mm 12mm;box-shadow:0 4px 24px rgba(0,0,0,.35);' +
+                'font-size:11px}' +
                 '.inv-report-brand{font-weight:800;font-size:14px;letter-spacing:.04em;color:#1d4ed8}' +
                 '.inv-preview-head{border-bottom:2px solid #1d4ed8;padding-bottom:10px;margin-bottom:14px}' +
                 '.inv-preview-head h1{margin:4px 0 0;font-size:16px;color:#0f172a}' +
                 '.inv-preview-meta{margin:6px 0 0;color:#334155;font-size:11px}' +
-                '.inv-report-tipo-titulo{margin:16px 0 8px;font-size:13px;color:#fff;background:#0f766e;padding:6px 10px;font-weight:800;letter-spacing:.03em}' +
-                '.inv-report-tipo-titulo.otros{background:#b45309}' +
-                '.inv-preview-linea{margin-bottom:14px;page-break-inside:avoid}' +
-                '.inv-preview-linea-h,.inv-preview-linea h2,.inv-preview-linea h3{margin:0 0 6px;font-size:12px;color:#fff;background:#1e3a5f;padding:5px 8px;font-weight:700}' +
+                '.inv-report-tipo-titulo{margin:16px 0 8px;font-size:13px;color:#fff!important;background:#0f766e!important;padding:6px 10px;font-weight:800;letter-spacing:.03em;border-radius:4px}' +
+                '.inv-report-tipo-titulo.otros{background:#b45309!important}' +
+                '.inv-preview-linea{margin-bottom:14px;page-break-inside:avoid;break-inside:avoid}' +
+                '.inv-preview-linea-h,.inv-preview-linea h2,.inv-preview-linea h3{margin:0 0 6px;font-size:12px;color:#fff!important;background:#1e3a5f!important;padding:5px 8px;font-weight:700}' +
                 '.inv-preview-table{width:100%;border-collapse:collapse;font-size:10px}' +
-                '.inv-preview-table th{background:#e2e8f0;text-align:left;padding:4px 6px;border:1px solid #94a3b8;font-weight:700}' +
+                '.inv-preview-table th{background:#e2e8f0!important;text-align:left;padding:4px 6px;border:1px solid #94a3b8;font-weight:700}' +
                 '.inv-preview-table td{padding:3px 6px;border:1px solid #cbd5e1;vertical-align:top}' +
                 '.mono{font-family:ui-monospace,Consolas,monospace;font-weight:600}' +
                 '.num{text-align:right;font-variant-numeric:tabular-nums;min-width:70px}' +
                 '.inv-preview-foot{margin-top:12px;padding-top:8px;border-top:2px solid #1d4ed8;font-size:11px}' +
-                '@media print{body{padding:8px}@page{margin:10mm;size:A4}}' +
+                '@media (max-width:700px){' +
+                '.pdf-page{width:100%;min-height:auto;padding:12px;box-shadow:none;border-radius:8px}' +
+                '.pdf-stage{padding:10px 8px 24px}' +
+                '.pdf-toolbar button{flex:1;min-width:120px}' +
+                '}' +
+                '@media print{' +
+                'html,body{background:#fff!important}' +
+                '.pdf-toolbar{display:none!important}' +
+                '.pdf-stage{padding:0}' +
+                '.pdf-page{width:auto;min-height:auto;padding:0;box-shadow:none}' +
+                '@page{margin:10mm;size:A4}' +
+                '*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}' +
+                '.inv-report-tipo-titulo{background:#0f766e!important;color:#fff!important}' +
+                '.inv-report-tipo-titulo.otros{background:#b45309!important;color:#fff!important}' +
+                '.inv-preview-linea-h,.inv-preview-linea h2,.inv-preview-linea h3{background:#1e3a5f!important;color:#fff!important}' +
+                '.inv-preview-table th{background:#e2e8f0!important}' +
+                '}' +
                 (estilosExtra || '');
+
             const html =
-                '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>' + titulo + '</title>' +
-                '<style>' + estilosBase + '</style></head><body>' + contenidoHtml +
-                '<script>window.onload=function(){setTimeout(function(){try{window.focus();window.print()}catch(e){}},400);}<\\/script>' +
+                '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">' +
+                '<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">' +
+                '<title>' + titulo + '</title>' +
+                '<style>' + estilos + '</style>' +
+                '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\\/script>' +
+                '</head><body>' +
+                '<div class="pdf-toolbar">' +
+                '<button type="button" class="btn-pdf" id="btnDescargarPdf">📄 Descargar PDF</button>' +
+                '<button type="button" class="btn-print" id="btnImprimir">🖨️ Imprimir</button>' +
+                '<button type="button" class="btn-close" id="btnCerrar">Cerrar</button>' +
+                '<div class="hint" id="pdfHint">Vista tipo hojas A4 · En celular usa “Descargar PDF”</div>' +
+                '</div>' +
+                '<div class="pdf-stage"><div class="pdf-page" id="pdfPage">' + contenidoHtml + '</div></div>' +
+                '<script>(function(){' +
+                'var page=document.getElementById("pdfPage");' +
+                'var hint=document.getElementById("pdfHint");' +
+                'var nombre=' + JSON.stringify(nombreArchivo + '.pdf') + ';' +
+                'function esMovil(){return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)||window.innerWidth<700;}' +
+                'function descargar(){' +
+                'if(typeof html2pdf==="undefined"){hint.textContent="No se cargó el generador PDF. Usa Imprimir → Guardar como PDF.";return;}' +
+                'hint.textContent="Generando PDF…";' +
+                'var opt={margin:[8,8,8,8],filename:nombre,image:{type:"jpeg",quality:0.95},' +
+                'html2canvas:{scale:2,useCORS:true,logging:false},' +
+                'jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},pagebreak:{mode:["css","legacy"]}};' +
+                'html2pdf().set(opt).from(page).save().then(function(){hint.textContent="PDF descargado.";}).catch(function(e){' +
+                'hint.textContent="Error al generar PDF. Prueba Imprimir.";console.error(e);});' +
+                '}' +
+                'document.getElementById("btnDescargarPdf").onclick=descargar;' +
+                'document.getElementById("btnImprimir").onclick=function(){window.print();};' +
+                'document.getElementById("btnCerrar").onclick=function(){window.close();};' +
+                'window.onload=function(){if(esMovil()){setTimeout(descargar,600);}else{hint.textContent="Escritorio: puedes Descargar PDF o Imprimir.";}};' +
+                '})();<\\/script>' +
                 '</body></html>';
+
             try {
                 const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
                 const url = URL.createObjectURL(blob);
                 const w = window.open(url, '_blank');
                 if (!w) {
-                    showToast('Permite ventanas emergentes para generar el PDF.', 'error');
+                    showToast('Permite ventanas emergentes para ver/descargar el PDF.', 'error');
                     URL.revokeObjectURL(url);
                     return false;
                 }
-                setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) {} }, 60000);
-                showToast('PDF: en el diálogo elige “Guardar como PDF”.', 'info');
+                setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) {} }, 120000);
+                showToast('Reporte abierto · En celular se descarga el PDF automáticamente.', 'info');
                 return true;
             } catch (err) {
                 console.error(err);
-                showToast('No se pudo abrir el PDF: ' + (err && err.message ? err.message : err), 'error');
+                showToast('No se pudo abrir el reporte: ' + (err && err.message ? err.message : err), 'error');
                 return false;
             }
         }
