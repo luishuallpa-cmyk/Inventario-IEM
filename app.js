@@ -2086,77 +2086,129 @@
         }
 
         function construirHtmlVistaInventario() {
-            // Formato tipo macro: REPORTE DE INVENTARIO POR ALMACÉN
-            // Catálogo habilitado agrupado por línea + cajas/unidades del conteo.
+            // Vista previa = SOLO inventario físico contado.
+            // Misma estructura que Reporte sistema: Fríos/Secos → líneas → cajas/unidades.
             const filtroVista = (typeof filtroTipoLaive !== 'undefined' && filtroTipoLaive) ? filtroTipoLaive : '';
             const invMap = {};
             (inventarioFisico || []).forEach(function (d) {
                 if (d && d.codigo) invMap[String(d.codigo)] = d;
             });
 
+            // Solo productos que tienen conteo físico registrado
             let items = (currentData || []).filter(function (item) {
-                const activoItem = item.activo !== false && item.Activo !== false && item.ACTIVO !== false;
-                if (!activoItem) return false;
-                if (filtroVista) return getTipoAlmacen(item) === filtroVista;
+                const cod = String(getCodigo(item) || '');
+                if (!cod || !invMap[cod]) return false;
+                const reg = invMap[cod];
+                const fisico = Number(reg.stockFisico);
+                if (!isFinite(fisico)) return false;
+                if (filtroVista) {
+                    const tipo = (typeof getTipoAlmacenReporte === 'function')
+                        ? getTipoAlmacenReporte(item)
+                        : getTipoAlmacen(item);
+                    return tipo === filtroVista;
+                }
                 return true;
             });
 
             if (!items.length) {
-                return '<p class="admin-sesiones-empty">No hay productos' +
+                return '<p class="admin-sesiones-empty">No hay productos contados' +
                     (filtroVista ? ' en <strong>' + filtroVista + '</strong>' : '') +
-                    '. Sube existencias y el Excel Laive (columna Tipo = Frios/Secos).</p>';
+                    '. Realiza el conteo físico y vuelve a abrir Vista previa.</p>';
             }
 
-            const gruposMap = {};
-            items.forEach(function (item) {
-                let lin = String(getLinea(item) || '').trim();
-                if (!lin || normalizarTipoAlmacen(lin)) lin = 'SIN LÍNEA';
-                if (!gruposMap[lin]) gruposMap[lin] = [];
-                gruposMap[lin].push(item);
-            });
-            const grupos = Object.keys(gruposMap).sort(function (a, b) {
-                return a.localeCompare(b, 'es');
-            }).map(function (lin) {
-                const arr = gruposMap[lin].slice().sort(function (a, b) {
-                    return String(getCodigo(a)).localeCompare(String(getCodigo(b)), 'es', { numeric: true });
+            function agruparPorLineaVista(lista) {
+                const gruposMap = {};
+                lista.forEach(function (item) {
+                    let lin = (typeof getLineaReporte === 'function')
+                        ? getLineaReporte(item)
+                        : String(getLinea(item) || '').trim();
+                    if (!lin || (typeof normalizarTipoAlmacen === 'function' && normalizarTipoAlmacen(lin))) {
+                        lin = 'SIN LÍNEA';
+                    }
+                    if (!gruposMap[lin]) gruposMap[lin] = [];
+                    gruposMap[lin].push(item);
                 });
-                return { linea: lin, items: arr };
-            });
+                return Object.keys(gruposMap).sort(function (a, b) {
+                    if (a === 'SIN LÍNEA') return 1;
+                    if (b === 'SIN LÍNEA') return -1;
+                    if (a === 'PROMOS / COMBOS') return 1;
+                    if (b === 'PROMOS / COMBOS') return -1;
+                    return a.localeCompare(b, 'es');
+                }).map(function (lin) {
+                    const arr = gruposMap[lin].slice().sort(function (a, b) {
+                        return String(getCodigo(a)).localeCompare(String(getCodigo(b)), 'es', { numeric: true });
+                    });
+                    return { linea: lin, items: arr };
+                });
+            }
 
-            let html = '<div class="inv-preview-doc inv-report-almacen">';
+            const bloques = [];
+            if (filtroVista) {
+                bloques.push({
+                    titulo: (filtroVista === 'FRIOS' ? '❄️ FRÍOS' : '📦 SECOS') + ' (' + items.length + ')',
+                    grupos: agruparPorLineaVista(items),
+                    esOtros: false
+                });
+            } else {
+                const getTipo = (typeof getTipoAlmacenReporte === 'function') ? getTipoAlmacenReporte : getTipoAlmacen;
+                const frios = items.filter(function (it) { return getTipo(it) === 'FRIOS'; });
+                const secos = items.filter(function (it) { return getTipo(it) === 'SECOS'; });
+                const otros = items.filter(function (it) {
+                    const t = getTipo(it);
+                    return t !== 'FRIOS' && t !== 'SECOS';
+                });
+                if (frios.length) bloques.push({ titulo: '❄️ FRÍOS (' + frios.length + ')', grupos: agruparPorLineaVista(frios), esOtros: false });
+                if (secos.length) bloques.push({ titulo: '📦 SECOS (' + secos.length + ')', grupos: agruparPorLineaVista(secos), esOtros: false });
+                if (otros.length) bloques.push({
+                    titulo: '⚠️ SIN CLASIFICAR (' + otros.length + ')',
+                    grupos: agruparPorLineaVista(otros),
+                    esOtros: true
+                });
+            }
+
+            let html = '<div class="inv-preview-doc inv-report-almacen inv-report-fisico">';
             let n = 0, totalCajas = 0, totalUni = 0;
-            // Cabecera simple para gerencia: logo + título + fecha
             html += '<header class="inv-preview-head inv-report-head">' +
                 '<div class="inv-report-logo-wrap"><img class="inv-report-logo" src="logo-iem.png" alt="IEM GROUP"></div>' +
-                '<h1>REPORTE DE INVENTARIO POR ALMACÉN</h1>' +
-                '<p class="inv-preview-meta">' + new Date().toLocaleString('es-PE') + '</p></header>';
+                '<h1>REPORTE DE INVENTARIO FÍSICO</h1>' +
+                '<p class="inv-preview-meta">' + new Date().toLocaleString('es-PE') + ' · Conteo físico</p></header>';
 
-            grupos.forEach(function (grupo) {
-                html += '<section class="inv-preview-linea"><h2>' + escapeHtmlSes(grupo.linea) + '</h2>';
-                html += '<table class="inv-preview-table inv-report-table"><thead><tr>' +
-                    '<th>Cod. Producto</th><th>Cod. Fábrica</th><th>Descripción</th>' +
-                    '<th>Unidad</th><th class="num">Cajas Completas</th><th class="num">Unidades Sueltas</th>' +
-                    '</tr></thead><tbody>';
-                (grupo.items || []).forEach(function (item) {
-                    n++;
-                    const cod = String(getCodigo(item) || '');
-                    const reg = invMap[cod];
-                    const factor = (typeof getFactorFinal === 'function') ? getFactorFinal(item) : (getFactorEmpaque(item) || 1);
-                    const fisico = reg ? (Number(reg.stockFisico) || 0) : 0;
-                    const cu = stockACajasUnidades(fisico, factor);
-                    if (reg) { totalCajas += cu.cajas; totalUni += cu.unidades; }
-                    html += '<tr>' +
-                        '<td class="mono">' + escapeHtmlSes(cod) + '</td>' +
-                        '<td class="mono">' + escapeHtmlSes(getCodigoFabrica(item) || '') + '</td>' +
-                        '<td>' + escapeHtmlSes(getDescripcion(item)) + '</td>' +
-                        '<td>' + escapeHtmlSes(getUnidadRef(item) || '') + '</td>' +
-                        '<td class="num">' + (reg ? cu.cajas : '') + '</td>' +
-                        '<td class="num">' + (reg ? cu.unidades : '') + '</td>' +
-                        '</tr>';
+            bloques.forEach(function (bloque, idxBloque) {
+                const breakCls = (idxBloque > 0) ? ' page-break-before' : '';
+                html += '<div class="inv-report-tipo-block' + breakCls + '">';
+                html += '<h2 class="inv-report-tipo-titulo' + (bloque.esOtros ? ' otros' : '') + '">' +
+                    escapeHtmlSes(bloque.titulo) + '</h2>';
+                (bloque.grupos || []).forEach(function (grupo) {
+                    html += '<section class="inv-preview-linea"><h3 class="inv-preview-linea-h">' + escapeHtmlSes(grupo.linea) + '</h3>';
+                    html += '<table class="inv-preview-table inv-report-table"><thead><tr>' +
+                        '<th>Cod. Producto</th><th>Cod. Fábrica</th><th>Descripción</th>' +
+                        '<th>Unidad</th><th class="num">Cajas Completas</th><th class="num">Unidades Sueltas</th>' +
+                        '</tr></thead><tbody>';
+                    (grupo.items || []).forEach(function (item) {
+                        n++;
+                        const cod = String(getCodigo(item) || '');
+                        const reg = invMap[cod];
+                        const factor = (typeof getFactorFinal === 'function') ? getFactorFinal(item) : (getFactorEmpaque(item) || 1);
+                        const fisico = reg ? (Number(reg.stockFisico) || 0) : 0;
+                        const cu = stockACajasUnidades(fisico, factor);
+                        totalCajas += cu.cajas;
+                        totalUni += cu.unidades;
+                        html += '<tr>' +
+                            '<td class="mono">' + escapeHtmlSes(cod) + '</td>' +
+                            '<td class="mono">' + escapeHtmlSes(getCodigoFabrica(item) || '') + '</td>' +
+                            '<td>' + escapeHtmlSes(getDescripcion(item)) + '</td>' +
+                            '<td>' + escapeHtmlSes(getUnidadRef(item) || '') + '</td>' +
+                            '<td class="num">' + cu.cajas + '</td>' +
+                            '<td class="num">' + cu.unidades + '</td>' +
+                            '</tr>';
+                    });
+                    html += '</tbody></table></section>';
                 });
-                html += '</tbody></table></section>';
+                html += '</div>';
             });
-            html += '<footer class="inv-preview-foot"><strong>TOTAL</strong> · Ítems: ' + n +
+
+            const tituloFiltro = filtroVista === 'FRIOS' ? 'FRÍOS' : (filtroVista === 'SECOS' ? 'SECOS' : 'TODOS');
+            html += '<footer class="inv-preview-foot"><strong>TOTAL FÍSICO</strong> · Ítems: ' + n +
                 ' · Cajas contadas: ' + totalCajas + ' · Unidades sueltas: ' + totalUni +
                 (filtroVista ? ' · (' + tituloFiltro + ')' : '') +
                 '</footer></div>';

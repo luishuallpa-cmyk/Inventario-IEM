@@ -589,10 +589,10 @@ body.modo-seleccion .pa-descripcion {
 body.light-theme input,
 body.light-theme select {
     border-color: var(--input-border);
-    background: var(--input-bg, #faf6f0);
+    background: var(--input-bg, #f8fbf9);
 }
 body.light-theme .card {
-    background: rgba(247, 241, 232, 0.96);
+    background: #ffffff;
 }
 
 /* Contraste en números de stock */
@@ -851,10 +851,10 @@ body.light-theme .admin-barras-selected.has-product {
     background: rgba(0, 0, 0, 0.15);
 }
 body.light-theme .admin-vista-preview {
-    background: rgba(250, 246, 240, 0.85);
+    background: #ffffff;
 }
 .inv-report-logo-wrap { margin-bottom: 0.35rem; }
-.inv-report-logo { height: 40px; width: auto; display: block; }
+.inv-report-logo { height: 48px; width: auto; display: block; background: #fff; padding: 4px 8px; border-radius: 8px; border: 1px solid rgba(15,157,88,0.25); }
 .inv-preview-head { text-align: center; }
 .inv-preview-head .inv-report-logo { margin: 0 auto; }
 .inv-preview-head h1 {

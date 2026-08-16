@@ -23,8 +23,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=3.52">
-    <link rel="stylesheet" href="admin.css?v=3.52">
+    <link rel="stylesheet" href="style.css?v=3.54">
+    <link rel="stylesheet" href="admin.css?v=3.54">
 </head>
 <body>
 <div class="login-overlay" id="loginOverlay">
@@ -95,7 +95,7 @@
                         <span class="hmi-icon">👥</span><span class="hmi-label">Sesiones</span>
                     </button>
                     <div class="header-menu-footer">
-                        <span class="version">v3.19 · Admin</span>
+                        <span class="version">v3.20 · Admin</span>
                     </div>
                 </div>
             </div>
@@ -408,7 +408,7 @@
 
                     <div class="admin-tab" id="adminTabVista" data-admin-panel="vista" hidden>
                         <h3 class="admin-subtitle">👁️ Vista previa del inventario</h3>
-                        <p class="admin-lead">Reporte del <strong>conteo físico</strong> por línea (como el macro). Usa <strong>Frios / Secos</strong> para filtrar y armar el PDF de supervisión.</p>
+                        <p class="admin-lead">Solo el <strong>inventario físico contado</strong>, separado en <strong>Fríos / Secos</strong> y por línea. Es la contraparte del Reporte sistema (stock del Excel).</p>
                         <div class="filtro-tipo-row filtro-tipo-vista" role="group" aria-label="Filtro Frios o Secos en vista">
                             <button type="button" class="filtro-tipo-btn active" data-filtro-tipo="">Todos</button>
                             <button type="button" class="filtro-tipo-btn" data-filtro-tipo="FRIOS">❄️ Frios</button>
@@ -508,8 +508,8 @@
         </div>
     </div>
 
-<script src="config.js?v=3.52"></script>
-<script src="app.js?v=3.52"></script>
+<script src="config.js?v=3.54"></script>
+<script src="app.js?v=3.54"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {
