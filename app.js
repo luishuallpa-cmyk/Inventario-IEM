@@ -2224,6 +2224,59 @@
             }
         }
 
+        /** Línea de reporte: categoría del catálogo o inferida de la descripción (estilo macro). */
+        function getLineaReporte(item) {
+            let lin = String(getLinea(item) || '').trim();
+            if (lin && !normalizarTipoAlmacen(lin)) return lin.toUpperCase();
+
+            const extra = getField(item,
+                'InventarioProductoCategoriaDescripcion', 'Categoria', 'categoria',
+                'Familia', 'familia', 'Sublinea', 'SubLínea', 'Grupo', 'grupo'
+            );
+            if (extra && !normalizarTipoAlmacen(String(extra))) return String(extra).trim().toUpperCase();
+
+            // Inferir por descripción (familias del reporte modelo Laive)
+            const d = String(getDescripcion(item) || '').toUpperCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            const reglas = [
+                [/BEBIDA|WATTS|\bNARANJA\b|\bDURAZNO\b|\bPERA\b|\bMANGO\b.*BOT/, 'BEBIDAS: BEBIDAS'],
+                [/CHICHARRON/, 'CARNICOS: CHICHARRON'],
+                [/CHORIZO/, 'CARNICOS: CHORIZO'],
+                [/HOT\s*DOG|HOTDOG/, 'CARNICOS: HOT DOG'],
+                [/JAMONADA/, 'CARNICOS: JAMONADA'],
+                [/\bJAMON\b|JAMÓN/, 'CARNICOS: JAMÓN'],
+                [/TOCINO/, 'CARNICOS: TOCINO'],
+                [/EVAPORAD/, 'EVAPORADAS'],
+                [/LECHE\s*UHT|UHT\s*LAIVE|LECHE\s*ENTER|LECHE\s*LIGHT|LECHE\s*SEMIDES|LECHE\s*SIN\s*LACT|LECHE\s*SABORIZ|BEBIDA\s*DE\s*LECHE|LECHE\s*LAIVE/, 'LECHES FRESCAS'],
+                [/AREQUIPENO|AREQUIPEÑO/, 'MANJARES: AREQUIPEÑO'],
+                [/BLANQUITO/, 'MANJARES: BLANQUITO'],
+                [/CASERO.*CHOCOLATE|FUDGE\s*ESPECIAL\s*CASERO/, 'MANJARES: CASERO - SABOR CHOCOLATE'],
+                [/DULCE\s*DE\s*LECHE/, 'MANJARES: DULCE DE LECHE'],
+                [/HELADERO/, 'MANJARES: HELADERO - SABOR CHOCOLATE'],
+                [/MANJAR|FUDGE/, 'MANJARES: MANJAR'],
+                [/MANTEQUILLA/, 'MANTEQUILLAS'],
+                [/MARGARINA/, 'MARGARINAS: MARGARINAS'],
+                [/SIROPE|MAPLE/, 'MAQUILA'],
+                [/QUESO\s*ANDINO|\bANDINO\b.*TAJADA/, 'QUESOS: ANDINO'],
+                [/CHARACATO/, 'QUESOS: CHARACATO'],
+                [/CHEDDAR/, 'QUESOS: CHEDDAR'],
+                [/CREAM\s*CHEESE|CREMA\s*DE\s*Q\s*LAIVE/, 'QUESOS: CREAM CHEESE'],
+                [/CREMA\s*DE\s*QUESO|CREMA\s*QUESO|CREMA\s*LAIVE/, 'QUESOS: CREMA'],
+                [/\bDANBO\b/, 'QUESOS: DANBO'],
+                [/\bEDAM\b/, 'QUESOS: EDAM'],
+                [/QUESO\s*FRESCO|FRESCO\s*LAIVE/, 'QUESOS: FRESCO'],
+                [/\bGOUDA\b/, 'QUESOS: GOUDA'],
+                [/MOZARELLA|MOZZARELLA/, 'QUESOS: MOZARELLA'],
+                [/PARMESANO/, 'QUESOS: PARMESANO'],
+                [/BEB\.?\s*COCO|COCO\s*LAIVE|ALMENDRA|SOYA\s*LAIVE/, 'VEGETALES'],
+                [/YOGURT|YOGHURT|\bYOG\b|BIO\s*DEFENSA|YOPI|YOP\s*MIX/, 'YOGURTS']
+            ];
+            for (let i = 0; i < reglas.length; i++) {
+                if (reglas[i][0].test(d)) return reglas[i][1];
+            }
+            return 'SIN LÍNEA';
+        }
+
         function construirHtmlReporteSistema() {
             // Stock del sistema (Excel subido) en formato REPORTE DE INVENTARIO POR ALMACÉN
             // Separación Fríos / Secos + agrupación por línea
@@ -2241,16 +2294,18 @@
                     '. Sube el Excel de existencias (y opcionalmente Laive con columna Tipo = Frios/Secos).</p>';
             }
 
-            // Agrupar: si "Todos", primero por FRIOS/SECOS, luego por línea; si filtro, solo por línea
+            // Agrupar: primero FRIOS/SECOS (bloques), luego por línea dentro de cada uno
             function agruparPorLinea(lista) {
                 const gruposMap = {};
                 lista.forEach(function (item) {
-                    let lin = String(getLinea(item) || '').trim();
-                    if (!lin || normalizarTipoAlmacen(lin)) lin = 'SIN LÍNEA';
+                    let lin = getLineaReporte(item);
+                    if (!lin) lin = 'SIN LÍNEA';
                     if (!gruposMap[lin]) gruposMap[lin] = [];
                     gruposMap[lin].push(item);
                 });
                 return Object.keys(gruposMap).sort(function (a, b) {
+                    if (a === 'SIN LÍNEA') return 1;
+                    if (b === 'SIN LÍNEA') return -1;
                     return a.localeCompare(b, 'es');
                 }).map(function (lin) {
                     const arr = gruposMap[lin].slice().sort(function (a, b) {
