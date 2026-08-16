@@ -2257,12 +2257,12 @@
             if (directo === 'FRIOS' || directo === 'SECOS') return directo;
 
             const d = descReporteNorm(item);
-            // Fríos (cadena de frío / refrigerados)
-            if (/YOGURT|YOGHURT|\bYOG\b|BIO\s*DEFENSA|YOPI|YOP\s*MIX|QUESO|MOZARELLA|MOZZARELLA|EDAM|GOUDA|DANBO|CHEDDAR|PARMESANO|FRESCO\s*LAIVE|CREAM\s*CHEESE|CREMA\s*DE\s*Q|CREMA\s*QUESO|MANTEQUILLA|MANJAR|FUDGE|AREQUIP|BLANQUITO|DULCE\s*DE\s*LECHE|HELADERO|JAMONADA|\bJAMON\b|CHORIZO|HOT\s*DOG|HOTDOG|CHICHARRON|TOCINO|LECHE\s*UHT|LECHE\s*ENTER|LECHE\s*LIGHT|LECHE\s*SEMIDES|LECHE\s*SIN\s*LACT|LECHE\s*SABORIZ|LECHE\s*LAIVE|BEBIDA\s*DE\s*LECHE|UHT\s*LAIVE|ALMENDRA|SOYA\s*LAIVE|BEB\.?\s*COCO|COCO\s*LAIVE/.test(d)) {
+            // Fríos primero cuando es UHT / bebida chocolate / preferida (aunque diga M.LÁC)
+            if (/UHT|BEB\.?\s*CHOCOLATE|BEB\.?\s*(?:LA\s*)?PREF|YOGURT|YOGHURT|\bYOG\b|BIO\s*DEFENSA|YOPI|YOP\s*MIX|QUESO|MOZARELLA|MOZZARELLA|EDAM|GOUDA|DANBO|CHEDDAR|PARMESANO|FRESCO\s*LAIVE|CREAM\s*CHEESE|CREMA\s*DE\s*Q|CREMA\s*QUESO|MANTEQUILLA|MANJAR|FUDGE|AREQUIP|BLANQUITO|DULCE\s*DE\s*LECHE|HELADERO|JAMONADA|\bJAMON\b|CHORIZO|HOT\s*DOG|HOTDOG|CHICHARRON|TOCINO|LECHE\s*ENTER|LECHE\s*LIGHT|LECHE\s*SEMIDES|LECHE\s*SIN\s*LACT|LECHE\s*SABORIZ|LECHE\s*LAIVE|BEBIDA\s*DE\s*LECHE|ALMENDRA|SOYA\s*LAIVE|BEB\.?\s*COCO|COCO\s*LAIVE/.test(d)) {
                 return 'FRIOS';
             }
-            // Secos (ambiente)
-            if (/EVAPORAD|MARGARINA|SIROPE|MAPLE|WATTS|BEBIDA|NARANJA|DURAZNO|\bPERA\b|\bMANGO\b/.test(d)) {
+            // Secos: evaporadas / M.LÁC caja / Nutrilac (ambiente)
+            if (/EVAPORAD|NUTRILAC|M\.?\s*LAC\.?|ML\s*LAIVE|SIN\s*LAC.*(?:CAJA|CJ|6PACK|PACK)|MARGARINA|SIROPE|MAPLE|WATTS|\bNARANJA\b|\bDURAZNO\b|\bPERA\b|\bMANGO\b/.test(d)) {
                 return 'SECOS';
             }
             // PROM / CBM sin match claro → por defecto fríos (promos lácteas)
@@ -2284,19 +2284,24 @@
             );
             if (extra && !normalizarTipoAlmacen(String(extra))) return String(extra).trim().toUpperCase();
 
-            // Inferir por descripción (familias del reporte modelo Laive)
+            // Inferir por descripción (abreviaturas de existencias + familias del macro)
             const d = descReporteNorm(item);
             const reglas = [
+                // UHT / bolsa preferida antes que evaporada genérica
+                [/UHT\s*(?:LA\s*)?PREF|UHT\s*LAIVE|M\.?\s*LAC\.?\s*UHT|LECHE\s*UHT/, 'LECHES FRESCAS'],
+                // Bebidas saborizadas / chocolate
+                [/BEB\.?\s*CHOCOLATE|BEB\.?\s*(?:LA\s*)?PREF|BEBIDA\s*YOPI|CHOCOLATE\s*LAIVE\s*BOLSA/, 'LECHES FRESCAS: SABORIZADAS'],
+                // Evaporadas: M. LÁC / ML / NUTRILAC / SIN LAC en caja/6pack
+                [/NUTRILAC|(?:^|[\s.])M\.?\s*LAC\.?(?:\s|$)|ML\s*LAIVE|SIN\s*LAC.*(?:CAJA|CJ|6PACK|PACK)|EVAPORAD/, 'EVAPORADAS'],
                 [/BEBIDA|WATTS|\bNARANJA\b|\bDURAZNO\b|\bPERA\b|\bMANGO\b.*BOT/, 'BEBIDAS: BEBIDAS'],
                 [/CHICHARRON/, 'CARNICOS: CHICHARRON'],
                 [/CHORIZO/, 'CARNICOS: CHORIZO'],
                 [/HOT\s*DOG|HOTDOG/, 'CARNICOS: HOT DOG'],
                 [/JAMONADA/, 'CARNICOS: JAMONADA'],
-                [/\bJAMON\b|JAMÓN/, 'CARNICOS: JAMÓN'],
+                [/\bJAMON\b/, 'CARNICOS: JAMÓN'],
                 [/TOCINO/, 'CARNICOS: TOCINO'],
-                [/EVAPORAD/, 'EVAPORADAS'],
-                [/LECHE\s*UHT|UHT\s*LAIVE|LECHE\s*ENTER|LECHE\s*LIGHT|LECHE\s*SEMIDES|LECHE\s*SIN\s*LACT|LECHE\s*SABORIZ|BEBIDA\s*DE\s*LECHE|LECHE\s*LAIVE/, 'LECHES FRESCAS'],
-                [/AREQUIPENO|AREQUIPEÑO/, 'MANJARES: AREQUIPEÑO'],
+                [/LECHE\s*ENTER|LECHE\s*LIGHT|LECHE\s*SEMIDES|LECHE\s*SIN\s*LACT|LECHE\s*SABORIZ|BEBIDA\s*DE\s*LECHE|LECHE\s*LAIVE/, 'LECHES FRESCAS'],
+                [/AREQUIPENO|AREQUIPENO/, 'MANJARES: AREQUIPEÑO'],
                 [/BLANQUITO/, 'MANJARES: BLANQUITO'],
                 [/CASERO.*CHOCOLATE|FUDGE\s*ESPECIAL\s*CASERO/, 'MANJARES: CASERO - SABOR CHOCOLATE'],
                 [/DULCE\s*DE\s*LECHE/, 'MANJARES: DULCE DE LECHE'],
