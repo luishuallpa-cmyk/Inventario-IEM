@@ -2172,25 +2172,42 @@
             box.innerHTML = construirHtmlVistaInventario();
         }
 
-        /** Abre el reporte como hojas A4 en el navegador + descarga PDF real (móvil/escritorio). */
+        /** Carga html2pdf.js una sola vez (CDN). */
+        function cargarHtml2Pdf() {
+            return new Promise(function (resolve, reject) {
+                if (typeof window.html2pdf === 'function') {
+                    resolve(window.html2pdf);
+                    return;
+                }
+                const existente = document.querySelector('script[data-html2pdf]');
+                if (existente) {
+                    existente.addEventListener('load', function () { resolve(window.html2pdf); });
+                    existente.addEventListener('error', function () { reject(new Error('No se pudo cargar html2pdf')); });
+                    return;
+                }
+                const s = document.createElement('script');
+                s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+                s.async = true;
+                s.setAttribute('data-html2pdf', '1');
+                s.onload = function () { resolve(window.html2pdf); };
+                s.onerror = function () { reject(new Error('No se pudo cargar html2pdf')); };
+                document.head.appendChild(s);
+            });
+        }
+
+        /**
+         * Genera un PDF real y lo abre en el visor nativo del navegador
+         * (como Chrome PDF viewer: páginas, zoom, descargar).
+         */
         function abrirHtmlParaImprimir(titulo, estilosExtra, contenidoHtml) {
-            const nombreArchivo = String(titulo || 'reporte')
+            const nombreArchivo = (String(titulo || 'reporte')
                 .replace(/[^\w\-áéíóúñÁÉÍÓÚÑ ]+/g, '')
                 .replace(/\s+/g, '_')
-                .slice(0, 60) || 'reporte_inventario';
-            const estilos =
-                '*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}' +
-                'html,body{margin:0;padding:0;background:#525659;font-family:Arial,Segoe UI,sans-serif;color:#111}' +
-                '.pdf-toolbar{position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;' +
-                'padding:10px 12px;background:#1e293b;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.25)}' +
-                '.pdf-toolbar button{border:0;border-radius:8px;padding:10px 14px;font-weight:700;font-size:14px;cursor:pointer}' +
-                '.pdf-toolbar .btn-pdf{background:#2563eb;color:#fff}' +
-                '.pdf-toolbar .btn-print{background:#e2e8f0;color:#0f172a}' +
-                '.pdf-toolbar .btn-close{background:transparent;color:#cbd5e1;border:1px solid #64748b}' +
-                '.pdf-toolbar .hint{font-size:12px;color:#94a3b8;width:100%;text-align:center}' +
-                '.pdf-stage{padding:16px 12px 32px;display:flex;flex-direction:column;align-items:center;gap:16px}' +
-                '.pdf-page{background:#fff;width:210mm;max-width:100%;min-height:297mm;padding:14mm 12mm;box-shadow:0 4px 24px rgba(0,0,0,.35);' +
-                'font-size:11px}' +
+                .slice(0, 60) || 'reporte_inventario') + '.pdf';
+
+            const estilosPagina =
+                '*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}' +
+                'body{margin:0;padding:0;font-family:Arial,Segoe UI,sans-serif;color:#111;font-size:11px;background:#fff}' +
                 '.inv-report-brand{font-weight:800;font-size:14px;letter-spacing:.04em;color:#1d4ed8}' +
                 '.inv-preview-head{border-bottom:2px solid #1d4ed8;padding-bottom:10px;margin-bottom:14px}' +
                 '.inv-preview-head h1{margin:4px 0 0;font-size:16px;color:#0f172a}' +
@@ -2205,77 +2222,61 @@
                 '.mono{font-family:ui-monospace,Consolas,monospace;font-weight:600}' +
                 '.num{text-align:right;font-variant-numeric:tabular-nums;min-width:70px}' +
                 '.inv-preview-foot{margin-top:12px;padding-top:8px;border-top:2px solid #1d4ed8;font-size:11px}' +
-                '@media (max-width:700px){' +
-                '.pdf-page{width:100%;min-height:auto;padding:12px;box-shadow:none;border-radius:8px}' +
-                '.pdf-stage{padding:10px 8px 24px}' +
-                '.pdf-toolbar button{flex:1;min-width:120px}' +
-                '}' +
-                '@media print{' +
-                'html,body{background:#fff!important}' +
-                '.pdf-toolbar{display:none!important}' +
-                '.pdf-stage{padding:0}' +
-                '.pdf-page{width:auto;min-height:auto;padding:0;box-shadow:none}' +
-                '@page{margin:10mm;size:A4}' +
-                '*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}' +
-                '.inv-report-tipo-titulo{background:#0f766e!important;color:#fff!important}' +
-                '.inv-report-tipo-titulo.otros{background:#b45309!important;color:#fff!important}' +
-                '.inv-preview-linea-h,.inv-preview-linea h2,.inv-preview-linea h3{background:#1e3a5f!important;color:#fff!important}' +
-                '.inv-preview-table th{background:#e2e8f0!important}' +
-                '}' +
                 (estilosExtra || '');
 
-            const html =
-                '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">' +
-                '<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">' +
-                '<title>' + titulo + '</title>' +
-                '<style>' + estilos + '</style>' +
-                '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\\/script>' +
-                '</head><body>' +
-                '<div class="pdf-toolbar">' +
-                '<button type="button" class="btn-pdf" id="btnDescargarPdf">📄 Descargar PDF</button>' +
-                '<button type="button" class="btn-print" id="btnImprimir">🖨️ Imprimir</button>' +
-                '<button type="button" class="btn-close" id="btnCerrar">Cerrar</button>' +
-                '<div class="hint" id="pdfHint">Vista tipo hojas A4 · En celular usa “Descargar PDF”</div>' +
-                '</div>' +
-                '<div class="pdf-stage"><div class="pdf-page" id="pdfPage">' + contenidoHtml + '</div></div>' +
-                '<script>(function(){' +
-                'var page=document.getElementById("pdfPage");' +
-                'var hint=document.getElementById("pdfHint");' +
-                'var nombre=' + JSON.stringify(nombreArchivo + '.pdf') + ';' +
-                'function esMovil(){return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)||window.innerWidth<700;}' +
-                'function descargar(){' +
-                'if(typeof html2pdf==="undefined"){hint.textContent="No se cargó el generador PDF. Usa Imprimir → Guardar como PDF.";return;}' +
-                'hint.textContent="Generando PDF…";' +
-                'var opt={margin:[8,8,8,8],filename:nombre,image:{type:"jpeg",quality:0.95},' +
-                'html2canvas:{scale:2,useCORS:true,logging:false},' +
-                'jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},pagebreak:{mode:["css","legacy"]}};' +
-                'html2pdf().set(opt).from(page).save().then(function(){hint.textContent="PDF descargado.";}).catch(function(e){' +
-                'hint.textContent="Error al generar PDF. Prueba Imprimir.";console.error(e);});' +
-                '}' +
-                'document.getElementById("btnDescargarPdf").onclick=descargar;' +
-                'document.getElementById("btnImprimir").onclick=function(){window.print();};' +
-                'document.getElementById("btnCerrar").onclick=function(){window.close();};' +
-                'window.onload=function(){if(esMovil()){setTimeout(descargar,600);}else{hint.textContent="Escritorio: puedes Descargar PDF o Imprimir.";}};' +
-                '})();<\\/script>' +
-                '</body></html>';
+            showToast('Generando PDF… espera un momento.', 'info');
 
-            try {
-                const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-                const url = URL.createObjectURL(blob);
-                const w = window.open(url, '_blank');
-                if (!w) {
-                    showToast('Permite ventanas emergentes para ver/descargar el PDF.', 'error');
-                    URL.revokeObjectURL(url);
-                    return false;
-                }
-                setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) {} }, 120000);
-                showToast('Reporte abierto · En celular se descarga el PDF automáticamente.', 'info');
-                return true;
-            } catch (err) {
-                console.error(err);
-                showToast('No se pudo abrir el reporte: ' + (err && err.message ? err.message : err), 'error');
-                return false;
+            // Contenedor fuera de pantalla (mismo origen → se puede abrir el blob)
+            let host = document.getElementById('iemPdfRenderHost');
+            if (!host) {
+                host = document.createElement('div');
+                host.id = 'iemPdfRenderHost';
+                host.setAttribute('aria-hidden', 'true');
+                host.style.cssText = 'position:fixed;left:-10000px;top:0;width:210mm;background:#fff;z-index:-1;pointer-events:none;opacity:0;';
+                document.body.appendChild(host);
             }
+            host.innerHTML = '<style>' + estilosPagina + '</style><div id="iemPdfPage">' + contenidoHtml + '</div>';
+            const page = host.querySelector('#iemPdfPage');
+
+            cargarHtml2Pdf()
+                .then(function (html2pdf) {
+                    const opt = {
+                        margin: [8, 8, 8, 8],
+                        filename: nombreArchivo,
+                        image: { type: 'jpeg', quality: 0.96 },
+                        html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
+                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                        pagebreak: { mode: ['css', 'legacy'] }
+                    };
+                    return html2pdf().set(opt).from(page).outputPdf('blob');
+                })
+                .then(function (blob) {
+                    if (!blob) throw new Error('PDF vacío');
+                    const url = URL.createObjectURL(blob);
+                    const w = window.open(url, '_blank');
+                    if (!w) {
+                        // Popup bloqueado → descarga directa
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = nombreArchivo;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        showToast('PDF descargado (activa ventanas emergentes para abrirlo en el visor).', 'info');
+                    } else {
+                        showToast('PDF abierto en el visor del navegador.', 'success');
+                    }
+                    setTimeout(function () {
+                        try { URL.revokeObjectURL(url); } catch (e) {}
+                        try { host.innerHTML = ''; } catch (e2) {}
+                    }, 120000);
+                })
+                .catch(function (err) {
+                    console.error(err);
+                    showToast('No se pudo generar el PDF: ' + (err && err.message ? err.message : err), 'error');
+                });
+
+            return true;
         }
 
         function exportarInventarioPDF() {
