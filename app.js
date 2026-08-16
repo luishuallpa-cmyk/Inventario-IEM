@@ -2166,6 +2166,50 @@
             box.innerHTML = construirHtmlVistaInventario();
         }
 
+        /** Abre HTML listo para imprimir / Guardar como PDF (Blob = no se queda en about:blank). */
+        function abrirHtmlParaImprimir(titulo, estilosExtra, contenidoHtml) {
+            const estilosBase =
+                '*{box-sizing:border-box}body{font-family:Arial,Segoe UI,sans-serif;color:#111;margin:0;padding:18px;background:#fff;font-size:11px}' +
+                '.inv-report-brand{font-weight:800;font-size:14px;letter-spacing:.04em;color:#1d4ed8}' +
+                '.inv-preview-head{border-bottom:2px solid #1d4ed8;padding-bottom:10px;margin-bottom:14px}' +
+                '.inv-preview-head h1{margin:4px 0 0;font-size:16px;color:#0f172a}' +
+                '.inv-preview-meta{margin:6px 0 0;color:#334155;font-size:11px}' +
+                '.inv-report-tipo-titulo{margin:16px 0 8px;font-size:13px;color:#fff;background:#0f766e;padding:6px 10px;font-weight:800;letter-spacing:.03em}' +
+                '.inv-report-tipo-titulo.otros{background:#b45309}' +
+                '.inv-preview-linea{margin-bottom:14px;page-break-inside:avoid}' +
+                '.inv-preview-linea-h,.inv-preview-linea h2,.inv-preview-linea h3{margin:0 0 6px;font-size:12px;color:#fff;background:#1e3a5f;padding:5px 8px;font-weight:700}' +
+                '.inv-preview-table{width:100%;border-collapse:collapse;font-size:10px}' +
+                '.inv-preview-table th{background:#e2e8f0;text-align:left;padding:4px 6px;border:1px solid #94a3b8;font-weight:700}' +
+                '.inv-preview-table td{padding:3px 6px;border:1px solid #cbd5e1;vertical-align:top}' +
+                '.mono{font-family:ui-monospace,Consolas,monospace;font-weight:600}' +
+                '.num{text-align:right;font-variant-numeric:tabular-nums;min-width:70px}' +
+                '.inv-preview-foot{margin-top:12px;padding-top:8px;border-top:2px solid #1d4ed8;font-size:11px}' +
+                '@media print{body{padding:8px}@page{margin:10mm;size:A4}}' +
+                (estilosExtra || '');
+            const html =
+                '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>' + titulo + '</title>' +
+                '<style>' + estilosBase + '</style></head><body>' + contenidoHtml +
+                '<script>window.onload=function(){setTimeout(function(){try{window.focus();window.print()}catch(e){}},400);}<\\/script>' +
+                '</body></html>';
+            try {
+                const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const w = window.open(url, '_blank');
+                if (!w) {
+                    showToast('Permite ventanas emergentes para generar el PDF.', 'error');
+                    URL.revokeObjectURL(url);
+                    return false;
+                }
+                setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) {} }, 60000);
+                showToast('PDF: en el diálogo elige “Guardar como PDF”.', 'info');
+                return true;
+            } catch (err) {
+                console.error(err);
+                showToast('No se pudo abrir el PDF: ' + (err && err.message ? err.message : err), 'error');
+                return false;
+            }
+        }
+
         function exportarInventarioPDF() {
             if (!esAdmin()) {
                 showToast('Solo el administrador puede exportar PDF.', 'error');
@@ -2176,34 +2220,8 @@
                 showToast('No hay productos para el PDF con el filtro actual.', 'error');
                 return;
             }
-            const w = window.open('', '_blank', 'noopener,noreferrer');
-            if (!w) {
-                showToast('Permite ventanas emergentes para generar el PDF.', 'error');
-                return;
-            }
             const titulo = 'REPORTE DE INVENTARIO POR ALMACÉN' + (filtroTipoLaive ? ' · ' + filtroTipoLaive : '');
-            w.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>' + titulo + '</title>');
-            w.document.write('<style>');
-            w.document.write('*{box-sizing:border-box}body{font-family:Arial,Segoe UI,sans-serif;color:#111;margin:0;padding:18px;background:#fff;font-size:11px}');
-            w.document.write('.inv-report-brand{font-weight:800;font-size:14px;letter-spacing:.04em;color:#1d4ed8}');
-            w.document.write('.inv-preview-head{border-bottom:2px solid #1d4ed8;padding-bottom:10px;margin-bottom:14px}');
-            w.document.write('.inv-preview-head h1{margin:4px 0 0;font-size:16px;color:#0f172a}');
-            w.document.write('.inv-preview-meta{margin:6px 0 0;color:#334155;font-size:11px}');
-            w.document.write('.inv-preview-linea{margin-bottom:14px;page-break-inside:avoid}');
-            w.document.write('.inv-preview-linea h2{margin:0 0 6px;font-size:12px;color:#fff;background:#1e3a5f;padding:5px 8px;font-weight:700}');
-            w.document.write('.inv-preview-table{width:100%;border-collapse:collapse;font-size:10px}');
-            w.document.write('.inv-preview-table th{background:#e2e8f0;text-align:left;padding:4px 6px;border:1px solid #94a3b8;font-weight:700}');
-            w.document.write('.inv-preview-table td{padding:3px 6px;border:1px solid #cbd5e1;vertical-align:top}');
-            w.document.write('.mono{font-family:ui-monospace,Consolas,monospace;font-weight:600}');
-            w.document.write('.num{text-align:right;font-variant-numeric:tabular-nums;min-width:70px}');
-            w.document.write('.inv-preview-foot{margin-top:12px;padding-top:8px;border-top:2px solid #1d4ed8;font-size:11px}');
-            w.document.write('@media print{body{padding:8px}@page{margin:10mm;size:A4}}');
-            w.document.write('</style></head><body>');
-            w.document.write(contenido);
-            w.document.write('<script>window.onload=function(){setTimeout(function(){window.print()},300);}<\/script>');
-            w.document.write('</body></html>');
-            w.document.close();
-            showToast('PDF: usa “Guardar como PDF” en el diálogo de impresión.', 'info');
+            abrirHtmlParaImprimir(titulo, '', contenido);
         }
 
         // ============================================================
@@ -2224,6 +2242,37 @@
             }
         }
 
+        /** Texto normalizado de descripción (sin tildes) para inferir línea / tipo. */
+        function descReporteNorm(item) {
+            return String(getDescripcion(item) || '').toUpperCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        }
+
+        /**
+         * Tipo Fríos/Secos para el reporte.
+         * Usa el del catálogo (Laive); si falta (PROM, CBM, etc.) lo infiere por nombre.
+         */
+        function getTipoAlmacenReporte(item) {
+            const directo = getTipoAlmacen(item);
+            if (directo === 'FRIOS' || directo === 'SECOS') return directo;
+
+            const d = descReporteNorm(item);
+            // Fríos (cadena de frío / refrigerados)
+            if (/YOGURT|YOGHURT|\bYOG\b|BIO\s*DEFENSA|YOPI|YOP\s*MIX|QUESO|MOZARELLA|MOZZARELLA|EDAM|GOUDA|DANBO|CHEDDAR|PARMESANO|FRESCO\s*LAIVE|CREAM\s*CHEESE|CREMA\s*DE\s*Q|CREMA\s*QUESO|MANTEQUILLA|MANJAR|FUDGE|AREQUIP|BLANQUITO|DULCE\s*DE\s*LECHE|HELADERO|JAMONADA|\bJAMON\b|CHORIZO|HOT\s*DOG|HOTDOG|CHICHARRON|TOCINO|LECHE\s*UHT|LECHE\s*ENTER|LECHE\s*LIGHT|LECHE\s*SEMIDES|LECHE\s*SIN\s*LACT|LECHE\s*SABORIZ|LECHE\s*LAIVE|BEBIDA\s*DE\s*LECHE|UHT\s*LAIVE|ALMENDRA|SOYA\s*LAIVE|BEB\.?\s*COCO|COCO\s*LAIVE/.test(d)) {
+                return 'FRIOS';
+            }
+            // Secos (ambiente)
+            if (/EVAPORAD|MARGARINA|SIROPE|MAPLE|WATTS|BEBIDA|NARANJA|DURAZNO|\bPERA\b|\bMANGO\b/.test(d)) {
+                return 'SECOS';
+            }
+            // PROM / CBM sin match claro → por defecto fríos (promos lácteas)
+            const cod = String(getCodigo(item) || '').toUpperCase();
+            if (/^(PROM|CBM|COMBO|PACK)/.test(cod) || /\b(PROM|PROMO|CBM|COMBO)\b/.test(d)) {
+                return 'FRIOS';
+            }
+            return '';
+        }
+
         /** Línea de reporte: categoría del catálogo o inferida de la descripción (estilo macro). */
         function getLineaReporte(item) {
             let lin = String(getLinea(item) || '').trim();
@@ -2236,8 +2285,7 @@
             if (extra && !normalizarTipoAlmacen(String(extra))) return String(extra).trim().toUpperCase();
 
             // Inferir por descripción (familias del reporte modelo Laive)
-            const d = String(getDescripcion(item) || '').toUpperCase()
-                .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            const d = descReporteNorm(item);
             const reglas = [
                 [/BEBIDA|WATTS|\bNARANJA\b|\bDURAZNO\b|\bPERA\b|\bMANGO\b.*BOT/, 'BEBIDAS: BEBIDAS'],
                 [/CHICHARRON/, 'CARNICOS: CHICHARRON'],
@@ -2274,24 +2322,30 @@
             for (let i = 0; i < reglas.length; i++) {
                 if (reglas[i][0].test(d)) return reglas[i][1];
             }
+            const cod = String(getCodigo(item) || '').toUpperCase();
+            if (/^(PROM|CBM)/.test(cod) || /\b(PROM|PROMO|CBM|COMBO)\b/.test(d)) {
+                return 'PROMOS / COMBOS';
+            }
             return 'SIN LÍNEA';
         }
 
         function construirHtmlReporteSistema() {
-            // Stock del sistema (Excel subido) en formato REPORTE DE INVENTARIO POR ALMACÉN
-            // Separación Fríos / Secos + agrupación por línea
+            // Stock del sistema: solo con stock > 0 · Fríos/Secos (Laive o por nombre) · luego línea
             const filtro = filtroTipoReporte || '';
             let items = (currentData || []).filter(function (item) {
                 const activoItem = item.activo !== false && item.Activo !== false && item.ACTIVO !== false;
                 if (!activoItem) return false;
-                if (filtro) return getTipoAlmacen(item) === filtro;
+                // Productos sin stock no figuran
+                const stock = (typeof getCantidad === 'function') ? Number(getCantidad(item)) || 0 : 0;
+                if (stock <= 0) return false;
+                if (filtro) return getTipoAlmacenReporte(item) === filtro;
                 return true;
             });
 
             if (!items.length) {
-                return '<p class="admin-sesiones-empty">No hay productos del sistema' +
+                return '<p class="admin-sesiones-empty">No hay productos con stock' +
                     (filtro ? ' en <strong>' + filtro + '</strong>' : '') +
-                    '. Sube el Excel de existencias (y opcionalmente Laive con columna Tipo = Frios/Secos).</p>';
+                    '. Sube el Excel de existencias (cantidad &gt; 0).</p>';
             }
 
             // Agrupar: primero FRIOS/SECOS (bloques), luego por línea dentro de cada uno
@@ -2306,6 +2360,8 @@
                 return Object.keys(gruposMap).sort(function (a, b) {
                     if (a === 'SIN LÍNEA') return 1;
                     if (b === 'SIN LÍNEA') return -1;
+                    if (a === 'PROMOS / COMBOS') return 1;
+                    if (b === 'PROMOS / COMBOS') return -1;
                     return a.localeCompare(b, 'es');
                 }).map(function (lin) {
                     const arr = gruposMap[lin].slice().sort(function (a, b) {
@@ -2317,20 +2373,28 @@
 
             const bloques = [];
             if (filtro) {
-                bloques.push({ titulo: filtro === 'FRIOS' ? '❄️ FRÍOS' : '📦 SECOS', grupos: agruparPorLinea(items) });
+                bloques.push({
+                    titulo: (filtro === 'FRIOS' ? '❄️ FRÍOS' : '📦 SECOS') + ' (' + items.length + ')',
+                    grupos: agruparPorLinea(items),
+                    esOtros: false
+                });
             } else {
-                const frios = items.filter(function (it) { return getTipoAlmacen(it) === 'FRIOS'; });
-                const secos = items.filter(function (it) { return getTipoAlmacen(it) === 'SECOS'; });
+                const frios = items.filter(function (it) { return getTipoAlmacenReporte(it) === 'FRIOS'; });
+                const secos = items.filter(function (it) { return getTipoAlmacenReporte(it) === 'SECOS'; });
                 const otros = items.filter(function (it) {
-                    const t = getTipoAlmacen(it);
+                    const t = getTipoAlmacenReporte(it);
                     return t !== 'FRIOS' && t !== 'SECOS';
                 });
-                if (frios.length) bloques.push({ titulo: '❄️ FRÍOS', grupos: agruparPorLinea(frios) });
-                if (secos.length) bloques.push({ titulo: '📦 SECOS', grupos: agruparPorLinea(secos) });
-                if (otros.length) bloques.push({ titulo: '📦 OTROS / SIN TIPO', grupos: agruparPorLinea(otros) });
+                if (frios.length) bloques.push({ titulo: '❄️ FRÍOS (' + frios.length + ')', grupos: agruparPorLinea(frios), esOtros: false });
+                if (secos.length) bloques.push({ titulo: '📦 SECOS (' + secos.length + ')', grupos: agruparPorLinea(secos), esOtros: false });
+                if (otros.length) bloques.push({
+                    titulo: '⚠️ SIN CLASIFICAR (' + otros.length + ')',
+                    grupos: agruparPorLinea(otros),
+                    esOtros: true
+                });
             }
 
-            const tituloFiltro = filtro === 'FRIOS' ? 'FRÍOS' : (filtro === 'SECOS' ? 'SECOS' : 'TODOS (Fríos + Secos)');
+            const tituloFiltro = filtro === 'FRIOS' ? 'FRÍOS' : (filtro === 'SECOS' ? 'SECOS' : 'TODOS (Fríos + Secos + sin tipo)');
             let html = '<div class="inv-preview-doc inv-report-almacen inv-report-sistema">';
             let n = 0, totalCajas = 0, totalUni = 0;
             html += '<header class="inv-preview-head inv-report-head">' +
@@ -2343,7 +2407,8 @@
 
             bloques.forEach(function (bloque) {
                 html += '<div class="inv-report-tipo-block">';
-                html += '<h2 class="inv-report-tipo-titulo">' + escapeHtmlSes(bloque.titulo) + '</h2>';
+                html += '<h2 class="inv-report-tipo-titulo' + (bloque.esOtros ? ' otros' : '') + '">' +
+                    escapeHtmlSes(bloque.titulo) + '</h2>';
                 (bloque.grupos || []).forEach(function (grupo) {
                     html += '<section class="inv-preview-linea"><h3 class="inv-preview-linea-h">' + escapeHtmlSes(grupo.linea) + '</h3>';
                     html += '<table class="inv-preview-table inv-report-table"><thead><tr>' +
@@ -2394,35 +2459,8 @@
                 showToast('No hay productos para el PDF con el filtro actual.', 'error');
                 return;
             }
-            const w = window.open('', '_blank', 'noopener,noreferrer');
-            if (!w) {
-                showToast('Permite ventanas emergentes para generar el PDF.', 'error');
-                return;
-            }
             const titulo = 'REPORTE DE INVENTARIO POR ALMACÉN · SISTEMA' + (filtroTipoReporte ? ' · ' + filtroTipoReporte : '');
-            w.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>' + titulo + '</title>');
-            w.document.write('<style>');
-            w.document.write('*{box-sizing:border-box}body{font-family:Arial,Segoe UI,sans-serif;color:#111;margin:0;padding:18px;background:#fff;font-size:11px}');
-            w.document.write('.inv-report-brand{font-weight:800;font-size:14px;letter-spacing:.04em;color:#1d4ed8}');
-            w.document.write('.inv-preview-head{border-bottom:2px solid #1d4ed8;padding-bottom:10px;margin-bottom:14px}');
-            w.document.write('.inv-preview-head h1{margin:4px 0 0;font-size:16px;color:#0f172a}');
-            w.document.write('.inv-preview-meta{margin:6px 0 0;color:#334155;font-size:11px}');
-            w.document.write('.inv-report-tipo-titulo{margin:16px 0 8px;font-size:13px;color:#fff;background:#0f766e;padding:6px 10px;font-weight:800;letter-spacing:.03em}');
-            w.document.write('.inv-preview-linea{margin-bottom:14px;page-break-inside:avoid}');
-            w.document.write('.inv-preview-linea-h,.inv-preview-linea h2,.inv-preview-linea h3{margin:0 0 6px;font-size:12px;color:#fff;background:#1e3a5f;padding:5px 8px;font-weight:700}');
-            w.document.write('.inv-preview-table{width:100%;border-collapse:collapse;font-size:10px}');
-            w.document.write('.inv-preview-table th{background:#e2e8f0;text-align:left;padding:4px 6px;border:1px solid #94a3b8;font-weight:700}');
-            w.document.write('.inv-preview-table td{padding:3px 6px;border:1px solid #cbd5e1;vertical-align:top}');
-            w.document.write('.mono{font-family:ui-monospace,Consolas,monospace;font-weight:600}');
-            w.document.write('.num{text-align:right;font-variant-numeric:tabular-nums;min-width:70px}');
-            w.document.write('.inv-preview-foot{margin-top:12px;padding-top:8px;border-top:2px solid #1d4ed8;font-size:11px}');
-            w.document.write('@media print{body{padding:8px}@page{margin:10mm;size:A4}}');
-            w.document.write('</style></head><body>');
-            w.document.write(contenido);
-            w.document.write('<script>window.onload=function(){setTimeout(function(){window.print()},300);}<\/script>');
-            w.document.write('</body></html>');
-            w.document.close();
-            showToast('PDF del sistema: usa “Guardar como PDF” en el diálogo de impresión.', 'info');
+            abrirHtmlParaImprimir(titulo, '', contenido);
         }
 
         // Buscador admin de catálogo completo (existencias)
