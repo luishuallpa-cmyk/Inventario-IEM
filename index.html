@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes, viewport-fit=cover">
     <title>IEM GROUP · Inventario</title>
-    <meta name="description" content="Conteo de inventario físico, pedidos y catálogo IEM GROUP">
+    <meta name="description" content="Conteo de inventario físico y catálogo IEM GROUP">
     <meta name="theme-color" content="#0c1220">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -23,8 +23,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=3.51">
-    <link rel="stylesheet" href="admin.css?v=3.51">
+    <link rel="stylesheet" href="style.css?v=3.52">
+    <link rel="stylesheet" href="admin.css?v=3.52">
 </head>
 <body>
 <div class="login-overlay" id="loginOverlay">
@@ -105,7 +105,6 @@
     <!-- ============================================================
     BUSCADOR
     ============================================================ -->
-    <div class="vendedor-only-banner" id="vendedorBanner">🛒 Modo vendedor: solo sugerencia de pedido. Busca productos y usa <strong>Al pedido</strong>.</div>
     <section class="card" id="searchSection">
         <div class="search-row">
             <input type="text" id="searchInput" placeholder="Buscar por código, descripción, marca o barras..." autofocus>
@@ -191,13 +190,6 @@
                 <input type="number" id="txtUnidades" value="0" min="0">
             </div>
             <span class="info-text" id="infoFactor">Factor: 1</span>
-            <div class="acciones">
-                <button class="btn btn-success" id="btnAgregar" title="Agregar al pedido de sugerencia"><span class="btn-icon">🛒</span><span class="btn-label"> Al pedido</span></button>
-            </div>
-        </div>
-        <div id="modoPedidoBanner" class="modo-pedido-banner hidden" role="status">
-            <span>🛒 <strong>Modo pedido</strong> — busca por código o nombre (catálogo / existencias) y agrega cantidades.</span>
-            <button type="button" class="btn btn-outline btn-sm" id="btnSalirModoPedido">Salir del modo pedido</button>
         </div>
 
         <!-- Aviso de conversión automática: aparece cuando se escriben más
@@ -289,60 +281,6 @@
             <span>📊 Diferencia: <strong id="resDiferencia">0</strong></span>
             <span>Contados: <strong id="resContados">0</strong></span>
         </div>
-        </div>
-        </div>
-    </section>
-
-    <!-- ============================================================
-    PEDIDO (opción secundaria: sugerencia al proveedor)
-    ============================================================ -->
-    <section class="card card-secundaria" id="pedidoSection">
-        <div class="card-header collapsible" id="pedidoCardHeader" role="button" tabindex="0" aria-expanded="false" aria-controls="pedidoCardBody">
-            <h2>🛒 Sugerencia de pedido</h2>
-            <span class="badge" id="pedidoCount">0 productos</span>
-            <span class="card-toggle" aria-hidden="true">▾</span>
-        </div>
-        <div class="card-body-collapsible is-collapsed" id="pedidoCardBody">
-        <div class="card-body-inner">
-        <p class="pedido-help">Opción secundaria: usa el <strong>mismo buscador</strong> y los códigos del catálogo (existencias / Excel). Toca <strong>Armar pedido</strong> para empezar.</p>
-        <div class="card-actions-row">
-                <button type="button" class="btn btn-primary btn-sm" id="btnArmarPedido" title="Activa modo pedido y enfoca el buscador">
-                    <span class="btn-icon">🔎</span><span class="btn-label"> Armar pedido</span>
-                </button>
-                <span class="totales-mini">
-                    <span style="font-size:0.7rem; color:var(--text-muted);">Cajas <strong id="totalCajasPedido" style="color:var(--heading-color);">0</strong></span>
-                    <span style="font-size:0.7rem; color:var(--text-muted);">Unid. <strong id="totalUnidadesPedido" style="color:var(--heading-color);">0</strong></span>
-                </span>
-                <button class="btn btn-success btn-sm" id="exportPedidoBtn"><span class="btn-icon">📊</span><span class="btn-label"> Excel</span></button>
-                <button class="btn btn-outline btn-sm" id="guardarPedidoDriveBtn"><span class="btn-icon">☁️</span><span class="btn-label"> Nube</span></button>
-                <button class="btn btn-danger btn-sm" id="limpiarPedidoBtn" title="Vaciar pedido"><span class="btn-icon">🗑️</span></button>
-        </div>
-        <div class="table-wrap">
-            <table class="diff-table" id="pedidoTable">
-                <thead><tr>
-                    <th>#</th>
-                    <th>Código</th>
-                    <th>Cód. Fábrica</th>
-                    <th>Descripción</th>
-                    <th>Unidad</th>
-                    <th>Cajas</th>
-                    <th>Unidades</th>
-                    <th>Acción</th>
-                </tr></thead>
-                <tbody id="pedidoBody">
-                    <tr><td colspan="8" class="empty-message">No hay productos en el pedido.</td></tr>
-                </tbody>
-                <tfoot id="pedidoFoot" style="display:none;">
-                    <tr>
-                        <td colspan="5" style="text-align:right;">Totales</td>
-                        <td id="totalCajasFoot" style="color:var(--heading-color);">0</td>
-                        <td id="totalUnidadesFoot" style="color:var(--heading-color);">0</td>
-                        <td></td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
-        <div class="mobile-item-list" id="pedidoMobileList"></div>
         </div>
         </div>
     </section>
@@ -466,11 +404,6 @@
                                 <span class="btn-icon">📊</span><span class="btn-label"> Descargar Excel (plano)</span>
                             </button>
                         </div>
-                        <div class="admin-actions" style="justify-content:stretch;margin-top:0.5rem;">
-                            <button type="button" class="btn btn-outline" id="adminExportPedidoBtn" style="flex:1;">
-                                <span class="btn-icon">🛒</span><span class="btn-label"> Descargar pedido</span>
-                            </button>
-                        </div>
                     </div>
 
                     <div class="admin-tab" id="adminTabVista" data-admin-panel="vista" hidden>
@@ -575,8 +508,8 @@
         </div>
     </div>
 
-<script src="config.js?v=3.51"></script>
-<script src="app.js?v=3.51"></script>
+<script src="config.js?v=3.52"></script>
+<script src="app.js?v=3.52"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {

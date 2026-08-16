@@ -853,6 +853,10 @@ body.light-theme .admin-barras-selected.has-product {
 body.light-theme .admin-vista-preview {
     background: rgba(250, 246, 240, 0.85);
 }
+.inv-report-logo-wrap { margin-bottom: 0.35rem; }
+.inv-report-logo { height: 40px; width: auto; display: block; }
+.inv-preview-head { text-align: center; }
+.inv-preview-head .inv-report-logo { margin: 0 auto; }
 .inv-preview-head h1 {
     font-size: 1.05rem;
     margin: 0;

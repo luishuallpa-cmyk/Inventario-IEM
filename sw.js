@@ -1,7 +1,7 @@
 /* IEM Inventario — Service Worker (PWA)
    Cachea la interfaz para abrir más rápido y tolerar cortes breves de red.
    Los datos (Supabase) siempre van por red. */
-const CACHE = 'iem-inventario-v3.40';
+const CACHE = 'iem-inventario-v3.51';
 const PRECACHE = [
   './',
   './index.html',
@@ -10,6 +10,10 @@ const PRECACHE = [
   './app.js',
   './config.js',
   './manifest.webmanifest',
+  './vendedores.html',
+  './vendedores.js',
+  './vendedores.css',
+  './manifest-vendedores.webmanifest',
   './logo-iem.png',
   './icon-192.png',
   './icon-512.png',

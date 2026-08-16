@@ -2123,16 +2123,13 @@
                 return { linea: lin, items: arr };
             });
 
-            const tituloFiltro = filtroVista === 'FRIOS' ? 'FRÍOS' : (filtroVista === 'SECOS' ? 'SECOS' : 'TODOS');
             let html = '<div class="inv-preview-doc inv-report-almacen">';
             let n = 0, totalCajas = 0, totalUni = 0;
+            // Cabecera simple para gerencia: logo + título + fecha
             html += '<header class="inv-preview-head inv-report-head">' +
-                '<div class="inv-report-brand">IEM GROUP</div>' +
+                '<div class="inv-report-logo-wrap"><img class="inv-report-logo" src="logo-iem.png" alt="IEM GROUP"></div>' +
                 '<h1>REPORTE DE INVENTARIO POR ALMACÉN</h1>' +
-                '<p class="inv-preview-meta">Filtro: <strong>' + tituloFiltro + '</strong>' +
-                ' · Fecha: ' + new Date().toLocaleString('es-PE') +
-                ' · Usuario: ' + escapeHtmlSes(usuarioActual || '-') +
-                ' · Productos: ' + items.length + '</p></header>';
+                '<p class="inv-preview-meta">' + new Date().toLocaleString('es-PE') + '</p></header>';
 
             grupos.forEach(function (grupo) {
                 html += '<section class="inv-preview-linea"><h2>' + escapeHtmlSes(grupo.linea) + '</h2>';
@@ -2210,9 +2207,10 @@
                 '*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}' +
                 '#iemPdfPage{margin:0;padding:0;font-family:Arial,Segoe UI,sans-serif;color:#111!important;font-size:11px;background:#fff!important}' +
                 '#iemPdfPage, #iemPdfPage td, #iemPdfPage th, #iemPdfPage p, #iemPdfPage span, #iemPdfPage div, #iemPdfPage strong{color:#111!important}' +
-                '#iemPdfPage .inv-report-brand{font-weight:800;font-size:14px;letter-spacing:.04em;color:#1d4ed8!important}' +
-                '#iemPdfPage .inv-preview-head{border-bottom:2px solid #1d4ed8;padding-bottom:10px;margin-bottom:14px}' +
-                '#iemPdfPage .inv-preview-head h1{margin:4px 0 0;font-size:16px;color:#0f172a!important}' +
+                '#iemPdfPage .inv-report-logo-wrap{margin:0 0 6px}' +
+                '#iemPdfPage .inv-report-logo{height:42px;width:auto;display:block}' +
+                '#iemPdfPage .inv-preview-head{border-bottom:2px solid #1d4ed8;padding-bottom:10px;margin-bottom:14px;text-align:center}' +
+                '#iemPdfPage .inv-preview-head h1{margin:6px 0 0;font-size:16px;color:#0f172a!important}' +
                 '#iemPdfPage .inv-preview-meta{margin:6px 0 0;color:#334155!important;font-size:11px}' +
                 '#iemPdfPage .inv-report-tipo-block{page-break-inside:auto}' +
                 '#iemPdfPage .inv-report-tipo-block.page-break-before{page-break-before:always;break-before:page}' +
@@ -2485,13 +2483,11 @@
             const tituloFiltro = filtro === 'FRIOS' ? 'FRÍOS' : (filtro === 'SECOS' ? 'SECOS' : 'TODOS (Fríos + Secos + sin tipo)');
             let html = '<div class="inv-preview-doc inv-report-almacen inv-report-sistema">';
             let n = 0, totalCajas = 0, totalUni = 0;
+            // Cabecera simple para gerencia: logo + título + fecha
             html += '<header class="inv-preview-head inv-report-head">' +
-                '<div class="inv-report-brand">IEM GROUP</div>' +
+                '<div class="inv-report-logo-wrap"><img class="inv-report-logo" src="logo-iem.png" alt="IEM GROUP"></div>' +
                 '<h1>REPORTE DE INVENTARIO POR ALMACÉN</h1>' +
-                '<p class="inv-preview-meta">Origen: <strong>Stock del sistema (Excel)</strong> · Filtro: <strong>' + tituloFiltro + '</strong>' +
-                ' · Fecha: ' + new Date().toLocaleString('es-PE') +
-                ' · Usuario: ' + escapeHtmlSes(usuarioActual || '-') +
-                ' · Productos: ' + items.length + '</p></header>';
+                '<p class="inv-preview-meta">' + new Date().toLocaleString('es-PE') + '</p></header>';
 
             bloques.forEach(function (bloque, idxBloque) {
                 // SECOS / OTROS empiezan en hoja nueva (no dejan el título solo al final de Fríos)
