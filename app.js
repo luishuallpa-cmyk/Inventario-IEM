@@ -2387,8 +2387,8 @@
                 [/Q\.?\s*ANDINO|\bANDINO\b/, 'QUESOS: ANDINO'],
                 [/CHARACATO/, 'QUESOS: CHARACATO'],
                 [/CHEDDAR/, 'QUESOS: CHEDDAR'],
-                [/CREAM\s*CHEESE/, 'QUESOS: CREAM CHEESE'],
-                [/CREMA\s*DE\s*Q\.?|CREMA\s*DE\s*QUESO|CREMA\s*QUESO|\bCREMA\s*DE\s*Q\b/, 'QUESOS: CREMA'],
+                [/CREAM\s*CHEESE|CREMA\s*CHEESE/, 'QUESOS: CREAM CHEESE'],
+                [/QUESO\s*CREMA|CREMA\s*DE\s*Q\.?|CREMA\s*DE\s*QUESO|CREMA\s*QUESO|\bCREMA\s*DE\s*Q\b/, 'QUESOS: CREMA'],
                 [/\bDANBO\b/, 'QUESOS: DANBO'],
                 [/\bEDAM\b/, 'QUESOS: EDAM'],
                 [/QUESO\s*FRESCO|FRESCO\s*LAIVE/, 'QUESOS: FRESCO'],
@@ -3075,17 +3075,26 @@
                             }
                             // No pisar stock ni la línea/categoría; solo habilitar + Frios/Secos + SAP
                             if (p.tipo_almacen) guardarTipoAlmacenCodigo(p.codigo, p.tipo_almacen);
+                            // Conservar Linea de existencias (si el upsert no manda el campo, a veces se pierde)
+                            let lineaExistente = null;
+                            const itemPrev = (currentData || []).find(function (it) {
+                                return String(getCodigo(it) || '').trim() === String(p.codigo).trim();
+                            });
+                            if (itemPrev) {
+                                const linPrev = String(getLinea(itemPrev) || '').trim();
+                                if (linPrev && !normalizarTipoAlmacen(linPrev)) lineaExistente = linPrev;
+                            }
                             const rowUp = {
                                 codigo: p.codigo,
                                 codigo_fabrica: p.codigo_fabrica || null,
                                 descripcion: p.descripcion,
                                 unidad_ref: p.unidad_ref || null,
                                 factor_empaque: p.factor_empaque || 1,
-                                // no enviar linea: conserva categoría de existencias
                                 marca: p.marca || 'LAIVE',
                                 activo: p.activo !== false, // BLOQUEADO=SI → false
                                 actualizado_en: new Date().toISOString()
                             };
+                            if (lineaExistente) rowUp.linea = lineaExistente;
                             if (!rowUp.activo) bloqueados++;
                             habilitados.add(p.codigo);
                             if (codigosVistos.has(p.codigo)) {
