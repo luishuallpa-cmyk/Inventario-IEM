@@ -429,7 +429,13 @@
             const val = getField(item, 'InventarioProductoUnidadReferenciaFactor', 'FactorEmpaque', 'Factor', 'UnidadRefFactor');
             return parseInt(val) || 1;
         }
-        function getLinea(item) { return getField(item, 'Linea', 'Línea', 'InventarioProductoCategoriaDescripcion', 'Categoria'); }
+        function getLinea(item) {
+            return getField(item,
+                'Linea', 'Línea', 'linea', 'LINEA',
+                'InventarioProductoCategoriaDescripcion', 'Categoria', 'categoria',
+                'Familia', 'familia', 'Grupo', 'grupo', 'Sublinea', 'SubLínea'
+            );
+        }
         function getMarca(item) { return getField(item, 'Marca', 'InventarioProductoProveedorNombre', 'Proveedor'); }
 
         function obtenerFactorEmpaque(textoEmpaque) {
@@ -2284,45 +2290,51 @@
             );
             if (extra && !normalizarTipoAlmacen(String(extra))) return String(extra).trim().toUpperCase();
 
-            // Inferir por descripción (abreviaturas de existencias + familias del macro)
+            // Inferir por descripción (nombres del Excel existencias + abreviaturas Laive/MAX)
             const d = descReporteNorm(item);
             const reglas = [
                 // UHT / bolsa preferida antes que evaporada genérica
-                [/UHT\s*(?:LA\s*)?PREF|UHT\s*LAIVE|M\.?\s*LAC\.?\s*UHT|LECHE\s*UHT/, 'LECHES FRESCAS'],
+                [/UHT\s*(?:LA\s*)?PREF|UHT\s*LAIVE|M\.?\s*LAC\.?\s*UHT|LECHE\s*UHT/, 'LECHES FRESCAS: ENTERO (A)'],
                 // Bebidas saborizadas / chocolate
-                [/BEB\.?\s*CHOCOLATE|BEB\.?\s*(?:LA\s*)?PREF|BEBIDA\s*YOPI|CHOCOLATE\s*LAIVE\s*BOLSA/, 'LECHES FRESCAS: SABORIZADAS'],
-                // Evaporadas: M. LÁC / ML / NUTRILAC / SIN LAC en caja/6pack
-                [/NUTRILAC|(?:^|[\s.])M\.?\s*LAC\.?(?:\s|$)|ML\s*LAIVE|SIN\s*LAC.*(?:CAJA|CJ|6PACK|PACK)|EVAPORAD/, 'EVAPORADAS'],
-                [/BEBIDA|WATTS|\bNARANJA\b|\bDURAZNO\b|\bPERA\b|\bMANGO\b.*BOT/, 'BEBIDAS: BEBIDAS'],
+                [/BEB\.?\s*CHOCOLATE|BEB\.?\s*(?:LA\s*)?PREF|BEBIDA\s*YOPI|CHOCOLATE\s*LAIVE\s*BOLSA|B\.?\s*NUTRITIVA|BEBIDA\s*DE\s*LECHE.*CHOCO/, 'LECHES FRESCAS: SABORIZADAS'],
+                // Evaporadas: M. LÁC / ML / NUTRILAC / SIN LAC en caja/6pack / BOLSITARRO
+                [/NUTRILAC|BOLSITARRO|(?:^|[\s.])M\.?\s*LAC\.?(?:\s|$)|ML\s*LAIVE|SIN\s*LAC.*(?:CAJA|CJ|6PACK|PACK)|EVAPORAD|MEZCLA\s*LACTEA/, 'EVAPORADAS: ENTERO (A)'],
+                [/WATTS|\bNARANJADA\b|\bNARANJA\b.*(?:BOT|CAJ|946)|YOPIGEL|REFRESCOS/, 'BEBIDAS: BEBIDAS'],
+                [/BEBIDA(?!\s*DE\s*LECHE)/, 'BEBIDAS: BEBIDAS'],
                 [/CHICHARRON/, 'CARNICOS: CHICHARRON'],
                 [/CHORIZO/, 'CARNICOS: CHORIZO'],
-                [/HOT\s*DOG|HOTDOG/, 'CARNICOS: HOT DOG'],
-                [/JAMONADA/, 'CARNICOS: JAMONADA'],
-                [/\bJAMON\b/, 'CARNICOS: JAMÓN'],
+                [/HOT\s*DOG|HOTDOG|SALCHICHA/, 'CARNICOS: HOT DOG'],
+                [/JAMONADA|MORTADELA/, 'CARNICOS: JAMONADA / MORTADELA'],
+                [/\bJAMON\b|PIZZERO/, 'CARNICOS: JAMÓN'],
                 [/TOCINO/, 'CARNICOS: TOCINO'],
-                [/LECHE\s*ENTER|LECHE\s*LIGHT|LECHE\s*SEMIDES|LECHE\s*SIN\s*LACT|LECHE\s*SABORIZ|BEBIDA\s*DE\s*LECHE|LECHE\s*LAIVE/, 'LECHES FRESCAS'],
+                [/LECHE\s*(?:ENTER|NATURAL|FRESCA)|LECHE\s*LAIVE\s*NATURAL/, 'LECHES FRESCAS: ENTERO (A)'],
+                [/LECHE\s*(?:LIGHT|SEMIDES)|SBELT/, 'LECHES FRESCAS: LIGHT'],
+                [/LECHE\s*SIN\s*LACT|SIN\s*LAC.*BOL/, 'LECHES FRESCAS: SIN LACTOSA'],
+                [/LECHE\s*SABORIZ|SAB\.?\s*CHOCO/, 'LECHES FRESCAS: SABORIZADAS'],
                 [/AREQUIPENO|AREQUIPENO/, 'MANJARES: AREQUIPEÑO'],
                 [/BLANQUITO/, 'MANJARES: BLANQUITO'],
-                [/CASERO.*CHOCOLATE|FUDGE\s*ESPECIAL\s*CASERO/, 'MANJARES: CASERO - SABOR CHOCOLATE'],
-                [/DULCE\s*DE\s*LECHE/, 'MANJARES: DULCE DE LECHE'],
+                [/CASERO.*CHOCOLATE|FUDGE\s*ESPECIAL\s*CASERO|FUDGE\s*SABOR\s*CASERO/, 'MANJARES: CASERO - SABOR CHOCOLATE'],
+                [/DULCE\s*DE\s*LECHE|DULC\.?\s*LECHE/, 'MANJARES: DULCE DE LECHE'],
                 [/HELADERO/, 'MANJARES: HELADERO - SABOR CHOCOLATE'],
+                [/MANJAR\s*ESPECIAL/, 'MANJARES: ESPECIAL'],
                 [/MANJAR|FUDGE/, 'MANJARES: MANJAR'],
-                [/MANTEQUILLA/, 'MANTEQUILLAS'],
-                [/MARGARINA/, 'MARGARINAS: MARGARINAS'],
+                [/MANTEQUILLA|MANT\.\s*CON\s*SAL|MANT\.\s*BAZO/, 'MANTEQUILLAS: CON SAL'],
+                [/MARGARINA|SWIS/, 'MARGARINAS: MARGARINAS'],
                 [/SIROPE|MAPLE/, 'MAQUILA'],
-                [/QUESO\s*ANDINO|\bANDINO\b.*TAJADA/, 'QUESOS: ANDINO'],
+                [/Q\.?\s*ANDINO|\bANDINO\b/, 'QUESOS: ANDINO'],
                 [/CHARACATO/, 'QUESOS: CHARACATO'],
                 [/CHEDDAR/, 'QUESOS: CHEDDAR'],
-                [/CREAM\s*CHEESE|CREMA\s*DE\s*Q\s*LAIVE/, 'QUESOS: CREAM CHEESE'],
-                [/CREMA\s*DE\s*QUESO|CREMA\s*QUESO|CREMA\s*LAIVE/, 'QUESOS: CREMA'],
+                [/CREAM\s*CHEESE/, 'QUESOS: CREAM CHEESE'],
+                [/CREMA\s*DE\s*Q\.?|CREMA\s*DE\s*QUESO|CREMA\s*QUESO|\bCREMA\s*DE\s*Q\b/, 'QUESOS: CREMA'],
                 [/\bDANBO\b/, 'QUESOS: DANBO'],
                 [/\bEDAM\b/, 'QUESOS: EDAM'],
                 [/QUESO\s*FRESCO|FRESCO\s*LAIVE/, 'QUESOS: FRESCO'],
                 [/\bGOUDA\b/, 'QUESOS: GOUDA'],
                 [/MOZARELLA|MOZZARELLA/, 'QUESOS: MOZARELLA'],
                 [/PARMESANO/, 'QUESOS: PARMESANO'],
-                [/BEB\.?\s*COCO|COCO\s*LAIVE|ALMENDRA|SOYA\s*LAIVE/, 'VEGETALES'],
-                [/YOGURT|YOGHURT|\bYOG\b|BIO\s*DEFENSA|YOPI|YOP\s*MIX/, 'YOGURTS']
+                [/BEB\.?\s*COCO|COCO\s*LAIVE|ALMENDRA|SOYA\s*LAIVE|VEGETALES/, 'VEGETALES:VEGETALES'],
+                [/BIO\s*DEF|BIODEFENSA|YOGURT|YOGHURT|\bYOG\b|YOPI|YOP\s*MIX|GRIEGO/, 'YOGURTS'],
+                [/CREMA\s*DE\s*LECHE/, 'CREMAS DE LECHE: CREMA DE LECHE']
             ];
             for (let i = 0; i < reglas.length; i++) {
                 if (reglas[i][0].test(d)) return reglas[i][1];
