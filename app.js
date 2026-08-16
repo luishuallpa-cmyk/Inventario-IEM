@@ -547,7 +547,11 @@
                     fileStatus.textContent = '⏳ Cargando productos... ' + all.length;
                 }
                 if (all.length > 0) {
-                    currentData = all.map(p => ({
+                    const mapTipo = leerMapaTipoAlmacen();
+                    currentData = all.map(p => {
+                        const tipo = normalizarTipoAlmacen(p.tipo_almacen) || mapTipo[p.codigo] || normalizarTipoAlmacen(p.linea) || '';
+                        if (tipo && p.codigo) mapTipo[p.codigo] = tipo;
+                        return {
                         Codigo: p.codigo,
                         CodigoFabrica: p.codigo_fabrica || '',
                         CodigoBarras: p.codigo_barras || '',
@@ -555,7 +559,9 @@
                         'Unidad Ref': p.unidad_ref || '',
                         Cantidad: String(p.stock_teorico ?? 0),
                         FactorEmpaque: String(p.factor_empaque ?? 1),
-                        Linea: p.linea || '',
+                        Linea: (normalizarTipoAlmacen(p.linea) ? '' : (p.linea || '')),
+                        TipoAlmacen: tipo,
+                        tipo_almacen: tipo,
                         Marca: p.marca || '',
                         InventarioProductoCodigo: p.codigo,
                         InventarioProductoDescripcion: p.descripcion,
@@ -564,7 +570,9 @@
                         InventarioProductoCantidad: String(p.stock_teorico ?? 0),
                         InventarioProductoCategoriaDescripcion: p.linea || '',
                         InventarioProductoProveedorNombre: p.marca || ''
-                    }));
+                    };
+                    });
+                    try { localStorage.setItem(TIPO_ALMACEN_KEY, JSON.stringify(mapTipo)); } catch (e) {}
                     guardarRespaldo(currentData);
                     aplicarBarrasLocalADatos();
                     actualizarEstadoCatalogo();
@@ -684,13 +692,64 @@
         // BÚSQUEDA Y RENDER
         // ============================================================
         
+        const TIPO_ALMACEN_KEY = 'iem_tipo_almacen_map';
+
+        function normalizarTipoAlmacen(t) {
+            const s = String(t || '').toUpperCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            if (!s) return '';
+            if (s.indexOf('FRIO') !== -1) return 'FRIOS';
+            if (s.indexOf('SECO') !== -1) return 'SECOS';
+            return '';
+        }
+
+        function leerMapaTipoAlmacen() {
+            try {
+                const raw = localStorage.getItem(TIPO_ALMACEN_KEY);
+                return raw ? (JSON.parse(raw) || {}) : {};
+            } catch (e) { return {}; }
+        }
+
+        function guardarTipoAlmacenCodigo(codigo, tipo) {
+            const cod = String(codigo || '').trim();
+            const t = normalizarTipoAlmacen(tipo);
+            if (!cod || !t) return;
+            try {
+                const map = leerMapaTipoAlmacen();
+                map[cod] = t;
+                localStorage.setItem(TIPO_ALMACEN_KEY, JSON.stringify(map));
+            } catch (e) {}
+        }
+
+        function getTipoAlmacen(item) {
+            if (!item) return '';
+            const directo = normalizarTipoAlmacen(
+                item.TipoAlmacen || item.tipo_almacen || item.tipoAlmacen || item['Tipo de Producto'] || ''
+            );
+            if (directo) return directo;
+            const cod = String(getCodigo(item) || '').trim();
+            if (cod) {
+                const map = leerMapaTipoAlmacen();
+                if (map[cod]) return map[cod];
+            }
+            // Compat: si linea solo dice Frios/Secos (import Laive antiguo)
+            return normalizarTipoAlmacen(getLinea(item));
+        }
+
         function setFiltroTipoLaive(tipo) {
-            filtroTipoLaive = (tipo || '').toUpperCase();
+            filtroTipoLaive = normalizarTipoAlmacen(tipo) || (tipo ? String(tipo).toUpperCase() : '');
+            if (filtroTipoLaive !== 'FRIOS' && filtroTipoLaive !== 'SECOS') filtroTipoLaive = '';
             document.querySelectorAll('[data-filtro-tipo]').forEach(function (btn) {
                 const t = (btn.getAttribute('data-filtro-tipo') || '').toUpperCase();
                 btn.classList.toggle('active', t === filtroTipoLaive || (filtroTipoLaive === '' && t === ''));
             });
             if (typeof performSearch === 'function') performSearch();
+            if (typeof renderVistaPreviaInventario === 'function') {
+                const vista = document.getElementById('adminVistaPreview');
+                if (vista && document.body.classList.contains('admin-open')) {
+                    try { renderVistaPreviaInventario(); } catch (e) {}
+                }
+            }
         }
 
         function performSearch() {
@@ -733,11 +792,10 @@
                 // Ya NO se ocultan los stock 0 en inventario si están habilitados.
                 // (Antes: if (!enPedido && getCantidad(item) <= 0) return false)
 
-                // Filtro Frios / Secos (tipo Laive guardado en linea)
+                // Filtro Frios / Secos (mapa local + tipo_almacen; no usa la línea/categoría)
                 if (filtroTipoLaive) {
-                    const lin = String(getLinea(item) || '').toUpperCase();
-                    if (filtroTipoLaive === 'FRIOS' && lin.indexOf('FRIO') === -1) return false;
-                    if (filtroTipoLaive === 'SECOS' && lin.indexOf('SECO') === -1) return false;
+                    const tipo = getTipoAlmacen(item);
+                    if (tipo !== filtroTipoLaive) return false;
                 }
 
                 const campos = [
@@ -2011,46 +2069,90 @@
         }
 
         // Vista previa agrupada por línea + PDF elegante (print)
+        function stockACajasUnidades(stock, factor) {
+            const f = Math.max(1, Number(factor) || 1);
+            const s = Math.max(0, Math.floor(Number(stock) || 0));
+            return { cajas: Math.floor(s / f), unidades: s % f };
+        }
+
         function construirHtmlVistaInventario() {
-            if (!inventarioFisico.length) {
-                return '<p class="admin-sesiones-empty">Aún no hay conteo físico registrado.</p>';
-            }
-            const grupos = (typeof agruparPorLinea === 'function')
-                ? agruparPorLinea(inventarioFisico, function (d) { return d.linea; })
-                : [{ linea: 'TODO', items: inventarioFisico }];
-            let totalT = 0, totalF = 0, totalD = 0, n = 0;
-            let html = '<div class="inv-preview-doc">';
-            html += '<header class="inv-preview-head"><h1>IEM GROUP · Inventario físico</h1>';
-            html += '<p class="inv-preview-meta">Fecha: ' + new Date().toLocaleString('es-PE') +
-                ' · Usuario: ' + escapeHtmlSes(usuarioActual || '-') +
-                ' · Productos: ' + inventarioFisico.length + '</p></header>';
-            grupos.forEach(function (grupo) {
-                let subT = 0, subF = 0, subD = 0;
-                html += '<section class="inv-preview-linea"><h2>' + escapeHtmlSes(grupo.linea || 'SIN LÍNEA') + '</h2>';
-                html += '<table class="inv-preview-table"><thead><tr>' +
-                    '<th>#</th><th>Código</th><th>Descripción</th><th>Teórico</th><th>Físico</th><th>Dif.</th><th>Venc.</th></tr></thead><tbody>';
-                (grupo.items || []).forEach(function (d, i) {
-                    n++;
-                    const venc = (d.lotes || []).map(function (l) {
-                        return (l.vencimiento || 'S/F') + ':' + l.cantidad;
-                    }).join(' · ') || (d.vencimiento || '-');
-                    const difClass = (d.diferencia > 0) ? 'diff-pos' : (d.diferencia < 0 ? 'diff-neg' : '');
-                    html += '<tr><td>' + (i + 1) + '</td><td class="mono">' + escapeHtmlSes(d.codigo) +
-                        '</td><td>' + escapeHtmlSes(d.descripcion) +
-                        '</td><td class="num">' + d.stockTeorico +
-                        '</td><td class="num">' + d.stockFisico +
-                        '</td><td class="num ' + difClass + '">' + d.diferencia +
-                        '</td><td class="venc">' + escapeHtmlSes(venc) + '</td></tr>';
-                    subT += Number(d.stockTeorico) || 0;
-                    subF += Number(d.stockFisico) || 0;
-                    subD += Number(d.diferencia) || 0;
-                });
-                html += '</tbody><tfoot><tr><td colspan="3">Subtotal línea</td><td class="num">' + subT +
-                    '</td><td class="num">' + subF + '</td><td class="num">' + subD + '</td><td></td></tr></tfoot></table></section>';
-                totalT += subT; totalF += subF; totalD += subD;
+            // Formato tipo macro: REPORTE DE INVENTARIO POR ALMACÉN
+            // Catálogo habilitado agrupado por línea + cajas/unidades del conteo.
+            const filtroVista = (typeof filtroTipoLaive !== 'undefined' && filtroTipoLaive) ? filtroTipoLaive : '';
+            const invMap = {};
+            (inventarioFisico || []).forEach(function (d) {
+                if (d && d.codigo) invMap[String(d.codigo)] = d;
             });
-            html += '<footer class="inv-preview-foot"><strong>TOTAL</strong> · Teórico: ' + totalT +
-                ' · Físico: ' + totalF + ' · Diferencia: ' + totalD + ' · Ítems: ' + n + '</footer></div>';
+
+            let items = (currentData || []).filter(function (item) {
+                const activoItem = item.activo !== false && item.Activo !== false && item.ACTIVO !== false;
+                if (!activoItem) return false;
+                if (filtroVista) return getTipoAlmacen(item) === filtroVista;
+                return true;
+            });
+
+            if (!items.length) {
+                return '<p class="admin-sesiones-empty">No hay productos' +
+                    (filtroVista ? ' en <strong>' + filtroVista + '</strong>' : '') +
+                    '. Sube existencias y el Excel Laive (columna Tipo = Frios/Secos).</p>';
+            }
+
+            const gruposMap = {};
+            items.forEach(function (item) {
+                let lin = String(getLinea(item) || '').trim();
+                if (!lin || normalizarTipoAlmacen(lin)) lin = 'SIN LÍNEA';
+                if (!gruposMap[lin]) gruposMap[lin] = [];
+                gruposMap[lin].push(item);
+            });
+            const grupos = Object.keys(gruposMap).sort(function (a, b) {
+                return a.localeCompare(b, 'es');
+            }).map(function (lin) {
+                const arr = gruposMap[lin].slice().sort(function (a, b) {
+                    return String(getCodigo(a)).localeCompare(String(getCodigo(b)), 'es', { numeric: true });
+                });
+                return { linea: lin, items: arr };
+            });
+
+            const tituloFiltro = filtroVista === 'FRIOS' ? 'FRÍOS' : (filtroVista === 'SECOS' ? 'SECOS' : 'TODOS');
+            let html = '<div class="inv-preview-doc inv-report-almacen">';
+            let n = 0, totalCajas = 0, totalUni = 0;
+            html += '<header class="inv-preview-head inv-report-head">' +
+                '<div class="inv-report-brand">IEM GROUP</div>' +
+                '<h1>REPORTE DE INVENTARIO POR ALMACÉN</h1>' +
+                '<p class="inv-preview-meta">Filtro: <strong>' + tituloFiltro + '</strong>' +
+                ' · Fecha: ' + new Date().toLocaleString('es-PE') +
+                ' · Usuario: ' + escapeHtmlSes(usuarioActual || '-') +
+                ' · Productos: ' + items.length + '</p></header>';
+
+            grupos.forEach(function (grupo) {
+                html += '<section class="inv-preview-linea"><h2>' + escapeHtmlSes(grupo.linea) + '</h2>';
+                html += '<table class="inv-preview-table inv-report-table"><thead><tr>' +
+                    '<th>Cod. Producto</th><th>Cod. Fábrica</th><th>Descripción</th>' +
+                    '<th>Unidad</th><th class="num">Cajas Completas</th><th class="num">Unidades Sueltas</th>' +
+                    '</tr></thead><tbody>';
+                (grupo.items || []).forEach(function (item) {
+                    n++;
+                    const cod = String(getCodigo(item) || '');
+                    const reg = invMap[cod];
+                    const factor = (typeof getFactorFinal === 'function') ? getFactorFinal(item) : (getFactorEmpaque(item) || 1);
+                    const fisico = reg ? (Number(reg.stockFisico) || 0) : 0;
+                    const cu = stockACajasUnidades(fisico, factor);
+                    if (reg) { totalCajas += cu.cajas; totalUni += cu.unidades; }
+                    html += '<tr>' +
+                        '<td class="mono">' + escapeHtmlSes(cod) + '</td>' +
+                        '<td class="mono">' + escapeHtmlSes(getCodigoFabrica(item) || '') + '</td>' +
+                        '<td>' + escapeHtmlSes(getDescripcion(item)) + '</td>' +
+                        '<td>' + escapeHtmlSes(getUnidadRef(item) || '') + '</td>' +
+                        '<td class="num">' + (reg ? cu.cajas : '') + '</td>' +
+                        '<td class="num">' + (reg ? cu.unidades : '') + '</td>' +
+                        '</tr>';
+                });
+                html += '</tbody></table></section>';
+            });
+            html += '<footer class="inv-preview-foot"><strong>TOTAL</strong> · Ítems: ' + n +
+                ' · Cajas contadas: ' + totalCajas + ' · Unidades sueltas: ' + totalUni +
+                (filtroVista ? ' · (' + tituloFiltro + ')' : '') +
+                '</footer></div>';
             return html;
         }
 
@@ -2065,34 +2167,33 @@
                 showToast('Solo el administrador puede exportar PDF.', 'error');
                 return;
             }
-            if (!inventarioFisico.length) {
-                showToast('No hay inventario para el PDF.', 'error');
+            const contenido = construirHtmlVistaInventario();
+            if (!contenido || contenido.indexOf('No hay productos') !== -1) {
+                showToast('No hay productos para el PDF con el filtro actual.', 'error');
                 return;
             }
-            const contenido = construirHtmlVistaInventario();
             const w = window.open('', '_blank', 'noopener,noreferrer');
             if (!w) {
                 showToast('Permite ventanas emergentes para generar el PDF.', 'error');
                 return;
             }
-            w.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Inventario físico IEM</title>');
+            const titulo = 'REPORTE DE INVENTARIO POR ALMACÉN' + (filtroTipoLaive ? ' · ' + filtroTipoLaive : '');
+            w.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>' + titulo + '</title>');
             w.document.write('<style>');
-            w.document.write('*{box-sizing:border-box}body{font-family:Inter,Segoe UI,Arial,sans-serif;color:#1a1a2e;margin:0;padding:24px;background:#fff}');
-            w.document.write('.inv-preview-head{border-bottom:3px solid #5b45d6;padding-bottom:12px;margin-bottom:20px}');
-            w.document.write('.inv-preview-head h1{margin:0;font-size:1.35rem;color:#3b2494}');
-            w.document.write('.inv-preview-meta{margin:6px 0 0;color:#555;font-size:0.85rem}');
-            w.document.write('.inv-preview-linea{margin-bottom:22px;page-break-inside:avoid}');
-            w.document.write('.inv-preview-linea h2{margin:0 0 8px;font-size:1rem;color:#5b45d6;border-left:4px solid #22d3ee;padding-left:8px}');
-            w.document.write('.inv-preview-table{width:100%;border-collapse:collapse;font-size:0.78rem}');
-            w.document.write('.inv-preview-table th{background:#eef2ff;text-align:left;padding:6px 8px;border-bottom:2px solid #c7d2fe}');
-            w.document.write('.inv-preview-table td{padding:5px 8px;border-bottom:1px solid #e5e7eb;vertical-align:top}');
-            w.document.write('.inv-preview-table tfoot td{font-weight:700;background:#f8fafc}');
-            w.document.write('.mono{font-family:ui-monospace,monospace;font-weight:600}');
-            w.document.write('.num{text-align:right;font-variant-numeric:tabular-nums}');
-            w.document.write('.diff-pos{color:#059669}.diff-neg{color:#e11d48}');
-            w.document.write('.venc{font-size:0.72rem;color:#555;max-width:140px}');
-            w.document.write('.inv-preview-foot{margin-top:16px;padding-top:12px;border-top:2px solid #5b45d6;font-size:0.9rem}');
-            w.document.write('@media print{body{padding:12px}@page{margin:12mm}}');
+            w.document.write('*{box-sizing:border-box}body{font-family:Arial,Segoe UI,sans-serif;color:#111;margin:0;padding:18px;background:#fff;font-size:11px}');
+            w.document.write('.inv-report-brand{font-weight:800;font-size:14px;letter-spacing:.04em;color:#1d4ed8}');
+            w.document.write('.inv-preview-head{border-bottom:2px solid #1d4ed8;padding-bottom:10px;margin-bottom:14px}');
+            w.document.write('.inv-preview-head h1{margin:4px 0 0;font-size:16px;color:#0f172a}');
+            w.document.write('.inv-preview-meta{margin:6px 0 0;color:#334155;font-size:11px}');
+            w.document.write('.inv-preview-linea{margin-bottom:14px;page-break-inside:avoid}');
+            w.document.write('.inv-preview-linea h2{margin:0 0 6px;font-size:12px;color:#fff;background:#1e3a5f;padding:5px 8px;font-weight:700}');
+            w.document.write('.inv-preview-table{width:100%;border-collapse:collapse;font-size:10px}');
+            w.document.write('.inv-preview-table th{background:#e2e8f0;text-align:left;padding:4px 6px;border:1px solid #94a3b8;font-weight:700}');
+            w.document.write('.inv-preview-table td{padding:3px 6px;border:1px solid #cbd5e1;vertical-align:top}');
+            w.document.write('.mono{font-family:ui-monospace,Consolas,monospace;font-weight:600}');
+            w.document.write('.num{text-align:right;font-variant-numeric:tabular-nums;min-width:70px}');
+            w.document.write('.inv-preview-foot{margin-top:12px;padding-top:8px;border-top:2px solid #1d4ed8;font-size:11px}');
+            w.document.write('@media print{body{padding:8px}@page{margin:10mm;size:A4}}');
             w.document.write('</style></head><body>');
             w.document.write(contenido);
             w.document.write('<script>window.onload=function(){setTimeout(function(){window.print()},300);}<\/script>');
@@ -2465,7 +2566,9 @@
                 ? (parseFactorDesdeTexto(um) || 1)
                 : 1;
 
+            const tipoNorm = normalizarTipoAlmacen(tipo);
             return codigos.map(function (codigo) {
+                if (tipoNorm) guardarTipoAlmacenCodigo(codigo, tipoNorm);
                 return {
                     codigo: codigo,
                     codigo_fabrica: sap || null,
@@ -2473,7 +2576,9 @@
                     unidad_ref: um || null,
                     factor_empaque: factor,
                     // sin stock_teorico → no se pisa el inventario diario
-                    linea: tipo || null,
+                    // NO guardar Frios/Secos en linea (linea = categoría del almacén)
+                    linea: null,
+                    tipo_almacen: tipoNorm || null,
                     marca: 'LAIVE',
                     activo: activo,
                     actualizado_en: new Date().toISOString()
@@ -2627,14 +2732,15 @@
                                 omitidosOtros++;
                                 return;
                             }
-                            // No pisar stock; solo habilitar + Frios/Secos + SAP
+                            // No pisar stock ni la línea/categoría; solo habilitar + Frios/Secos + SAP
+                            if (p.tipo_almacen) guardarTipoAlmacenCodigo(p.codigo, p.tipo_almacen);
                             const rowUp = {
                                 codigo: p.codigo,
                                 codigo_fabrica: p.codigo_fabrica || null,
                                 descripcion: p.descripcion,
                                 unidad_ref: p.unidad_ref || null,
                                 factor_empaque: p.factor_empaque || 1,
-                                linea: p.linea || null, // Frios / Secos
+                                // no enviar linea: conserva categoría de existencias
                                 marca: p.marca || 'LAIVE',
                                 activo: p.activo !== false, // BLOQUEADO=SI → false
                                 actualizado_en: new Date().toISOString()
@@ -3561,6 +3667,13 @@
                     if (cod) seleccionarProductoBarrasAdmin(cod);
                 });
             }
+            // Frios / Secos: conectar botones (antes no tenían listener)
+            document.querySelectorAll('[data-filtro-tipo]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    setFiltroTipoLaive(btn.getAttribute('data-filtro-tipo') || '');
+                });
+            });
+
             const adminRefreshVistaBtn = document.getElementById('adminRefreshVistaBtn');
             if (adminRefreshVistaBtn) {
                 adminRefreshVistaBtn.addEventListener('click', function () {

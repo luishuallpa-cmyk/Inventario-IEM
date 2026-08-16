@@ -23,8 +23,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=3.27">
-    <link rel="stylesheet" href="admin.css?v=3.27">
+    <link rel="stylesheet" href="style.css?v=3.40">
+    <link rel="stylesheet" href="admin.css?v=3.40">
 </head>
 <body>
 <div class="login-overlay" id="loginOverlay">
@@ -469,8 +469,13 @@
 
                     <div class="admin-tab" id="adminTabVista" data-admin-panel="vista" hidden>
                         <h3 class="admin-subtitle">👁️ Vista previa del inventario</h3>
-                        <p class="admin-lead">Agrupado por <strong>línea</strong> para revisar. Puedes exportar un PDF elegante para enviar.</p>
-                        <div class="admin-actions" style="justify-content:stretch;gap:0.5rem;flex-wrap:wrap;">
+                        <p class="admin-lead">Reporte por <strong>línea</strong> (como el macro). Usa <strong>Frios / Secos</strong> arriba en la búsqueda o aquí para armar el PDF.</p>
+                        <div class="filtro-tipo-row filtro-tipo-vista" role="group" aria-label="Filtro Frios o Secos en vista">
+                            <button type="button" class="filtro-tipo-btn active" data-filtro-tipo="">Todos</button>
+                            <button type="button" class="filtro-tipo-btn" data-filtro-tipo="FRIOS">❄️ Frios</button>
+                            <button type="button" class="filtro-tipo-btn" data-filtro-tipo="SECOS">📦 Secos</button>
+                        </div>
+                        <div class="admin-actions" style="justify-content:stretch;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem;">
                             <button type="button" class="btn btn-outline btn-sm" id="adminRefreshVistaBtn">
                                 <span class="btn-icon">↻</span><span class="btn-label"> Actualizar vista</span>
                             </button>
@@ -543,8 +548,8 @@
         </div>
     </div>
 
-<script src="config.js?v=3.27"></script>
-<script src="app.js?v=3.27"></script>
+<script src="config.js?v=3.40"></script>
+<script src="app.js?v=3.40"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {
