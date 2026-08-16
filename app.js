@@ -10,6 +10,7 @@
                     barras: 'Barras / QR',
                     descargas: '📊 Descargas',
                     vista: '👁️ Vista previa',
+                    reporte: '📋 Reporte sistema',
                     clientes: '👤 Clientes',
                     sesiones: '👥 Sesiones'
                 };
@@ -61,6 +62,9 @@
                 }
                 if (tabId === 'vista' && typeof renderVistaPreviaInventario === 'function') {
                     renderVistaPreviaInventario();
+                }
+                if (tabId === 'reporte' && typeof renderReporteSistema === 'function') {
+                    renderReporteSistema();
                 }
                 if (tabId === 'clientes') {
                     if (typeof cargarClientesDesdeNube === 'function') cargarClientesDesdeNube();
@@ -2202,6 +2206,170 @@
             showToast('PDF: usa “Guardar como PDF” en el diálogo de impresión.', 'info');
         }
 
+        // ============================================================
+        // REPORTE DEL SISTEMA (stock del Excel / existencias)
+        // Formato igual al macro: agrupado por Fríos/Secos + línea
+        // ============================================================
+        let filtroTipoReporte = ''; // '' | 'FRIOS' | 'SECOS'
+
+        function setFiltroTipoReporte(tipo) {
+            filtroTipoReporte = normalizarTipoAlmacen(tipo) || (tipo ? String(tipo).toUpperCase() : '');
+            if (filtroTipoReporte !== 'FRIOS' && filtroTipoReporte !== 'SECOS') filtroTipoReporte = '';
+            document.querySelectorAll('[data-filtro-tipo-reporte]').forEach(function (btn) {
+                const t = (btn.getAttribute('data-filtro-tipo-reporte') || '').toUpperCase();
+                btn.classList.toggle('active', t === filtroTipoReporte || (filtroTipoReporte === '' && t === ''));
+            });
+            if (typeof renderReporteSistema === 'function') {
+                try { renderReporteSistema(); } catch (e) {}
+            }
+        }
+
+        function construirHtmlReporteSistema() {
+            // Stock del sistema (Excel subido) en formato REPORTE DE INVENTARIO POR ALMACÉN
+            // Separación Fríos / Secos + agrupación por línea
+            const filtro = filtroTipoReporte || '';
+            let items = (currentData || []).filter(function (item) {
+                const activoItem = item.activo !== false && item.Activo !== false && item.ACTIVO !== false;
+                if (!activoItem) return false;
+                if (filtro) return getTipoAlmacen(item) === filtro;
+                return true;
+            });
+
+            if (!items.length) {
+                return '<p class="admin-sesiones-empty">No hay productos del sistema' +
+                    (filtro ? ' en <strong>' + filtro + '</strong>' : '') +
+                    '. Sube el Excel de existencias (y opcionalmente Laive con columna Tipo = Frios/Secos).</p>';
+            }
+
+            // Agrupar: si "Todos", primero por FRIOS/SECOS, luego por línea; si filtro, solo por línea
+            function agruparPorLinea(lista) {
+                const gruposMap = {};
+                lista.forEach(function (item) {
+                    let lin = String(getLinea(item) || '').trim();
+                    if (!lin || normalizarTipoAlmacen(lin)) lin = 'SIN LÍNEA';
+                    if (!gruposMap[lin]) gruposMap[lin] = [];
+                    gruposMap[lin].push(item);
+                });
+                return Object.keys(gruposMap).sort(function (a, b) {
+                    return a.localeCompare(b, 'es');
+                }).map(function (lin) {
+                    const arr = gruposMap[lin].slice().sort(function (a, b) {
+                        return String(getCodigo(a)).localeCompare(String(getCodigo(b)), 'es', { numeric: true });
+                    });
+                    return { linea: lin, items: arr };
+                });
+            }
+
+            const bloques = [];
+            if (filtro) {
+                bloques.push({ titulo: filtro === 'FRIOS' ? '❄️ FRÍOS' : '📦 SECOS', grupos: agruparPorLinea(items) });
+            } else {
+                const frios = items.filter(function (it) { return getTipoAlmacen(it) === 'FRIOS'; });
+                const secos = items.filter(function (it) { return getTipoAlmacen(it) === 'SECOS'; });
+                const otros = items.filter(function (it) {
+                    const t = getTipoAlmacen(it);
+                    return t !== 'FRIOS' && t !== 'SECOS';
+                });
+                if (frios.length) bloques.push({ titulo: '❄️ FRÍOS', grupos: agruparPorLinea(frios) });
+                if (secos.length) bloques.push({ titulo: '📦 SECOS', grupos: agruparPorLinea(secos) });
+                if (otros.length) bloques.push({ titulo: '📦 OTROS / SIN TIPO', grupos: agruparPorLinea(otros) });
+            }
+
+            const tituloFiltro = filtro === 'FRIOS' ? 'FRÍOS' : (filtro === 'SECOS' ? 'SECOS' : 'TODOS (Fríos + Secos)');
+            let html = '<div class="inv-preview-doc inv-report-almacen inv-report-sistema">';
+            let n = 0, totalCajas = 0, totalUni = 0;
+            html += '<header class="inv-preview-head inv-report-head">' +
+                '<div class="inv-report-brand">IEM GROUP</div>' +
+                '<h1>REPORTE DE INVENTARIO POR ALMACÉN</h1>' +
+                '<p class="inv-preview-meta">Origen: <strong>Stock del sistema (Excel)</strong> · Filtro: <strong>' + tituloFiltro + '</strong>' +
+                ' · Fecha: ' + new Date().toLocaleString('es-PE') +
+                ' · Usuario: ' + escapeHtmlSes(usuarioActual || '-') +
+                ' · Productos: ' + items.length + '</p></header>';
+
+            bloques.forEach(function (bloque) {
+                html += '<div class="inv-report-tipo-block">';
+                html += '<h2 class="inv-report-tipo-titulo">' + escapeHtmlSes(bloque.titulo) + '</h2>';
+                (bloque.grupos || []).forEach(function (grupo) {
+                    html += '<section class="inv-preview-linea"><h3 class="inv-preview-linea-h">' + escapeHtmlSes(grupo.linea) + '</h3>';
+                    html += '<table class="inv-preview-table inv-report-table"><thead><tr>' +
+                        '<th>Cod. Producto</th><th>Cod. Fábrica</th><th>Descripción</th>' +
+                        '<th>Unidad</th><th class="num">Cajas Completas</th><th class="num">Unidades Sueltas</th>' +
+                        '</tr></thead><tbody>';
+                    (grupo.items || []).forEach(function (item) {
+                        n++;
+                        const cod = String(getCodigo(item) || '');
+                        const factor = (typeof getFactorFinal === 'function') ? getFactorFinal(item) : (getFactorEmpaque(item) || 1);
+                        const stock = (typeof getCantidad === 'function') ? getCantidad(item) : 0;
+                        const cu = stockACajasUnidades(stock, factor);
+                        totalCajas += cu.cajas;
+                        totalUni += cu.unidades;
+                        html += '<tr>' +
+                            '<td class="mono">' + escapeHtmlSes(cod) + '</td>' +
+                            '<td class="mono">' + escapeHtmlSes(getCodigoFabrica(item) || '') + '</td>' +
+                            '<td>' + escapeHtmlSes(getDescripcion(item)) + '</td>' +
+                            '<td>' + escapeHtmlSes(getUnidadRef(item) || '') + '</td>' +
+                            '<td class="num">' + cu.cajas + '</td>' +
+                            '<td class="num">' + cu.unidades + '</td>' +
+                            '</tr>';
+                    });
+                    html += '</tbody></table></section>';
+                });
+                html += '</div>';
+            });
+
+            html += '<footer class="inv-preview-foot"><strong>TOTAL</strong> · Ítems: ' + n +
+                ' · Cajas: ' + totalCajas + ' · Unidades sueltas: ' + totalUni +
+                ' · (' + tituloFiltro + ')</footer></div>';
+            return html;
+        }
+
+        function renderReporteSistema() {
+            const box = document.getElementById('adminReportePreview');
+            if (!box) return;
+            box.innerHTML = construirHtmlReporteSistema();
+        }
+
+        function exportarReporteSistemaPDF() {
+            if (!esAdmin()) {
+                showToast('Solo el administrador puede exportar PDF.', 'error');
+                return;
+            }
+            const contenido = construirHtmlReporteSistema();
+            if (!contenido || contenido.indexOf('No hay productos') !== -1) {
+                showToast('No hay productos para el PDF con el filtro actual.', 'error');
+                return;
+            }
+            const w = window.open('', '_blank', 'noopener,noreferrer');
+            if (!w) {
+                showToast('Permite ventanas emergentes para generar el PDF.', 'error');
+                return;
+            }
+            const titulo = 'REPORTE DE INVENTARIO POR ALMACÉN · SISTEMA' + (filtroTipoReporte ? ' · ' + filtroTipoReporte : '');
+            w.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>' + titulo + '</title>');
+            w.document.write('<style>');
+            w.document.write('*{box-sizing:border-box}body{font-family:Arial,Segoe UI,sans-serif;color:#111;margin:0;padding:18px;background:#fff;font-size:11px}');
+            w.document.write('.inv-report-brand{font-weight:800;font-size:14px;letter-spacing:.04em;color:#1d4ed8}');
+            w.document.write('.inv-preview-head{border-bottom:2px solid #1d4ed8;padding-bottom:10px;margin-bottom:14px}');
+            w.document.write('.inv-preview-head h1{margin:4px 0 0;font-size:16px;color:#0f172a}');
+            w.document.write('.inv-preview-meta{margin:6px 0 0;color:#334155;font-size:11px}');
+            w.document.write('.inv-report-tipo-titulo{margin:16px 0 8px;font-size:13px;color:#fff;background:#0f766e;padding:6px 10px;font-weight:800;letter-spacing:.03em}');
+            w.document.write('.inv-preview-linea{margin-bottom:14px;page-break-inside:avoid}');
+            w.document.write('.inv-preview-linea-h,.inv-preview-linea h2,.inv-preview-linea h3{margin:0 0 6px;font-size:12px;color:#fff;background:#1e3a5f;padding:5px 8px;font-weight:700}');
+            w.document.write('.inv-preview-table{width:100%;border-collapse:collapse;font-size:10px}');
+            w.document.write('.inv-preview-table th{background:#e2e8f0;text-align:left;padding:4px 6px;border:1px solid #94a3b8;font-weight:700}');
+            w.document.write('.inv-preview-table td{padding:3px 6px;border:1px solid #cbd5e1;vertical-align:top}');
+            w.document.write('.mono{font-family:ui-monospace,Consolas,monospace;font-weight:600}');
+            w.document.write('.num{text-align:right;font-variant-numeric:tabular-nums;min-width:70px}');
+            w.document.write('.inv-preview-foot{margin-top:12px;padding-top:8px;border-top:2px solid #1d4ed8;font-size:11px}');
+            w.document.write('@media print{body{padding:8px}@page{margin:10mm;size:A4}}');
+            w.document.write('</style></head><body>');
+            w.document.write(contenido);
+            w.document.write('<script>window.onload=function(){setTimeout(function(){window.print()},300);}<\/script>');
+            w.document.write('</body></html>');
+            w.document.close();
+            showToast('PDF del sistema: usa “Guardar como PDF” en el diálogo de impresión.', 'info');
+        }
+
         // Buscador admin de catálogo completo (existencias)
         function buscarCatalogoAdmin(term) {
             const list = document.getElementById('adminCatalogList');
@@ -3688,6 +3856,26 @@
                     exportarInventarioPDF();
                 });
             }
+            // Reporte del sistema (stock Excel): filtros + PDF
+            document.querySelectorAll('[data-filtro-tipo-reporte]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    setFiltroTipoReporte(btn.getAttribute('data-filtro-tipo-reporte') || '');
+                });
+            });
+            const adminRefreshReporteBtn = document.getElementById('adminRefreshReporteBtn');
+            if (adminRefreshReporteBtn) {
+                adminRefreshReporteBtn.addEventListener('click', function () {
+                    if (!esAdmin()) return;
+                    renderReporteSistema();
+                });
+            }
+            const adminPdfReporteBtn = document.getElementById('adminPdfReporteBtn');
+            if (adminPdfReporteBtn) {
+                adminPdfReporteBtn.addEventListener('click', function () {
+                    if (!esAdmin()) return;
+                    exportarReporteSistemaPDF();
+                });
+            }
             const adminExportPedidoBtn = document.getElementById('adminExportPedidoBtn');
             if (adminExportPedidoBtn) {
                 adminExportPedidoBtn.addEventListener('click', function () {
@@ -3852,7 +4040,7 @@
         //   #/admin/barras  → sección Barras / QR
         // El botón "atrás" del navegador también funciona.
         // ============================================================
-        const ADMIN_TABS = ['subir', 'catalogo', 'barras', 'descargas', 'vista', 'clientes', 'sesiones'];
+        const ADMIN_TABS = ['subir', 'catalogo', 'barras', 'descargas', 'vista', 'reporte', 'clientes', 'sesiones'];
         let _hashNavSilent = false;
 
         function parseHashRuta() {
