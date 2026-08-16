@@ -183,6 +183,7 @@
         body.light-theme .btn {
             background: #f8fafc;
             border-color: rgba(15, 23, 42, 0.12);
+            color: #0f172a;
         }
         .btn:active { transform: scale(0.97); }
         .btn-primary {
@@ -190,6 +191,21 @@
             color: #fff;
             border-color: transparent;
             box-shadow: 0 2px 10px rgba(37, 99, 235, 0.35);
+        }
+        /* Tema claro: no pisar el degradado del botón primario (antes quedaba gris + texto blanco) */
+        body.light-theme .btn-primary {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: #fff !important;
+            border-color: transparent;
+            box-shadow: 0 2px 10px rgba(37, 99, 235, 0.35);
+        }
+        body.light-theme .btn-outline {
+            background: #fff;
+            border: 1.5px solid #64748b;
+            color: #0f172a;
+        }
+        body.light-theme .btn-success {
+            color: #fff !important;
         }
         .btn-primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
         .btn-success {

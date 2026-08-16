@@ -2205,23 +2205,27 @@
                 .replace(/\s+/g, '_')
                 .slice(0, 60) || 'reporte_inventario') + '.pdf';
 
+            // Colores fijos (no hereda tema oscuro → evita PDF en blanco)
             const estilosPagina =
                 '*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}' +
-                'body{margin:0;padding:0;font-family:Arial,Segoe UI,sans-serif;color:#111;font-size:11px;background:#fff}' +
-                '.inv-report-brand{font-weight:800;font-size:14px;letter-spacing:.04em;color:#1d4ed8}' +
-                '.inv-preview-head{border-bottom:2px solid #1d4ed8;padding-bottom:10px;margin-bottom:14px}' +
-                '.inv-preview-head h1{margin:4px 0 0;font-size:16px;color:#0f172a}' +
-                '.inv-preview-meta{margin:6px 0 0;color:#334155;font-size:11px}' +
-                '.inv-report-tipo-titulo{margin:16px 0 8px;font-size:13px;color:#fff!important;background:#0f766e!important;padding:6px 10px;font-weight:800;letter-spacing:.03em;border-radius:4px}' +
-                '.inv-report-tipo-titulo.otros{background:#b45309!important}' +
-                '.inv-preview-linea{margin-bottom:14px;page-break-inside:avoid;break-inside:avoid}' +
-                '.inv-preview-linea-h,.inv-preview-linea h2,.inv-preview-linea h3{margin:0 0 6px;font-size:12px;color:#fff!important;background:#1e3a5f!important;padding:5px 8px;font-weight:700}' +
-                '.inv-preview-table{width:100%;border-collapse:collapse;font-size:10px}' +
-                '.inv-preview-table th{background:#e2e8f0!important;text-align:left;padding:4px 6px;border:1px solid #94a3b8;font-weight:700}' +
-                '.inv-preview-table td{padding:3px 6px;border:1px solid #cbd5e1;vertical-align:top}' +
-                '.mono{font-family:ui-monospace,Consolas,monospace;font-weight:600}' +
-                '.num{text-align:right;font-variant-numeric:tabular-nums;min-width:70px}' +
-                '.inv-preview-foot{margin-top:12px;padding-top:8px;border-top:2px solid #1d4ed8;font-size:11px}' +
+                '#iemPdfPage{margin:0;padding:0;font-family:Arial,Segoe UI,sans-serif;color:#111!important;font-size:11px;background:#fff!important}' +
+                '#iemPdfPage, #iemPdfPage td, #iemPdfPage th, #iemPdfPage p, #iemPdfPage span, #iemPdfPage div, #iemPdfPage strong{color:#111!important}' +
+                '#iemPdfPage .inv-report-brand{font-weight:800;font-size:14px;letter-spacing:.04em;color:#1d4ed8!important}' +
+                '#iemPdfPage .inv-preview-head{border-bottom:2px solid #1d4ed8;padding-bottom:10px;margin-bottom:14px}' +
+                '#iemPdfPage .inv-preview-head h1{margin:4px 0 0;font-size:16px;color:#0f172a!important}' +
+                '#iemPdfPage .inv-preview-meta{margin:6px 0 0;color:#334155!important;font-size:11px}' +
+                '#iemPdfPage .inv-report-tipo-block{page-break-inside:auto}' +
+                '#iemPdfPage .inv-report-tipo-block.page-break-before{page-break-before:always;break-before:page}' +
+                '#iemPdfPage .inv-report-tipo-titulo{margin:16px 0 8px;font-size:13px;color:#fff!important;background:#0f766e!important;padding:6px 10px;font-weight:800;letter-spacing:.03em;border-radius:4px;page-break-after:avoid;break-after:avoid-page}' +
+                '#iemPdfPage .inv-report-tipo-titulo.otros{background:#b45309!important}' +
+                '#iemPdfPage .inv-preview-linea{margin-bottom:14px;page-break-inside:avoid;break-inside:avoid}' +
+                '#iemPdfPage .inv-preview-linea-h,#iemPdfPage .inv-preview-linea h2,#iemPdfPage .inv-preview-linea h3{margin:0 0 6px;font-size:12px;color:#fff!important;background:#1e3a5f!important;padding:5px 8px;font-weight:700;page-break-after:avoid;break-after:avoid-page}' +
+                '#iemPdfPage .inv-preview-table{width:100%;border-collapse:collapse;font-size:10px;color:#111!important}' +
+                '#iemPdfPage .inv-preview-table th{background:#e2e8f0!important;color:#0f172a!important;text-align:left;padding:4px 6px;border:1px solid #94a3b8;font-weight:700}' +
+                '#iemPdfPage .inv-preview-table td{padding:3px 6px;border:1px solid #cbd5e1;vertical-align:top;color:#111!important}' +
+                '#iemPdfPage .mono{font-family:ui-monospace,Consolas,monospace;font-weight:600;color:#111!important}' +
+                '#iemPdfPage .num{text-align:right;font-variant-numeric:tabular-nums;min-width:70px;color:#111!important}' +
+                '#iemPdfPage .inv-preview-foot{margin-top:12px;padding-top:8px;border-top:2px solid #1d4ed8;font-size:11px;color:#0f172a!important}' +
                 (estilosExtra || '');
 
             showToast('Generando PDF… espera un momento.', 'info');
@@ -2232,11 +2236,15 @@
                 host = document.createElement('div');
                 host.id = 'iemPdfRenderHost';
                 host.setAttribute('aria-hidden', 'true');
-                host.style.cssText = 'position:fixed;left:-10000px;top:0;width:210mm;background:#fff;z-index:-1;pointer-events:none;opacity:0;';
+                host.style.cssText = 'position:fixed;left:-10000px;top:0;width:210mm;background:#ffffff;color:#111111;z-index:-1;pointer-events:none;opacity:1;';
                 document.body.appendChild(host);
             }
             host.innerHTML = '<style>' + estilosPagina + '</style><div id="iemPdfPage">' + contenidoHtml + '</div>';
             const page = host.querySelector('#iemPdfPage');
+            if (page) {
+                page.style.background = '#ffffff';
+                page.style.color = '#111111';
+            }
 
             cargarHtml2Pdf()
                 .then(function (html2pdf) {
@@ -2485,8 +2493,10 @@
                 ' · Usuario: ' + escapeHtmlSes(usuarioActual || '-') +
                 ' · Productos: ' + items.length + '</p></header>';
 
-            bloques.forEach(function (bloque) {
-                html += '<div class="inv-report-tipo-block">';
+            bloques.forEach(function (bloque, idxBloque) {
+                // SECOS / OTROS empiezan en hoja nueva (no dejan el título solo al final de Fríos)
+                const breakCls = (idxBloque > 0) ? ' page-break-before' : '';
+                html += '<div class="inv-report-tipo-block' + breakCls + '">';
                 html += '<h2 class="inv-report-tipo-titulo' + (bloque.esOtros ? ' otros' : '') + '">' +
                     escapeHtmlSes(bloque.titulo) + '</h2>';
                 (bloque.grupos || []).forEach(function (grupo) {
