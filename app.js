@@ -533,7 +533,7 @@
                 const conActivos = (currentData || []).filter(function (x) {
                     return x.activo !== false && x.Activo !== false;
                 }).length;
-                fileStatus.textContent = '📦 Laive/buscables: ' + buscables + ' · Activos: ' + conActivos + ' · Con stock: ' + conStock;
+                fileStatus.textContent = '📦 Habilitados: ' + buscables + ' · Con stock: ' + conStock + ' (se listan también sin stock)';
                 fileStatus.style.display = '';
             } else {
                 // Almacén / conteo: sin números de catálogo
@@ -789,13 +789,9 @@
         function esProductoBuscableInventario(item) {
             if (!item) return false;
             if (esCodigoServicioOBasura(item)) return false;
+            // Todo lo activo (habilitado por Laive / base), CON o SIN stock
             const activoItem = item.activo !== false && item.Activo !== false && item.ACTIVO !== false;
-            if (!activoItem) return false;
-            const tipo = getTipoAlmacen(item);
-            if (tipo === 'FRIOS' || tipo === 'SECOS') return true;
-            // Sin tipos en catálogo aún: permitir activos (hasta que suban Excel Laive)
-            if (!catalogoTieneTiposLaive()) return true;
-            return false;
+            return !!activoItem;
         }
 
         function setFiltroTipoLaive(tipo) {
