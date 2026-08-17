@@ -23,8 +23,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=3.79">
-    <link rel="stylesheet" href="admin.css?v=3.79">
+    <link rel="stylesheet" href="style.css?v=3.82">
+    <link rel="stylesheet" href="admin.css?v=3.82">
 </head>
 <body>
 <div class="login-overlay" id="loginOverlay">
@@ -348,14 +348,18 @@
                             <input type="file" id="importExcelInput" accept=".xlsx,.xls,.csv" class="admin-file-input">
                         </div>
                         <div class="admin-import-modo" style="margin:0.75rem 0;padding:0.75rem;background:var(--input-bg,#f8fafc);border-radius:10px;border:1px solid var(--card-border,#e2e8f0);">
-                            <div style="font-weight:600;margin-bottom:0.5rem;font-size:0.9rem;">Tipo de Excel</div>
-                            <label class="admin-check" style="display:flex;align-items:flex-start;gap:0.5rem;margin-bottom:0.4rem;">
+                            <div style="font-weight:600;margin-bottom:0.5rem;font-size:0.9rem;">Tipo de Excel (se detecta solo; puedes forzar)</div>
+                            <label class="admin-check" style="display:flex;align-items:flex-start;gap:0.5rem;margin-bottom:0.45rem;">
                                 <input type="radio" name="adminImportModo" id="adminModoExistencias" value="existencias" checked>
-                                <span><strong>Existencias / inventario</strong> — actualiza stock y datos (usa la casilla de abajo si no quieres tocar stock)</span>
+                                <span><strong>1 · Existencias</strong> — catálogo (código, línea, marca, fábrica/SAP). Stock opcional.</span>
                             </label>
-                            <label class="admin-check" style="display:flex;align-items:flex-start;gap:0.5rem;margin-bottom:0.4rem;">
+                            <label class="admin-check" style="display:flex;align-items:flex-start;gap:0.5rem;margin-bottom:0.45rem;">
+                                <input type="radio" name="adminImportModo" id="adminModoValorado" value="valorado">
+                                <span><strong>2 · Inventario valorado</strong> — <em>solo stock del sistema</em> (no pisa línea, Fríos/Secos ni nombres).</span>
+                            </label>
+                            <label class="admin-check" style="display:flex;align-items:flex-start;gap:0.5rem;margin-bottom:0.35rem;">
                                 <input type="radio" name="adminImportModo" id="adminModoBase" value="base">
-                                <span><strong>Excel base / habilitados (Laive)</strong> — solo habilita códigos para reposición y venta. <em>No modifica el inventario (stock)</em>. Fríos/Secos se guarda en <code>productos.tipo_almacen</code> y <strong>no se pisa</strong> al resubir la base (solo se asigna a códigos nuevos). Se guía por <strong>CÓDIGO SAP</strong> (= código de fábrica). No elige cuál Uniflex de la lista es el vuestro. Cruza SAP o Uniflex que ya existan en existencias; <em>no crea códigos</em> ni cambia stock ni nombres.</span>
+                                <span><strong>3 · Base Laive</strong> — habilita por <strong>CÓDIGO SAP</strong>; Fríos/Secos solo si aún no tiene tipo. <em>No toca stock</em>.</span>
                             </label>
                         </div>
                         <label class="admin-check" title="Útil cuando solo cambian nombres o líneas" id="adminSoloCatalogoWrap">
@@ -545,8 +549,8 @@
         </div>
     </div>
 
-<script src="config.js?v=3.79"></script>
-<script src="app.js?v=3.79"></script>
+<script src="config.js?v=3.82"></script>
+<script src="app.js?v=3.82"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {

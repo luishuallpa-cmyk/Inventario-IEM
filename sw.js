@@ -1,5 +1,5 @@
 /* IEM Inventario — SW optimizado: precache UI, red prioritaria en JS/CSS */
-const CACHE = 'iem-inventario-v3.74';
+const CACHE = 'iem-inventario-v3.82';
 const PRECACHE = [
   './',
   './index.html',

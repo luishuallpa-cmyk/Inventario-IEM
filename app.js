@@ -3008,14 +3008,36 @@
             return filas;
         }
 
+        function keysExcelNorm(filas) {
+            if (!filas || !filas.length) return [];
+            return Object.keys(filas[0] || {}).map(function (k) {
+                return String(k).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s._\-]+/g, '');
+            });
+        }
+
         function esExcelLaive(filas) {
-            if (!filas || !filas.length) return false;
-            const keys = Object.keys(filas[0] || {}).map(function (k) {
-                return String(k).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-            });
+            const keys = keysExcelNorm(filas);
             return keys.some(function (k) {
-                return k.indexOf('CODIGO SAP') !== -1 || k.indexOf('CODIGO UNIFLEX') !== -1 || k === 'CODIGOSAP' || k === 'CODIGOUNIFLEX';
+                return k.indexOf('CODIGOSAP') !== -1 || k.indexOf('CODIGOUNIFLEX') !== -1 || k === 'CODIGOSAP' || k === 'CODIGOUNIFLEX';
             });
+        }
+
+        /** Detecta los 3 Excel de IEM: existencias | valorado | laive */
+        function detectarTipoExcel(filas) {
+            if (esExcelLaive(filas)) return 'laive';
+            const keys = keysExcelNorm(filas);
+            const has = function (frag) {
+                return keys.some(function (k) { return k.indexOf(frag) !== -1; });
+            };
+            // Inventario valorado por almacén
+            if (has('INVENTARIOPRODUCTOCODIGO') || has('INVENTARIOPRODUCTOCANTIDAD') || has('INVENTARIOALMACEN')) {
+                return 'valorado';
+            }
+            // Existencias (Codigo + Stock Fisico / Producto)
+            if (has('CODIGO') || has('STOCKFISICO') || has('PRODUCTO')) {
+                return 'existencias';
+            }
+            return 'existencias';
         }
 
         function normalizarCodigoUniflex(c) {
@@ -3172,9 +3194,10 @@
                 activoExplicit = !(a === 'false' || a === '0' || a === 'no' || a === 'f');
             }
 
+            // Existencias: actualiza stock/nombre/línea. NO incluye tipo_almacen
+            // (Fríos/Secos lo pone solo el Excel base Laive y no se pisa).
             const producto = {
                 codigo: codigo,
-                codigo_fabrica: String(valorColumna(row, ['CodigoFabrica', 'codigo_fabrica', 'Cod. Fabrica'])).trim() || null,
                 descripcion: descripcion,
                 unidad_ref: unidadRef || null,
                 factor_empaque: factor,
@@ -3187,6 +3210,9 @@
                 ])).trim() || null,
                 actualizado_en: new Date().toISOString()
             };
+            // Solo manda codigo_fabrica si el Excel lo trae (no borra SAP de Laive)
+            const fabEx = String(valorColumna(row, ['CodigoFabrica', 'codigo_fabrica', 'Cod. Fabrica', 'Cod Fabrica'])).trim();
+            if (fabEx) producto.codigo_fabrica = fabEx;
             if (activoExplicit !== null) producto.activo = activoExplicit;
             // Solo incluir codigo_barras si el Excel trae un valor real.
             // Así no se borran los códigos de barras/QR ya guardados en la nube.
@@ -3204,7 +3230,8 @@
                 return;
             }
             const soloCatalogo = !!(opciones && opciones.soloCatalogo);
-            const modoBase = !!(opciones && (opciones.modoBase || opciones.modo === 'base'));
+            const modoBase = !!(opciones && (opciones.modoBase || opciones.modo === 'base' || opciones.modo === 'laive'));
+            const modoValorado = !!(opciones && (opciones.modoValorado || opciones.modo === 'valorado'));
             showToast('⏳ Leyendo Excel...', 'info');
             try {
                 const buffer = await file.arrayBuffer();
@@ -3217,7 +3244,16 @@
                 if (!filas.length) { showToast('El archivo no tiene filas de datos.', 'error'); return; }
 
                 // Modo base forzado por el usuario O detección automática de columnas Laive
-                const esLaive = modoBase || esExcelLaive(filas);
+                const tipoDetectado = detectarTipoExcel(filas);
+                const esLaive = modoBase || tipoDetectado === 'laive';
+                const esValorado = !esLaive && (modoValorado || tipoDetectado === 'valorado');
+                if (tipoDetectado === 'laive' && !modoBase) {
+                    showToast('Detectado: Excel base Laive (SAP + Fríos/Secos).', 'info');
+                } else if (esValorado) {
+                    showToast('Detectado: Inventario valorado → solo actualiza stock del sistema.', 'info');
+                } else if (!esLaive) {
+                    showToast('Detectado: Existencias → catálogo (línea, marca, fábrica).', 'info');
+                }
                 const productos = [];
                 const codigosVistos = new Set();
 
@@ -3374,6 +3410,25 @@
                     filas.forEach(function (row) {
                         const p = filaExcelAProducto(row);
                         if (!p) return;
+                        // Nunca tocar Fríos/Secos desde existencias/valorado
+                        delete p.tipo_almacen;
+                        if (esValorado) {
+                            // Solo stock (+ fábrica si viene). No pisa línea/nombre/marca/activo
+                            const solo = {
+                                codigo: p.codigo,
+                                stock_teorico: p.stock_teorico,
+                                actualizado_en: p.actualizado_en
+                            };
+                            if (p.codigo_fabrica) solo.codigo_fabrica = p.codigo_fabrica;
+                            if (codigosVistos.has(solo.codigo)) {
+                                const idx = productos.findIndex(function (x) { return x.codigo === solo.codigo; });
+                                if (idx >= 0) productos[idx] = solo;
+                            } else {
+                                codigosVistos.add(solo.codigo);
+                                productos.push(solo);
+                            }
+                            return;
+                        }
                         if (soloCatalogo) {
                             delete p.stock_teorico;
                         }
@@ -3419,6 +3474,7 @@
                     subidos += lote.length;
                 }
                 let extra = soloCatalogo ? ' (sin cambiar stock)' : '';
+                if (esValorado) extra = ' (valorado: solo stock del sistema)';
                 if (esLaive) {
                     const st = window.__laiveImportStats || {};
                     extra = ' (Base/habilitados: ' + (st.habilitados || subidos) + ' habilitados'
@@ -4161,11 +4217,14 @@
                     try {
                         const solo = document.getElementById('adminSoloCatalogo');
                         const modoBaseEl = document.getElementById('adminModoBase');
+                        const modoValEl = document.getElementById('adminModoValorado');
                         const modoBase = !!(modoBaseEl && modoBaseEl.checked);
+                        const modoValorado = !!(modoValEl && modoValEl.checked);
                         await importarExcelASupabase(adminSelectedFile, {
                             soloCatalogo: !!(solo && solo.checked),
                             modoBase: modoBase,
-                            modo: modoBase ? 'base' : 'existencias'
+                            modoValorado: modoValorado,
+                            modo: modoBase ? 'base' : (modoValorado ? 'valorado' : 'existencias')
                         });
                         if (statusEl) {
                             statusEl.textContent = 'Listo. Revisa el mensaje arriba o el toast.';
@@ -4759,6 +4818,44 @@
             const importBtn = document.getElementById('adminImportBtn');
             if (nameEl) nameEl.textContent = '📄 ' + file.name + ' (' + Math.round(file.size / 1024) + ' KB)';
             if (importBtn) importBtn.disabled = false;
+            // Auto-detectar tipo de Excel y marcar el radio
+            (async function () {
+                try {
+                    if (!window.XLSX) return;
+                    const buf = await file.arrayBuffer();
+                    const wb = XLSX.read(buf, { type: 'array', sheetRows: 25 });
+                    const sheet = wb.Sheets[wb.SheetNames[0]];
+                    const raw = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+                    const flat = (raw || []).slice(0, 20).map(function (r) {
+                        return (r || []).map(function (c) { return String(c || ''); }).join(' ');
+                    }).join(' | ').toUpperCase()
+                        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                    let modo = 'existencias';
+                    if (flat.indexOf('CODIGO SAP') !== -1 || flat.indexOf('CODIGO UNIFLEX') !== -1) {
+                        modo = 'base';
+                    } else if (
+                        flat.indexOf('INVENTARIOPRODUCTO') !== -1 ||
+                        flat.indexOf('INVENTARIO PRODUCTO CODIGO') !== -1 ||
+                        flat.indexOf('INVENTARIOALMACEN') !== -1 ||
+                        flat.indexOf('INVENTARIO ALMACEN') !== -1
+                    ) {
+                        modo = 'valorado';
+                    }
+                    const ids = {
+                        existencias: 'adminModoExistencias',
+                        valorado: 'adminModoValorado',
+                        base: 'adminModoBase'
+                    };
+                    const el = document.getElementById(ids[modo]);
+                    if (el) el.checked = true;
+                    const labels = { existencias: 'Existencias', valorado: 'Inventario valorado', base: 'Base Laive' };
+                    const st = document.getElementById('adminStatus');
+                    if (st) {
+                        st.textContent = 'Listo · detectado: ' + labels[modo] + ' (puedes cambiar el tipo arriba)';
+                        st.className = 'admin-status admin-status-info';
+                    }
+                } catch (e) { /* ignore */ }
+            })();
         }
 
         function mostrarApp() {
