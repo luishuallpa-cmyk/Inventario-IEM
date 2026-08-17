@@ -558,17 +558,18 @@
                 let all = [];
                 let from = 0;
                 for (;;) {
+                    // Carga TODO el catálogo (activos e inactivos).
+                    // - Buscador inventario: solo habilitados (activo).
+                    // - Vista Admin → Catálogo: todos, para ubicar códigos aunque estén desactivados.
                     let { data, error } = await supabaseClient
                         .from('productos')
                         .select('codigo,codigo_fabrica,codigo_barras,descripcion,unidad_ref,factor_empaque,stock_teorico,linea,marca,activo,tipo_almacen')
-                        .eq('activo', true)
                         .order('codigo', { ascending: true })
                         .range(from, from + PAGE - 1);
                     if (error && /tipo_almacen/i.test(error.message || '')) {
                         const r0 = await supabaseClient
                             .from('productos')
                             .select('codigo,codigo_fabrica,codigo_barras,descripcion,unidad_ref,factor_empaque,stock_teorico,linea,marca,activo')
-                            .eq('activo', true)
                             .order('codigo', { ascending: true })
                             .range(from, from + PAGE - 1);
                         data = r0.data; error = r0.error;
@@ -598,6 +599,8 @@
                         TipoAlmacen: tipo,
                         tipo_almacen: tipo,
                         Marca: p.marca || '',
+                        activo: p.activo !== false,
+                        Activo: p.activo !== false,
                         InventarioProductoCodigo: p.codigo,
                         InventarioProductoDescripcion: p.descripcion,
                         InventarioProductoUnidadReferenciaAbreviacion: p.unidad_ref || '',
@@ -2772,12 +2775,16 @@
                 const lin = escapeHtmlSes(getLinea(item) || '-');
                 const mar = escapeHtmlSes(getMarca(item) || '-');
                 const cant = getCantidad(item);
+                const activoItem = item.activo !== false && item.Activo !== false;
                 const stockClass = cant <= 0 ? 'stock-cero' : '';
+                const estado = activoItem
+                    ? ''
+                    : ' · <span style="color:#f59e0b">Inactivo</span>';
                 return '<div class="admin-catalog-item ' + stockClass + '">' +
                     '<div class="aci-cod">' + cod + '</div>' +
                     '<div class="aci-desc">' + desc + '</div>' +
                     '<div class="aci-meta">Línea: ' + lin + ' · Marca: ' + mar +
-                    ' · Stock: <strong>' + cant + '</strong></div></div>';
+                    ' · Stock: <strong>' + cant + '</strong>' + estado + '</div></div>';
             }).join('');
         }
 
