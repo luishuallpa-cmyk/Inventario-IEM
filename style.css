@@ -47,8 +47,8 @@
         /* Tema claro cálido (crema / papel) — menos blanco puro, más cómodo a la vista */
         body.light-theme {
             color-scheme: light;
-            /* Fondo verde IEM más presente · cards blancas con relieve */
-            --bg-gradient: #f4f6f8;
+            /* Fondo claro = verde oscuro del logo; cards blancas; el usuario elige tema */
+            --bg-gradient: #0A784C;
             --card-bg: #ffffff;
             --card-border: #e2e8f0;
             --card-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
@@ -1974,7 +1974,7 @@ body.modo-vendedor .vendedor-only-banner {
 /* móvil tema claro: fondo verde suave · cards blancas */
 @media (max-width: 768px) {
     body.light-theme {
-        --bg-gradient: #f4f6f8;
+        --bg-gradient: #0A784C;
         --card-bg: #ffffff;
         --card-border: #e2e8f0;
         --card-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
