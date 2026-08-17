@@ -558,12 +558,21 @@
                 let all = [];
                 let from = 0;
                 for (;;) {
-                    const { data, error } = await supabaseClient
+                    let { data, error } = await supabaseClient
                         .from('productos')
-                        .select('codigo,codigo_fabrica,codigo_barras,descripcion,unidad_ref,factor_empaque,stock_teorico,linea,marca,activo')
+                        .select('codigo,codigo_fabrica,codigo_barras,descripcion,unidad_ref,factor_empaque,stock_teorico,linea,marca,activo,tipo_almacen')
                         .eq('activo', true)
                         .order('codigo', { ascending: true })
                         .range(from, from + PAGE - 1);
+                    if (error && /tipo_almacen/i.test(error.message || '')) {
+                        const r0 = await supabaseClient
+                            .from('productos')
+                            .select('codigo,codigo_fabrica,codigo_barras,descripcion,unidad_ref,factor_empaque,stock_teorico,linea,marca,activo')
+                            .eq('activo', true)
+                            .order('codigo', { ascending: true })
+                            .range(from, from + PAGE - 1);
+                        data = r0.data; error = r0.error;
+                    }
                     if (error) throw error;
                     if (!data || !data.length) break;
                     all = all.concat(data);
@@ -599,18 +608,30 @@
                     };
                     });
                     try { localStorage.setItem(TIPO_ALMACEN_KEY, JSON.stringify(mapTipo)); } catch (e) {}
-                    // Índices: búsqueda y lookup O(1) por código / barras
+                    // Índices + sincronizar Fríos/Secos desde nube a localStorage
                     window._mapCodigo = Object.create(null);
                     window._mapBarras = Object.create(null);
+                    var mapTipoSync = {};
                     currentData.forEach(function (item) {
                         var c = String(getCodigo(item) || '').trim();
                         var f = String(getCodigoFabrica(item) || '').trim();
                         var b = String(getCodigoBarras(item) || '').trim();
+                        var tip = normalizarTipoAlmacen(item.tipo_almacen || item.TipoAlmacen || '');
+                        if (c && tip) {
+                            mapTipoSync[c] = tip;
+                            item.tipo_almacen = tip;
+                            item.TipoAlmacen = tip;
+                        }
                         item._sb = [c, f, b, getDescripcion(item), getUnidadRef(item), getLinea(item), getMarca(item)].join('\u0001').toUpperCase();
                         if (c) window._mapCodigo[c.toUpperCase()] = item;
                         if (f) window._mapCodigo[f.toUpperCase()] = item;
                         if (b) window._mapBarras[b] = item;
                     });
+                    try {
+                        var prevMap = leerMapaTipoAlmacen();
+                        Object.keys(mapTipoSync).forEach(function (k) { prevMap[k] = mapTipoSync[k]; });
+                        localStorage.setItem(TIPO_ALMACEN_KEY, JSON.stringify(prevMap));
+                    } catch (eMap) {}
                     guardarRespaldo(currentData);
                     aplicarBarrasLocalADatos();
                     actualizarEstadoCatalogo();
@@ -3250,13 +3271,21 @@
 
                     function pushUpdate(codigo, meta) {
                         if (!codigo || !codigosExistentes.has(codigo)) return false;
-                        if (meta.tipo_almacen) guardarTipoAlmacenCodigo(codigo, meta.tipo_almacen);
                         let lineaExistente = null;
+                        let tipoYa = '';
                         const itemPrev = byCodigo[codigo];
                         if (itemPrev) {
                             const linPrev = String(getLinea(itemPrev) || '').trim();
                             if (linPrev && !normalizarTipoAlmacen(linPrev)) lineaExistente = linPrev;
+                            tipoYa = normalizarTipoAlmacen(
+                                itemPrev.tipo_almacen || itemPrev.TipoAlmacen || ''
+                            ) || (leerMapaTipoAlmacen()[codigo] || '');
                         }
+                        // Fríos/Secos: SOLO asignar si aún no tiene (no se pisa al subir otra base)
+                        const tipoNuevo = (!tipoYa && meta.tipo_almacen)
+                            ? normalizarTipoAlmacen(meta.tipo_almacen)
+                            : '';
+                        if (tipoNuevo) guardarTipoAlmacenCodigo(codigo, tipoNuevo);
                         const rowUp = {
                             codigo: codigo,
                             codigo_fabrica: meta.sap, // SAP = fabricación
@@ -3267,12 +3296,21 @@
                             activo: meta.activo !== false,
                             actualizado_en: new Date().toISOString()
                         };
+                        // Solo manda tipo_almacen a la nube cuando es asignación nueva
+                        if (tipoNuevo) rowUp.tipo_almacen = tipoNuevo;
                         if (lineaExistente) rowUp.linea = lineaExistente;
                         if (!rowUp.activo) bloqueados++;
                         habilitados.add(codigo);
                         if (codigosVistos.has(codigo)) {
                             const idx = productos.findIndex(function (x) { return x.codigo === codigo; });
-                            if (idx >= 0) productos[idx] = rowUp;
+                            if (idx >= 0) {
+                                // Fusionar: no borrar tipo_almacen previo en el objeto local
+                                const prev = productos[idx];
+                                productos[idx] = Object.assign({}, prev, rowUp);
+                                if (!rowUp.tipo_almacen && prev.tipo_almacen) {
+                                    productos[idx].tipo_almacen = prev.tipo_almacen;
+                                }
+                            }
                         } else {
                             codigosVistos.add(codigo);
                             productos.push(rowUp);
@@ -3363,7 +3401,20 @@
                 let subidos = 0;
                 for (let i = 0; i < productos.length; i += TAMANO_LOTE) {
                     const lote = productos.slice(i, i + TAMANO_LOTE);
-                    const { error } = await supabaseClient.from('productos').upsert(lote, { onConflict: 'codigo' });
+                    let { error } = await supabaseClient.from('productos').upsert(lote, { onConflict: 'codigo' });
+                    // Si falta columna tipo_almacen en Supabase, reintentar sin ella
+                    if (error && /tipo_almacen/i.test(error.message || '')) {
+                        const lote2 = lote.map(function (r) {
+                            const x = Object.assign({}, r);
+                            delete x.tipo_almacen;
+                            return x;
+                        });
+                        const r2 = await supabaseClient.from('productos').upsert(lote2, { onConflict: 'codigo' });
+                        error = r2.error;
+                        if (!error) {
+                            showToast('Aviso: crea la columna tipo_almacen en productos (SQL) para guardar Fríos/Secos en la nube.', 'info');
+                        }
+                    }
                     if (error) throw error;
                     subidos += lote.length;
                 }
