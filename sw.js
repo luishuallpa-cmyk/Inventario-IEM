@@ -1,34 +1,23 @@
-/* IEM Inventario — Service Worker (PWA)
-   Cachea la interfaz para abrir más rápido y tolerar cortes breves de red.
-   Los datos (Supabase) siempre van por red. */
-const CACHE = 'iem-inventario-v3.51';
+/* IEM Inventario — SW optimizado: precache UI, red prioritaria en JS/CSS */
+const CACHE = 'iem-inventario-v3.72';
 const PRECACHE = [
   './',
   './index.html',
   './style.css',
   './admin.css',
-  './app.js',
   './config.js',
   './manifest.webmanifest',
-  './vendedores.html',
-  './vendedores.js',
-  './vendedores.css',
-  './manifest-vendedores.webmanifest',
   './logo-iem.png',
   './icon-192.png',
   './icon-512.png',
-  './icon-512-maskable.png',
-  './apple-touch-icon.png',
-  './favicon-32.png',
-  './favicon-64.png'
+  './favicon-32.png'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE)
-      .then((cache) => cache.addAll(PRECACHE))
+      .then((cache) => cache.addAll(PRECACHE).catch(function () {}))
       .then(() => self.skipWaiting())
-      .catch((err) => console.warn('[sw] precache', err))
   );
 });
 
@@ -43,39 +32,36 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
-
   const url = new URL(req.url);
+  // Datos y API siempre red
+  if (url.hostname.indexOf('supabase') !== -1) return;
+  if (url.hostname.indexOf('cdn') !== -1 || url.hostname.indexOf('unpkg') !== -1) return;
 
-  // No interceptar APIs externas (Supabase, CDN, etc.)
-  if (url.origin !== self.location.origin) return;
-
-  // Navegación / HTML: red primero, fallback a cache
-  if (req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html')) {
+  const isAppShell = /\\.(js|css)(\\?|$)/.test(url.pathname) || /index\\.html$/.test(url.pathname) || url.pathname.endsWith('/');
+  if (isAppShell && url.origin === self.location.origin) {
+    // Network-first para no quedar con JS viejo
     event.respondWith(
-      fetch(req)
-        .then((res) => {
+      fetch(req).then((res) => {
+        if (res && res.ok) {
           const copy = res.clone();
           caches.open(CACHE).then((c) => c.put(req, copy));
-          return res;
-        })
-        .catch(() => caches.match('./index.html'))
+        }
+        return res;
+      }).catch(() => caches.match(req))
     );
     return;
   }
 
-  // Estáticos: cache primero, luego red
   event.respondWith(
     caches.match(req).then((cached) => {
-      const network = fetch(req)
-        .then((res) => {
-          if (res && res.ok) {
-            const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(req, copy));
-          }
-          return res;
-        })
-        .catch(() => cached);
-      return cached || network;
+      const net = fetch(req).then((res) => {
+        if (res && res.ok && url.origin === self.location.origin) {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, copy));
+        }
+        return res;
+      }).catch(() => cached);
+      return cached || net;
     })
   );
 });

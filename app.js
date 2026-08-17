@@ -110,6 +110,14 @@
         // ESTADO
         // ============================================================
         let currentData = [];
+        function debounce(fn, ms) {
+            let t;
+            return function () {
+                const ctx = this, args = arguments;
+                clearTimeout(t);
+                t = setTimeout(function () { fn.apply(ctx, args); }, ms);
+            };
+        }
         let filteredData = [];
         let selectedIndex = -1;
         let pedido = [];
@@ -552,7 +560,7 @@
                 for (;;) {
                     const { data, error } = await supabaseClient
                         .from('productos')
-                        .select('*')
+                        .select('codigo,codigo_fabrica,codigo_barras,descripcion,unidad_ref,factor_empaque,stock_teorico,linea,marca,activo')
                         .eq('activo', true)
                         .order('codigo', { ascending: true })
                         .range(from, from + PAGE - 1);
@@ -591,6 +599,13 @@
                     };
                     });
                     try { localStorage.setItem(TIPO_ALMACEN_KEY, JSON.stringify(mapTipo)); } catch (e) {}
+                    // Índice de búsqueda precalculado (menos trabajo en cada tecla)
+                    currentData.forEach(function (item) {
+                        item._sb = [
+                            getCodigo(item), getCodigoFabrica(item), getCodigoBarras(item),
+                            getDescripcion(item), getUnidadRef(item), getLinea(item), getMarca(item)
+                        ].join('\u0001').toUpperCase();
+                    });
                     guardarRespaldo(currentData);
                     aplicarBarrasLocalADatos();
                     actualizarEstadoCatalogo();
@@ -869,16 +884,14 @@
                     if (tipo !== filtroTipoLaive) return false;
                 }
 
-                const campos = [
+                const blob = item._sb || [
                     cod, fab, bar,
                     getDescripcion(item).toUpperCase(),
                     getUnidadRef(item).toUpperCase(),
                     getLinea(item).toUpperCase(),
                     getMarca(item).toUpperCase()
-                ];
-                return palabrasUpper.every(function (pal) {
-                    return campos.some(function (campo) { return campo.indexOf(pal) !== -1; });
-                });
+                ].join('\u0001');
+                return palabrasUpper.every(function (pal) { return blob.indexOf(pal) !== -1; });
             });
 
             // Si buscaste un EAN y hay varios, priorizar coincidencia exacta de barras
@@ -893,6 +906,9 @@
         }
 
         function renderResults(items) {
+            const MAX_SHOW = 60;
+            const totalHit = items ? items.length : 0;
+            if (items && items.length > MAX_SHOW) items = items.slice(0, MAX_SHOW);
             if (!items || items.length === 0) {
                 resultList.innerHTML = `<div class="empty-message">🔎 No se encontraron productos</div>`;
                 resultCount.textContent = '0';
@@ -937,7 +953,7 @@
                 </div>`;
             });
             resultList.innerHTML = html;
-            resultCount.textContent = items.length;
+            resultCount.textContent = (typeof totalHit === 'number' && totalHit > items.length) ? (items.length + '/' + totalHit) : String(items.length);
 
             if (selectedIndex !== -1 && selectedIndex < items.length) {
                 actualizarCantidades(items[selectedIndex]);
