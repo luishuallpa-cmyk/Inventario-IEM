@@ -3322,10 +3322,20 @@
                             ? normalizarTipoAlmacen(meta.tipo_almacen)
                             : '';
                         if (tipoNuevo) guardarTipoAlmacenCodigo(codigo, tipoNuevo);
+                        // descripcion obligatoria en Supabase (NOT NULL): reutilizar la de existencias
+                        let descPrev = '';
+                        if (itemPrev) {
+                            try {
+                                descPrev = String(getDescripcion(itemPrev) || itemPrev.descripcion || '').trim();
+                            } catch (e) {
+                                descPrev = String(itemPrev.descripcion || '').trim();
+                            }
+                        }
                         const rowUp = {
                             codigo: codigo,
                             codigo_fabrica: meta.sap, // SAP = fabricación
-                            // NO pisar descripción (nombres difieren entre distribuidoras)
+                            descripcion: descPrev || codigo, // no usar nombre Laive; evita null
+                            // NO pisar descripción real si ya hay una en el objeto al fusionar
                             unidad_ref: meta.unidad_ref || null,
                             factor_empaque: meta.factor_empaque || 1,
                             marca: 'LAIVE',
@@ -3413,9 +3423,19 @@
                         // Nunca tocar Fríos/Secos desde existencias/valorado
                         delete p.tipo_almacen;
                         if (esValorado) {
-                            // Solo stock (+ fábrica si viene). No pisa línea/nombre/marca/activo
+                            // Solo stock. No pisa línea/nombre/marca/activo/tipo.
+                            // Incluye descripcion existente para no violar NOT NULL en upsert;
+                            // el envío real de valorado usa UPDATE (ver bucle de subida).
+                            let descExist = '';
+                            try {
+                                const prev = (currentData || []).find(function (it) {
+                                    return String(getCodigo(it) || '').trim() === String(p.codigo);
+                                });
+                                if (prev) descExist = String(getDescripcion(prev) || prev.descripcion || '').trim();
+                            } catch (e) {}
                             const solo = {
                                 codigo: p.codigo,
+                                descripcion: descExist || p.descripcion || p.codigo,
                                 stock_teorico: p.stock_teorico,
                                 actualizado_en: p.actualizado_en
                             };
@@ -3456,22 +3476,66 @@
                 let subidos = 0;
                 for (let i = 0; i < productos.length; i += TAMANO_LOTE) {
                     const lote = productos.slice(i, i + TAMANO_LOTE);
-                    let { error } = await supabaseClient.from('productos').upsert(lote, { onConflict: 'codigo' });
-                    // Si falta columna tipo_almacen en Supabase, reintentar sin ella
-                    if (error && /tipo_almacen/i.test(error.message || '')) {
-                        const lote2 = lote.map(function (r) {
-                            const x = Object.assign({}, r);
-                            delete x.tipo_almacen;
-                            return x;
-                        });
-                        const r2 = await supabaseClient.from('productos').upsert(lote2, { onConflict: 'codigo' });
-                        error = r2.error;
-                        if (!error) {
-                            showToast('Aviso: crea la columna tipo_almacen en productos (SQL) para guardar Fríos/Secos en la nube.', 'info');
+                    let error = null;
+                    if (esValorado) {
+                        // UPDATE por código: no crea filas nuevas ni exige todos los NOT NULL
+                        for (let j = 0; j < lote.length; j++) {
+                            const r = lote[j];
+                            const patch = {
+                                stock_teorico: r.stock_teorico,
+                                actualizado_en: r.actualizado_en || new Date().toISOString()
+                            };
+                            if (r.codigo_fabrica) patch.codigo_fabrica = r.codigo_fabrica;
+                            const res = await supabaseClient
+                                .from('productos')
+                                .update(patch)
+                                .eq('codigo', r.codigo);
+                            if (res.error) {
+                                error = res.error;
+                                break;
+                            }
+                            subidos += 1;
                         }
+                    } else {
+                        let res = await supabaseClient.from('productos').upsert(lote, { onConflict: 'codigo' });
+                        error = res.error;
+                        // Si falta columna tipo_almacen en Supabase, reintentar sin ella
+                        if (error && /tipo_almacen/i.test(error.message || '')) {
+                            const lote2 = lote.map(function (r) {
+                                const x = Object.assign({}, r);
+                                delete x.tipo_almacen;
+                                return x;
+                            });
+                            const r2 = await supabaseClient.from('productos').upsert(lote2, { onConflict: 'codigo' });
+                            error = r2.error;
+                            if (!error) {
+                                showToast('Aviso: crea la columna tipo_almacen en productos (SQL) para guardar Fríos/Secos en la nube.', 'info');
+                            }
+                        }
+                        // Si falla por descripcion null, rellenar desde catálogo y reintentar
+                        if (error && /descripcion/i.test(error.message || '')) {
+                            const lote3 = lote.map(function (r) {
+                                const x = Object.assign({}, r);
+                                if (!x.descripcion) {
+                                    try {
+                                        const prev = (currentData || []).find(function (it) {
+                                            return String(getCodigo(it) || '').trim() === String(r.codigo);
+                                        });
+                                        x.descripcion = prev
+                                            ? String(getDescripcion(prev) || prev.descripcion || r.codigo).trim()
+                                            : String(r.codigo);
+                                    } catch (e) {
+                                        x.descripcion = String(r.codigo);
+                                    }
+                                }
+                                return x;
+                            });
+                            const r3 = await supabaseClient.from('productos').upsert(lote3, { onConflict: 'codigo' });
+                            error = r3.error;
+                        }
+                        if (!error) subidos += lote.length;
                     }
                     if (error) throw error;
-                    subidos += lote.length;
                 }
                 let extra = soloCatalogo ? ' (sin cambiar stock)' : '';
                 if (esValorado) extra = ' (valorado: solo stock del sistema)';
