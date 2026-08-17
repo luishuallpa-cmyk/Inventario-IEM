@@ -525,13 +525,18 @@
             const conStock = contarConStock();
             // Detalle de habilitados / catálogo solo para administrador
             if (typeof esAdmin === 'function' && esAdmin()) {
+                const buscables = (currentData || []).filter(function (x) {
+                    return typeof esProductoBuscableInventario === 'function'
+                        ? esProductoBuscableInventario(x)
+                        : (x.activo !== false && x.Activo !== false);
+                }).length;
                 const conActivos = (currentData || []).filter(function (x) {
                     return x.activo !== false && x.Activo !== false;
                 }).length;
-                fileStatus.textContent = '📦 Habilitados: ' + conActivos + ' · Con stock: ' + conStock + ' · Catálogo: ' + total;
+                fileStatus.textContent = '📦 Laive/buscables: ' + buscables + ' · Activos: ' + conActivos + ' · Con stock: ' + conStock;
                 fileStatus.style.display = '';
             } else {
-                // Usuarios / vendedores: no mostrar esos números
+                // Almacén / conteo: sin números de catálogo
                 fileStatus.textContent = '';
                 fileStatus.style.display = 'none';
             }
@@ -749,6 +754,50 @@
             return normalizarTipoAlmacen(getLinea(item));
         }
 
+
+        /** Códigos de servicio / no inventariables (no son productos Laive). */
+        function esCodigoServicioOBasura(item) {
+            const cod = String(getCodigo(item) || '').trim();
+            const desc = String(getDescripcion(item) || '').toUpperCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            if (/RECOJO\s+DE\s+DEVOLUCION|DESCUENTOS?\s+VARIOS|VEH[IÍ]?CULO\s+MARCA|PRODUCTOS\s+VARIOS|^DEVOLUCION\b/.test(desc)) {
+                return true;
+            }
+            // Códigos internos muy cortos tipo 0001–0009 con descripción genérica
+            if (/^0+\d{1,3}$/.test(cod) && /DEVOLUCION|DESCUENTO|VEHICULO|VARIOS|OTROS/.test(desc)) {
+                return true;
+            }
+            return false;
+        }
+
+        /** ¿Hay al menos un producto con tipo Fríos/Secos (base Laive aplicada)? */
+        function catalogoTieneTiposLaive() {
+            const data = currentData || [];
+            for (let i = 0; i < data.length; i++) {
+                const t = getTipoAlmacen(data[i]);
+                if (t === 'FRIOS' || t === 'SECOS') return true;
+            }
+            return false;
+        }
+
+        /**
+         * Producto visible en buscador de inventario:
+         * - activo
+         * - no es código de servicio
+         * - si ya se subió Laive (hay tipos), solo los que tienen Fríos/Secos
+         */
+        function esProductoBuscableInventario(item) {
+            if (!item) return false;
+            if (esCodigoServicioOBasura(item)) return false;
+            const activoItem = item.activo !== false && item.Activo !== false && item.ACTIVO !== false;
+            if (!activoItem) return false;
+            const tipo = getTipoAlmacen(item);
+            if (tipo === 'FRIOS' || tipo === 'SECOS') return true;
+            // Sin tipos en catálogo aún: permitir activos (hasta que suban Excel Laive)
+            if (!catalogoTieneTiposLaive()) return true;
+            return false;
+        }
+
         function setFiltroTipoLaive(tipo) {
             filtroTipoLaive = normalizarTipoAlmacen(tipo) || (tipo ? String(tipo).toUpperCase() : '');
             if (filtroTipoLaive !== 'FRIOS' && filtroTipoLaive !== 'SECOS') filtroTipoLaive = '';
@@ -795,17 +844,18 @@
                 const matchBarras = bar && (bar === termUpper || bar.indexOf(termUpper) !== -1);
                 const matchCodigoExacto = cod === termUpper || fab === termUpper;
 
-                // Inventario: solo productos habilitados (activo=true, p.ej. por Excel Laive).
-                // SÍ se muestran aunque stock sea 0 (para poder contarlos).
-                // Catalogo admin / modo pedido: otras reglas.
-                const activoItem = item.activo !== false && item.Activo !== false && item.ACTIVO !== false;
-                if (!enPedido && !activoItem) {
-                    if (!(matchBarras || matchCodigoExacto)) return false;
+                // Inventario: solo base Laive (Fríos/Secos) + activos; sin códigos de servicio.
+                // Escáner: permite código exacto aunque esté fuera de lista.
+                if (!enPedido) {
+                    if (!esProductoBuscableInventario(item)) {
+                        if (!(matchBarras || matchCodigoExacto)) return false;
+                    }
+                } else {
+                    const activoItem = item.activo !== false && item.Activo !== false && item.ACTIVO !== false;
+                    if (!activoItem && !(matchBarras || matchCodigoExacto)) return false;
                 }
-                // Ya NO se ocultan los stock 0 en inventario si están habilitados.
-                // (Antes: if (!enPedido && getCantidad(item) <= 0) return false)
 
-                // Filtro Frios / Secos (mapa local + tipo_almacen; no usa la línea/categoría)
+                // Filtro Frios / Secos
                 if (filtroTipoLaive) {
                     const tipo = getTipoAlmacen(item);
                     if (tipo !== filtroTipoLaive) return false;
@@ -3040,11 +3090,13 @@
             }
             const stockTeorico = parseStockFisicoTexto(cantidadRaw, factor);
 
+            // Activo: solo si el Excel lo trae explícito. Si no, NO se manda
+            // (así existencias no re-habilita códigos que Laive desactivó).
             const activoRaw = valorColumna(row, ['Activo', 'activo']);
-            let activo = true;
+            let activoExplicit = null;
             if (activoRaw !== '' && activoRaw !== undefined) {
                 const a = String(activoRaw).trim().toLowerCase();
-                activo = !(a === 'false' || a === '0' || a === 'no' || a === 'f');
+                activoExplicit = !(a === 'false' || a === '0' || a === 'no' || a === 'f');
             }
 
             const producto = {
@@ -3060,9 +3112,9 @@
                 marca: String(valorColumna(row, [
                     'InventarioProductoProveedorNombre', 'Marca', 'marca', 'Proveedor'
                 ])).trim() || null,
-                activo: activo,
                 actualizado_en: new Date().toISOString()
             };
+            if (activoExplicit !== null) producto.activo = activoExplicit;
             // Solo incluir codigo_barras si el Excel trae un valor real.
             // Así no se borran los códigos de barras/QR ya guardados en la nube.
             const barrasExcel = String(valorColumna(row, [
