@@ -23,8 +23,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=3.67">
-    <link rel="stylesheet" href="admin.css?v=3.67">
+    <link rel="stylesheet" href="style.css?v=3.71">
+    <link rel="stylesheet" href="admin.css?v=3.71">
 </head>
 <body>
 <div class="login-overlay" id="loginOverlay">
@@ -333,7 +333,7 @@
                 </nav>
                 <div class="admin-panel-body">
                     <div class="admin-tab active" id="adminTabSubir" data-admin-panel="subir">
-                        <p class="admin-lead">Sube inventario valorado, existencias o el reporte Laive (CÓDIGO SAP / UNIFLEX). Laive solo habilita en inventario los Uniflex que coinciden con tus existencias (códigos principales), asigna Frios/Secos y desactiva el resto. No crea códigos de otras distribuidoras ni cambia stock.</p>
+                        <p class="admin-lead">Elige el tipo de Excel: <strong>Existencias</strong> (stock) o <strong>Base / habilitados Laive</strong> (solo marca qué se puede reponer y vender, sin tocar stock). La base solo usa códigos de 8 dígitos que ya están en tu catálogo (el nombre puede variar).</p>
                         <ul class="admin-tips">
                             <li>Formato: <strong>.xlsx / .xls / .csv</strong></li>
                             <li>Acepta <strong>inventario valorado</strong> o <strong>existencias</strong> (con Línea/Marca)</li>
@@ -347,9 +347,20 @@
                             <div class="admin-drop-text">Arrastra el archivo aquí<br>o haz clic para elegir</div>
                             <input type="file" id="importExcelInput" accept=".xlsx,.xls,.csv" class="admin-file-input">
                         </div>
-                        <label class="admin-check" title="Útil cuando solo cambian nombres o líneas">
+                        <div class="admin-import-modo" style="margin:0.75rem 0;padding:0.75rem;background:var(--input-bg,#f8fafc);border-radius:10px;border:1px solid var(--card-border,#e2e8f0);">
+                            <div style="font-weight:600;margin-bottom:0.5rem;font-size:0.9rem;">Tipo de Excel</div>
+                            <label class="admin-check" style="display:flex;align-items:flex-start;gap:0.5rem;margin-bottom:0.4rem;">
+                                <input type="radio" name="adminImportModo" id="adminModoExistencias" value="existencias" checked>
+                                <span><strong>Existencias / inventario</strong> — actualiza stock y datos (usa la casilla de abajo si no quieres tocar stock)</span>
+                            </label>
+                            <label class="admin-check" style="display:flex;align-items:flex-start;gap:0.5rem;margin-bottom:0.4rem;">
+                                <input type="radio" name="adminImportModo" id="adminModoBase" value="base">
+                                <span><strong>Excel base / habilitados (Laive)</strong> — solo habilita códigos para reposición y venta. <em>No modifica el inventario (stock)</em>. Solo códigos Uniflex de 8 dígitos que ya existen en tu catálogo (evita duplicados de otras distribuidoras).</span>
+                            </label>
+                        </div>
+                        <label class="admin-check" title="Útil cuando solo cambian nombres o líneas" id="adminSoloCatalogoWrap">
                             <input type="checkbox" id="adminSoloCatalogo">
-                            Solo catálogo (nombres / línea / marca) — <strong>no modificar stock</strong>
+                            Solo catálogo (nombres / línea / marca) — <strong>no modificar stock</strong> (solo aplica a Existencias)
                         </label>
                         <div class="admin-file-name" id="adminFileName"></div>
                         <div class="admin-actions">
@@ -534,8 +545,8 @@
         </div>
     </div>
 
-<script src="config.js?v=3.67"></script>
-<script src="app.js?v=3.67"></script>
+<script src="config.js?v=3.71"></script>
+<script src="app.js?v=3.71"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {

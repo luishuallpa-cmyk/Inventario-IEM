@@ -2977,6 +2977,34 @@
             return c;
         }
 
+        /** Excel base: solo códigos de exactamente 8 dígitos (Uniflex principal).
+         *  El nombre puede variar o duplicarse en el Excel; se agrupa por código. */
+        function esCodigoProductoUniflex(c) {
+            c = String(c || '').trim();
+            // Solo dígitos, exactamente 8 (no 4, no 9+, no letras)
+            if (!/^\d{8}$/.test(c)) return false;
+            return true;
+        }
+
+        /** Extrae candidatos de un campo Uniflex (puede traer varios separados por coma). */
+        function extraerCodigos8Digitos(raw) {
+            var out = [];
+            var vistos = {};
+            String(raw || '').split(/[,;|/\s]+/).forEach(function (s) {
+                s = String(s || '').trim();
+                // Si viene con ceros a la izquierda o espacios
+                if (/^\d+$/.test(s) && s.length > 8) {
+                    // a veces pegan varios sin separador: no adivinar
+                    return;
+                }
+                // normalizar: solo aceptar exactamente 8 dígitos
+                if (/^\d{8}$/.test(s)) {
+                    if (!vistos[s]) { vistos[s] = true; out.push(s); }
+                }
+            });
+            return out;
+        }
+
         /**
          * Excel Laive "Reporte de Pedido de Reposición".
          * Usa CÓDIGO UNIFLEX (puede haber varios separados por coma) o, si no hay, CÓDIGO SAP.
@@ -3007,19 +3035,13 @@
 
             if (!nombre && !sap && !uniflexRaw) return [];
 
-            let codigos = uniflexRaw
-                .split(/[,;|/]+/)
-                .map(function (s) { return normalizarCodigoUniflex(s); })
-                .filter(Boolean);
-            // únicos
-            const vistos = {};
-            codigos = codigos.filter(function (c) {
-                if (vistos[c]) return false;
-                vistos[c] = true;
-                return true;
-            });
-            // Si no hay Uniflex, usar SAP como código
-            if (!codigos.length && sap) codigos = [sap];
+            // Solo códigos de exactamente 8 dígitos (nombre puede variar/duplicar; se une por código)
+            let codigos = typeof extraerCodigos8Digitos === 'function'
+                ? extraerCodigos8Digitos(uniflexRaw)
+                : [];
+            if (!codigos.length && sap && /^\d{8}$/.test(String(sap).trim())) {
+                codigos = [String(sap).trim()];
+            }
             if (!codigos.length) return [];
 
             const factor = (typeof parseFactorDesdeTexto === 'function')
@@ -3139,6 +3161,7 @@
                 return;
             }
             const soloCatalogo = !!(opciones && opciones.soloCatalogo);
+            const modoBase = !!(opciones && (opciones.modoBase || opciones.modo === 'base'));
             showToast('⏳ Leyendo Excel...', 'info');
             try {
                 const buffer = await file.arrayBuffer();
@@ -3150,12 +3173,13 @@
                     : XLSX.utils.sheet_to_json(hoja, { defval: '' });
                 if (!filas.length) { showToast('El archivo no tiene filas de datos.', 'error'); return; }
 
-                const esLaive = esExcelLaive(filas);
+                // Modo base forzado por el usuario O detección automática de columnas Laive
+                const esLaive = modoBase || esExcelLaive(filas);
                 const productos = [];
                 const codigosVistos = new Set();
 
                 if (esLaive) {
-                    showToast('📋 Laive: habilitando solo códigos que ya están en existencias...', 'info');
+                    showToast('📋 Excel base / habilitados: solo códigos de 8 dígitos que ya están en tu catálogo (sin tocar stock)...', 'info');
                     // Códigos que YA existen en tu catálogo (existencias = códigos principales)
                     const codigosExistentes = new Set();
                     (currentData || []).forEach(function (item) {
@@ -3228,11 +3252,13 @@
                         });
                     });
 
-                    // Desactivar en catálogo los que NO vinieron en este Excel Laive
-                    // (solo afecta activo; no borra ni cambia stock)
+                    // Desactivar solo productos Uniflex 8 dígitos que NO vinieron en el Excel base
+                    // (no toca códigos de servicio / basura; no borra ni cambia stock)
                     const desactivarOtros = [];
                     codigosExistentes.forEach(function (c) {
-                        if (!habilitados.has(c)) desactivarOtros.push(c);
+                        if (habilitados.has(c)) return;
+                        if (typeof esCodigoProductoUniflex === 'function' && !esCodigoProductoUniflex(c)) return;
+                        desactivarOtros.push(c);
                     });
 
                     if (omitidosOtros > 0) {
@@ -3280,7 +3306,7 @@
                 if (!productos.length) {
                     showToast(
                         esLaive
-                            ? 'Ningún Uniflex del Excel coincide con tu catálogo. Primero sube existencias; Laive solo actualiza códigos que ya tienes.'
+                            ? 'Ningún código 8 dígitos del Excel coincide con tu catálogo. Primero sube existencias; el Excel base solo habilita códigos que ya tienes.'
                             : 'No se encontraron productos con código (Uniflex/SAP o código interno).',
                         'error'
                     );
@@ -3298,7 +3324,7 @@
                 let extra = soloCatalogo ? ' (sin cambiar stock)' : '';
                 if (esLaive) {
                     const st = window.__laiveImportStats || {};
-                    extra = ' (Laive: ' + (st.habilitados || subidos) + ' habilitados'
+                    extra = ' (Base/habilitados: ' + (st.habilitados || subidos) + ' habilitados'
                         + (st.desactivados ? ', ' + st.desactivados + ' fuera de lista' : '')
                         + (st.omitidos ? ', ' + st.omitidos + ' otras distrib.' : '')
                         + ', sin tocar stock)';
@@ -4037,8 +4063,12 @@
                     }
                     try {
                         const solo = document.getElementById('adminSoloCatalogo');
+                        const modoBaseEl = document.getElementById('adminModoBase');
+                        const modoBase = !!(modoBaseEl && modoBaseEl.checked);
                         await importarExcelASupabase(adminSelectedFile, {
-                            soloCatalogo: !!(solo && solo.checked)
+                            soloCatalogo: !!(solo && solo.checked),
+                            modoBase: modoBase,
+                            modo: modoBase ? 'base' : 'existencias'
                         });
                         if (statusEl) {
                             statusEl.textContent = 'Listo. Revisa el mensaje arriba o el toast.';
