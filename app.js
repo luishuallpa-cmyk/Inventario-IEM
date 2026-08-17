@@ -3478,23 +3478,30 @@
                     const lote = productos.slice(i, i + TAMANO_LOTE);
                     let error = null;
                     if (esValorado) {
-                        // UPDATE por código: no crea filas nuevas ni exige todos los NOT NULL
-                        for (let j = 0; j < lote.length; j++) {
-                            const r = lote[j];
-                            const patch = {
-                                stock_teorico: r.stock_teorico,
-                                actualizado_en: r.actualizado_en || new Date().toISOString()
-                            };
-                            if (r.codigo_fabrica) patch.codigo_fabrica = r.codigo_fabrica;
-                            const res = await supabaseClient
-                                .from('productos')
-                                .update(patch)
-                                .eq('codigo', r.codigo);
-                            if (res.error) {
-                                error = res.error;
+                        // UPDATE solo stock en paralelo (evita NOT NULL y no se cuelga)
+                        const CONCURRENCY = 30;
+                        for (let j = 0; j < lote.length; j += CONCURRENCY) {
+                            const chunk = lote.slice(j, j + CONCURRENCY);
+                            const results = await Promise.all(chunk.map(function (r) {
+                                const patch = {
+                                    stock_teorico: r.stock_teorico,
+                                    actualizado_en: r.actualizado_en || new Date().toISOString()
+                                };
+                                if (r.codigo_fabrica) patch.codigo_fabrica = r.codigo_fabrica;
+                                return supabaseClient
+                                    .from('productos')
+                                    .update(patch)
+                                    .eq('codigo', r.codigo);
+                            }));
+                            const failed = results.find(function (x) { return x && x.error; });
+                            if (failed) {
+                                error = failed.error;
                                 break;
                             }
-                            subidos += 1;
+                            subidos += chunk.length;
+                            if (productos.length > 40) {
+                                showToast('⏳ Stock: ' + subidos + ' / ' + productos.length + '...', 'info');
+                            }
                         }
                     } else {
                         let res = await supabaseClient.from('productos').upsert(lote, { onConflict: 'codigo' });
