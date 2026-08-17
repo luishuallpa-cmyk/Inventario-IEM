@@ -13,21 +13,21 @@
             color-scheme: dark;
 
             /* Tema oscuro — estilo corporativo (azul/slate, legible en almacén) */
-            --bg-gradient: linear-gradient(165deg, #0c1220 0%, #121a2b 45%, #152033 100%);
-            --card-bg: rgba(22, 30, 46, 0.96);
-            --card-border: rgba(148, 163, 184, 0.14);
-            --card-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+            --bg-gradient: linear-gradient(180deg, #0f1419 0%, #141a22 50%, #121820 100%);
+            --card-bg: #1a222d;
+            --card-border: rgba(148, 163, 184, 0.12);
+            --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
             --text-primary: #f1f5f9;
             --text-secondary: #cbd5e1;
             --text-muted: #94a3b8;
             --heading-color: #e2e8f0;
-            --accent: #2563eb;
-            --accent-2: #0d9488;
-            --accent-light: #34d399;
-            --accent-gradient: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 45%, #059669 100%);
-            --success: #22c55e;
-            --brand-green: #0f9d58;
-            --brand-green-soft: rgba(15, 157, 88, 0.18);
+            --accent: #3b82f6;
+            --accent-2: #64748b;
+            --accent-light: #93c5fd;
+            --accent-gradient: #2563eb;
+            --success: #16a34a;
+            --brand-green: #15803d;
+            --brand-green-soft: rgba(21, 128, 61, 0.15);
             --warning: #f59e0b;
             --danger: #ef4444;
             --input-bg: rgba(255, 255, 255, 0.07);
@@ -48,18 +48,18 @@
         body.light-theme {
             color-scheme: light;
             /* Fondo verde IEM más presente · cards blancas con relieve */
-            --bg-gradient: linear-gradient(160deg, #cfe8d6 0%, #d9efdf 35%, #e5f3ea 70%, #eef7f1 100%);
+            --bg-gradient: linear-gradient(180deg, #e8eef2 0%, #eef2f5 45%, #e9eef1 100%);
             --card-bg: #ffffff;
-            --card-border: rgba(15, 100, 55, 0.16);
-            --card-shadow: 0 6px 24px rgba(15, 70, 40, 0.1), 0 1px 3px rgba(15, 70, 40, 0.06);
+            --card-border: rgba(30, 50, 70, 0.1);
+            --card-shadow: 0 2px 12px rgba(15, 30, 50, 0.06);
             --text-primary: #14201a;
             --text-secondary: #334840;
             --text-muted: #5a6e64;
             --heading-color: #0f2e1c;
             --accent: #1d4ed8;
-            --accent-2: #0f9d58;
-            --accent-light: #34d399;
-            --accent-gradient: linear-gradient(135deg, #1e3a5f 0%, #1d4ed8 50%, #0f9d58 100%);
+            --accent-2: #475569;
+            --accent-light: #3b82f6;
+            --accent-gradient: #1d4ed8;
             --success: #15803d;
             --warning: #b45309;
             --danger: #b91c1c;
@@ -193,48 +193,52 @@
         }
         .btn:active { transform: scale(0.97); }
         .btn-primary {
-            background: var(--accent-gradient);
+            background: #2563eb;
             color: #fff;
             border-color: transparent;
-            box-shadow: 0 2px 10px rgba(37, 99, 235, 0.35);
+            box-shadow: none;
         }
-        /* Tema claro: no pisar el degradado del botón primario (antes quedaba gris + texto blanco) */
         body.light-theme .btn-primary {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            background: #1d4ed8;
             color: #fff !important;
             border-color: transparent;
-            box-shadow: 0 2px 10px rgba(37, 99, 235, 0.35);
+            box-shadow: none;
+        }
+        body.light-theme .btn {
+            background: #f1f5f9;
+            border-color: rgba(30, 50, 70, 0.12);
+            color: #1e293b;
         }
         body.light-theme .btn-outline {
-            background: #f7f1e8;
-            border: 1.5px solid #8b7355;
-            color: #2c2419;
+            background: #fff;
+            border: 1.5px solid #94a3b8;
+            color: #1e293b;
         }
         body.light-theme .btn-success {
             color: #fff !important;
         }
-        .btn-primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
+        .btn-primary:hover { background: #1d4ed8; filter: none; transform: none; }
         .btn-success {
-            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+            background: #16a34a;
             color: #fff;
             border-color: transparent;
-            box-shadow: 0 2px 10px rgba(22, 163, 74, 0.3);
+            box-shadow: none;
         }
-        .btn-success:hover { filter: brightness(1.06); transform: translateY(-1px); }
+        .btn-success:hover { background: #15803d; filter: none; transform: none; }
         .btn-warning {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            background: #d97706;
             color: #fff;
             border-color: transparent;
-            box-shadow: 0 2px 10px rgba(245, 158, 11, 0.3);
+            box-shadow: none;
         }
-        .btn-warning:hover { filter: brightness(1.06); transform: translateY(-1px); }
+        .btn-warning:hover { background: #b45309; filter: none; transform: none; }
         .btn-danger {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            background: #dc2626;
             color: #fff;
             border-color: transparent;
-            box-shadow: 0 4px 12px rgba(255, 84, 112, 0.35);
+            box-shadow: none;
         }
-        .btn-danger:hover { filter: brightness(1.08); transform: translateY(-1px); }
+        .btn-danger:hover { background: #b91c1c; filter: none; transform: none; }
         .btn-outline {
             background: transparent;
             border: 1.5px solid var(--text-muted);
@@ -810,7 +814,7 @@
         }
         .year-tab:hover { border-color: var(--accent); }
         .year-tab.active {
-            background: var(--accent-gradient);
+            background: #2563eb;
             border-color: transparent;
             color: #fff;
         }
@@ -1970,13 +1974,13 @@ body.modo-vendedor .vendedor-only-banner {
 /* móvil tema claro: fondo verde suave · cards blancas */
 @media (max-width: 768px) {
     body.light-theme {
-        --bg-gradient: linear-gradient(180deg, #d4ebd9 0%, #e8f5ec 50%, #f2faf5 100%);
+        --bg-gradient: #f1f5f9;
         --card-bg: #ffffff;
-        --card-border: rgba(15, 100, 55, 0.14);
-        --card-shadow: 0 3px 14px rgba(15, 70, 40, 0.08);
-        --input-bg: #f3faf6;
+        --card-border: rgba(30, 50, 70, 0.1);
+        --card-shadow: 0 1px 6px rgba(15, 30, 50, 0.05);
+        --input-bg: #f8fafc;
     }
     body.light-theme .card {
-        border-color: rgba(15, 100, 55, 0.16);
+        border-color: rgba(30, 50, 70, 0.1);
     }
 }

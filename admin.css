@@ -593,6 +593,7 @@ body.light-theme select {
 }
 body.light-theme .card {
     background: #ffffff;
+    border-color: rgba(30, 50, 70, 0.1);
 }
 
 /* Contraste en números de stock */
