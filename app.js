@@ -322,8 +322,6 @@
         const paStock = document.getElementById('paStock');
         const paTotalValor = document.getElementById('paTotalValor');
         const paTotalUnidad = document.getElementById('paTotalUnidad');
-        const paImagen = document.getElementById('paImagen');
-        const paImgWrap = document.getElementById('paImgWrap');
         const conversionHint = document.getElementById('conversionHint');
         const btnCambiarProducto = document.getElementById('btnCambiarProducto');
 
@@ -562,19 +560,14 @@
                 for (;;) {
                     let { data, error } = await supabaseClient
                         .from('productos')
-                        .select('codigo,codigo_fabrica,codigo_barras,descripcion,unidad_ref,factor_empaque,stock_teorico,linea,marca,activo,tipo_almacen,imagen_url')
+                        .select('codigo,codigo_fabrica,codigo_barras,descripcion,unidad_ref,factor_empaque,stock_teorico,linea,marca,activo,tipo_almacen')
                         .eq('activo', true)
                         .order('codigo', { ascending: true })
                         .range(from, from + PAGE - 1);
-                    // Si falta alguna columna nueva, reintentar sin ella
-                    if (error && /imagen_url|tipo_almacen/i.test(error.message || '')) {
-                        const hasTipo = !/tipo_almacen/i.test(error.message || '');
-                        const cols = hasTipo
-                            ? 'codigo,codigo_fabrica,codigo_barras,descripcion,unidad_ref,factor_empaque,stock_teorico,linea,marca,activo,tipo_almacen'
-                            : 'codigo,codigo_fabrica,codigo_barras,descripcion,unidad_ref,factor_empaque,stock_teorico,linea,marca,activo';
+                    if (error && /tipo_almacen/i.test(error.message || '')) {
                         const r0 = await supabaseClient
                             .from('productos')
-                            .select(cols)
+                            .select('codigo,codigo_fabrica,codigo_barras,descripcion,unidad_ref,factor_empaque,stock_teorico,linea,marca,activo')
                             .eq('activo', true)
                             .order('codigo', { ascending: true })
                             .range(from, from + PAGE - 1);
@@ -605,7 +598,6 @@
                         TipoAlmacen: tipo,
                         tipo_almacen: tipo,
                         Marca: p.marca || '',
-                        imagen_url: p.imagen_url || '',
                         InventarioProductoCodigo: p.codigo,
                         InventarioProductoDescripcion: p.descripcion,
                         InventarioProductoUnidadReferenciaAbreviacion: p.unidad_ref || '',
@@ -615,11 +607,6 @@
                         InventarioProductoProveedorNombre: p.marca || ''
                     };
                     });
-                    // Anexar imágenes oficiales Laive (matching por nombre/marca)
-                    // si el producto aún no tiene imagen_url en Supabase.
-                    if (window.LaiveImages && typeof window.LaiveImages.enrichList === 'function') {
-                        try { window.LaiveImages.enrichList(currentData); } catch (eImg) { console.warn('LaiveImages:', eImg); }
-                    }
                     try { localStorage.setItem(TIPO_ALMACEN_KEY, JSON.stringify(mapTipo)); } catch (e) {}
                     // Índices + sincronizar Fríos/Secos desde nube a localStorage
                     window._mapCodigo = Object.create(null);
@@ -671,9 +658,6 @@
             const respaldo = cargarRespaldo();
             if (respaldo) {
                 currentData = respaldo.data;
-                if (window.LaiveImages && typeof window.LaiveImages.enrichList === 'function') {
-                    try { window.LaiveImages.enrichList(currentData); } catch (eImg) {}
-                }
                 const fechaTexto = formatearFechaRespaldo(respaldo.fechaISO);
                 actualizarEstadoCatalogo(); fileStatus.textContent = (fileStatus.textContent || '') + ' · respaldo ' + fechaTexto;
             } else {
@@ -689,9 +673,6 @@
 
         function useLocalData() {
             currentData = [...sampleData];
-            if (window.LaiveImages && typeof window.LaiveImages.enrichList === 'function') {
-                try { window.LaiveImages.enrichList(currentData); } catch (eImg) {}
-            }
             fileStatus.textContent = `📋 ${currentData.length} registros de ejemplo`;
             // Bug #2: mismo cuidado que en loadFromGoogleSheets, para no interrumpir
             // una búsqueda o selección en curso si esto ocurre durante el auto-refresco.
@@ -984,14 +965,8 @@
                 const cajasStock = factor === 1 ? 0 : Math.floor(cantidad / factor);
                 const unidadesStock = factor === 1 ? cantidad : cantidad % factor;
                 const selectedClass = (idx === selectedIndex) ? ' selected' : '';
-                const imgUrl = item.imagen_url || item.imagen || item.image_url || '';
-                const thumbInner = imgUrl
-                    ? `<img class="result-thumb-img" src="${imgUrl}" alt="" loading="lazy" decoding="async" width="26" height="26" onerror="this.parentElement.classList.add('is-empty');this.remove();">`
-                    : '';
-                const thumbHtml = `<div class="result-thumb-wrap${imgUrl ? '' : ' is-empty'}" aria-hidden="${imgUrl ? 'false' : 'true'}">${thumbInner || '📦'}</div>`;
 
                 html += `<div class="result-item${selectedClass}" data-index="${idx}">
-                    ${thumbHtml}
                     <span class="codigo">${codigo}</span>
                     <span class="fabrica">${fabrica}</span>
                     <span class="descripcion">${desc}</span>
@@ -999,7 +974,6 @@
                     <span class="stock-cajas">${cajasStock}</span>
                     <span class="stock-unidades">${unidadesStock}</span>
                     <div class="row1">
-                        ${thumbHtml}
                         <span class="codigo">${codigo}</span>
                         <span class="fabrica">${fabrica}</span>
                         <span class="unidad">${unidad}</span>
@@ -1204,19 +1178,6 @@
                 ? `${unidadesStock} unidades`
                 : `${cajasStock} cajas, ${unidadesStock} unidades`;
             paTotalUnidad.textContent = getUnidadRef(item) || '';
-            // Imagen oficial Laive (si hay match)
-            const imgUrl = item.imagen_url || item.imagen || item.image_url || '';
-            if (paImagen && paImgWrap) {
-                if (imgUrl) {
-                    paImagen.src = imgUrl;
-                    paImagen.alt = getDescripcion(item) || '';
-                    paImgWrap.style.display = '';
-                    paImagen.onerror = function () { paImgWrap.style.display = 'none'; };
-                } else {
-                    paImagen.removeAttribute('src');
-                    paImgWrap.style.display = 'none';
-                }
-            }
             actualizarTotalCalculado();
         }
 
@@ -1233,10 +1194,6 @@
             vencBlock.classList.add('hidden');
             document.body.classList.remove('modo-seleccion');
             paTotalValor.textContent = '0';
-            if (paImagen && paImgWrap) {
-                paImagen.removeAttribute('src');
-                paImgWrap.style.display = 'none';
-            }
         }
 
         // Regresa de la tarjeta de producto seleccionado a la lista de
@@ -4399,68 +4356,6 @@
                     exportarInventario();
                 });
             }
-
-            // Sincronizar imágenes oficiales Laive → columna imagen_url en Supabase
-            const adminSyncImagenesBtn = document.getElementById('adminSyncImagenesBtn');
-            if (adminSyncImagenesBtn) {
-                adminSyncImagenesBtn.addEventListener('click', async function () {
-                    if (!esAdmin()) {
-                        showToast('Solo el administrador puede sincronizar imágenes.', 'error');
-                        return;
-                    }
-                    if (!window.LaiveImages || typeof window.LaiveImages.syncToSupabase !== 'function') {
-                        showToast('Módulo de imágenes no cargado (laive-images.js).', 'error');
-                        return;
-                    }
-                    if (!currentData || !currentData.length) {
-                        showToast('No hay productos cargados. Espera a que cargue el catálogo.', 'error');
-                        return;
-                    }
-                    const st = document.getElementById('adminImagenesStatus');
-                    adminSyncImagenesBtn.disabled = true;
-                    if (st) {
-                        st.textContent = 'Matching y guardando en Supabase...';
-                        st.className = 'admin-status admin-status-info';
-                    }
-                    try {
-                        const result = await window.LaiveImages.syncToSupabase(
-                            supabaseClient,
-                            currentData,
-                            function (done, total) {
-                                if (st) st.textContent = 'Guardando imágenes... ' + done + '/' + total;
-                            }
-                        );
-                        const errMsg = (result.errors && result.errors.length)
-                            ? (' · avisos: ' + result.errors.slice(0, 3).join('; '))
-                            : '';
-                        if (result.errors && result.errors.some(function (e) { return /Falta la columna/i.test(e); })) {
-                            if (st) {
-                                st.textContent = '⚠️ Falta crear la columna. En Supabase SQL Editor ejecuta: ALTER TABLE productos ADD COLUMN IF NOT EXISTS imagen_url text;';
-                                st.className = 'admin-status admin-status-error';
-                            }
-                            showToast('Primero crea la columna imagen_url en Supabase.', 'error');
-                        } else {
-                            if (st) {
-                                st.textContent = '✅ Matches: ' + result.matched + ' · Guardados: ' + result.updated + errMsg;
-                                st.className = 'admin-status admin-status-success';
-                            }
-                            showToast('Imágenes: ' + result.updated + ' actualizadas en Supabase.', 'success');
-                            // Refrescar catálogo para que las URLs queden en memoria
-                            try { await loadFromGoogleSheets(); } catch (eReload) {}
-                        }
-                    } catch (e) {
-                        console.error(e);
-                        const msg = e && e.message ? e.message : String(e);
-                        if (st) {
-                            st.textContent = 'Error: ' + msg;
-                            st.className = 'admin-status admin-status-error';
-                        }
-                        showToast(msg, 'error');
-                    }
-                    adminSyncImagenesBtn.disabled = false;
-                });
-            }
-
             const adminCatalogInput = document.getElementById('adminCatalogInput');
             if (adminCatalogInput) {
                 let tCat = null;
