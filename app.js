@@ -66,6 +66,9 @@
                 if (tabId === 'reporte' && typeof renderReporteSistema === 'function') {
                     renderReporteSistema();
                 }
+                if (tabId === 'pedidos' && typeof cargarPedidosSugeridos === 'function') {
+                    cargarPedidosSugeridos();
+                }
                 if (tabId === 'clientes') {
                     if (typeof cargarClientesDesdeNube === 'function') cargarClientesDesdeNube();
                     var cin = document.getElementById('adminClienteInput');
@@ -4793,6 +4796,190 @@
                 mostrarLogin();
             }
         }, 60000);
+
+        // ============================================================
+        // PEDIDOS SUGERIDOS (PWA vendedores → admin)
+        // ============================================================
+        let _pedidosCache = [];
+        let _pedidoDetalleId = null;
+
+        function escHtmlPed(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        async function cargarPedidosSugeridos() {
+            const list = document.getElementById('adminPedidosList');
+            const det = document.getElementById('adminPedidoDetalle');
+            if (det) { det.hidden = true; det.innerHTML = ''; }
+            _pedidoDetalleId = null;
+            if (!list) return;
+            if (!supabaseClient) {
+                list.innerHTML = '<p class="admin-sesiones-empty">Sin conexión a Supabase.</p>';
+                return;
+            }
+            list.innerHTML = '<p class="admin-sesiones-empty">Cargando pedidos…</p>';
+            try {
+                const { data, error } = await supabaseClient
+                    .from('pedidos_sugeridos')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(100);
+                if (error) throw error;
+                _pedidosCache = data || [];
+                renderListaPedidosSugeridos();
+            } catch (e) {
+                console.error(e);
+                list.innerHTML = '<p class="admin-sesiones-empty">No se pudieron cargar. ¿Ejecutaste <code>supabase-vendedores.sql</code>?<br>' +
+                    escHtmlPed(e.message || e) + '</p>';
+            }
+        }
+
+        function renderListaPedidosSugeridos() {
+            const list = document.getElementById('adminPedidosList');
+            if (!list) return;
+            const estadoSel = (document.getElementById('adminPedidosEstado') || {}).value || '';
+            const q = String((document.getElementById('adminPedidosFiltro') || {}).value || '').trim().toUpperCase();
+
+            let rows = _pedidosCache.slice();
+            if (estadoSel) {
+                rows = rows.filter(function (r) { return String(r.estado || '') === estadoSel; });
+            }
+            if (q) {
+                rows = rows.filter(function (r) {
+                    const blob = [
+                        r.vendedor_codigo, r.vendedor_nombre, r.ruta, r.notas, r.estado,
+                        JSON.stringify(r.items || [])
+                    ].join(' ').toUpperCase();
+                    return blob.indexOf(q) !== -1;
+                });
+            }
+
+            if (!rows.length) {
+                list.innerHTML = '<p class="admin-sesiones-empty">No hay pedidos' +
+                    (estadoSel ? ' en estado <strong>' + escHtmlPed(estadoSel) + '</strong>' : '') + '.</p>';
+                return;
+            }
+
+            list.innerHTML = rows.map(function (r) {
+                const fecha = r.created_at ? new Date(r.created_at).toLocaleString('es-PE') : '-';
+                const nItems = Array.isArray(r.items) ? r.items.length : 0;
+                const est = String(r.estado || 'pendiente');
+                const estCls = est === 'atendido' ? 'ok' : (est === 'rechazado' ? 'bad' : 'pend');
+                return (
+                    '<div class="admin-pedido-card" data-ped-id="' + escHtmlPed(r.id) + '">' +
+                    '<div class="apc-top">' +
+                    '<span class="apc-vend"><strong>' + escHtmlPed(r.vendedor_codigo || '') + '</strong> ' +
+                    escHtmlPed(r.vendedor_nombre || '') + '</span>' +
+                    '<span class="apc-estado ' + estCls + '">' + escHtmlPed(est) + '</span>' +
+                    '</div>' +
+                    '<div class="apc-meta">' + fecha +
+                    (r.ruta ? ' · Ruta ' + escHtmlPed(r.ruta) : '') +
+                    ' · ' + nItems + ' ítems · ' +
+                    (Number(r.total_cajas) || 0) + ' cj / ' + (Number(r.total_unidades) || 0) + ' u' +
+                    '</div>' +
+                    (r.notas ? '<div class="apc-notas">' + escHtmlPed(r.notas) + '</div>' : '') +
+                    '</div>'
+                );
+            }).join('');
+        }
+
+        function verDetallePedidoSugerido(id) {
+            const r = _pedidosCache.find(function (x) { return String(x.id) === String(id); });
+            const det = document.getElementById('adminPedidoDetalle');
+            if (!det || !r) return;
+            _pedidoDetalleId = r.id;
+            const items = Array.isArray(r.items) ? r.items : [];
+            let filas = items.map(function (it, i) {
+                return '<tr>' +
+                    '<td>' + (i + 1) + '</td>' +
+                    '<td class="mono">' + escHtmlPed(it.codigo) + '</td>' +
+                    '<td>' + escHtmlPed(it.descripcion) + '</td>' +
+                    '<td class="num">' + (Number(it.cajas) || 0) + '</td>' +
+                    '<td class="num">' + (Number(it.unidades) || 0) + '</td>' +
+                    '<td>' + escHtmlPed(it.linea || '') + '</td>' +
+                    '</tr>';
+            }).join('');
+            if (!filas) filas = '<tr><td colspan="6" class="empty-message">Sin ítems</td></tr>';
+            det.hidden = false;
+            det.innerHTML =
+                '<div class="apd-head">' +
+                '<h4>Detalle · ' + escHtmlPed(r.vendedor_codigo) + ' ' + escHtmlPed(r.vendedor_nombre || '') + '</h4>' +
+                '<button type="button" class="btn btn-outline btn-sm" id="apdCerrar">Cerrar</button>' +
+                '</div>' +
+                '<p class="apd-meta">' + (r.created_at ? new Date(r.created_at).toLocaleString('es-PE') : '') +
+                ' · Estado: <strong>' + escHtmlPed(r.estado || 'pendiente') + '</strong></p>' +
+                (r.notas ? '<p class="apd-notas">' + escHtmlPed(r.notas) + '</p>' : '') +
+                '<div class="table-wrap"><table class="diff-table apd-table"><thead><tr>' +
+                '<th>#</th><th>Código</th><th>Descripción</th><th>Cajas</th><th>Unid.</th><th>Línea</th>' +
+                '</tr></thead><tbody>' + filas + '</tbody></table></div>' +
+                '<div class="apd-actions">' +
+                '<button type="button" class="btn btn-success btn-sm" data-ped-estado="atendido">✓ Marcar atendido</button> ' +
+                '<button type="button" class="btn btn-danger btn-sm" data-ped-estado="rechazado">✕ Rechazar</button> ' +
+                '<button type="button" class="btn btn-outline btn-sm" data-ped-estado="pendiente">↩ Pendiente</button>' +
+                '</div>';
+            det.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        async function actualizarEstadoPedido(id, estado) {
+            if (!supabaseClient || !id) return;
+            try {
+                const { error } = await supabaseClient
+                    .from('pedidos_sugeridos')
+                    .update({ estado: estado })
+                    .eq('id', id);
+                if (error) throw error;
+                const row = _pedidosCache.find(function (x) { return String(x.id) === String(id); });
+                if (row) row.estado = estado;
+                renderListaPedidosSugeridos();
+                if (_pedidoDetalleId && String(_pedidoDetalleId) === String(id)) {
+                    verDetallePedidoSugerido(id);
+                }
+                if (typeof showToast === 'function') showToast('Estado: ' + estado, 'success');
+            } catch (e) {
+                console.error(e);
+                if (typeof showToast === 'function') {
+                    showToast('No se pudo actualizar: ' + (e.message || e), 'error');
+                }
+            }
+        }
+
+        // Listeners pedidos (delegation)
+        document.addEventListener('click', function (e) {
+            const card = e.target.closest && e.target.closest('.admin-pedido-card');
+            if (card && card.getAttribute('data-ped-id')) {
+                verDetallePedidoSugerido(card.getAttribute('data-ped-id'));
+                return;
+            }
+            if (e.target && e.target.id === 'apdCerrar') {
+                const det = document.getElementById('adminPedidoDetalle');
+                if (det) { det.hidden = true; det.innerHTML = ''; }
+                _pedidoDetalleId = null;
+                return;
+            }
+            const estBtn = e.target.closest && e.target.closest('[data-ped-estado]');
+            if (estBtn && _pedidoDetalleId) {
+                actualizarEstadoPedido(_pedidoDetalleId, estBtn.getAttribute('data-ped-estado'));
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const btn = document.getElementById('adminRefreshPedidosBtn');
+            if (btn) btn.addEventListener('click', cargarPedidosSugeridos);
+            const sel = document.getElementById('adminPedidosEstado');
+            if (sel) sel.addEventListener('change', renderListaPedidosSugeridos);
+            const fil = document.getElementById('adminPedidosFiltro');
+            if (fil) {
+                let t;
+                fil.addEventListener('input', function () {
+                    clearTimeout(t);
+                    t = setTimeout(renderListaPedidosSugeridos, 200);
+                });
+            }
+        });
+
+
 
         // Cierre por inactividad (20 min)
         const INACTIVIDAD_MS = 20 * 60000;
