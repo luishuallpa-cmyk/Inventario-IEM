@@ -1982,83 +1982,79 @@ body.modo-vendedor .vendedor-only-banner {
     }
 }
 
-/* —— Tema claro formal (PC) v3.63 —— */
+
+
+
+
+/* —— Tema claro: verde logo sólido (sin transparencia) v3.66 —— */
 body.light-theme {
-    --bg-gradient: #f4f6f8 !important;
+    --bg-gradient: #f3f4f6 !important;
     --card-bg: #ffffff !important;
-    --card-border: #e2e8f0 !important;
+    --card-border: #0f9d58 !important;
     --text-primary: #0f172a !important;
     --text-secondary: #334155 !important;
     --text-muted: #64748b !important;
     --input-bg: #ffffff !important;
-    --input-border: #cbd5e1 !important;
+    --input-border: #0f9d58 !important;
+    --input-focus: #0f9d58 !important;
+    --brand-green: #0f9d58 !important;
 }
 body.light-theme .header,
 body.light-theme .card {
     background: #ffffff !important;
-    border: 1px solid #e2e8f0 !important;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05) !important;
+    border: 1.5px solid #0f9d58 !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+}
+body.light-theme input[type="text"],
+body.light-theme input[type="search"],
+body.light-theme input[type="number"],
+body.light-theme input[type="password"],
+body.light-theme .search-row input,
+body.light-theme .login-field input,
+body.light-theme textarea {
+    background: #ffffff !important;
+    border: 1.5px solid #0f9d58 !important;
+    color: #0f172a !important;
+}
+body.light-theme input:focus,
+body.light-theme .search-row input:focus,
+body.light-theme .login-field input:focus {
+    border-color: #0f9d58 !important;
+    box-shadow: 0 0 0 3px rgba(15, 157, 88, 0.18) !important;
 }
 body.light-theme .filtro-tipo-btn {
-    background: #f8fafc !important;
-    border: 1px solid #cbd5e1 !important;
-    color: #334155 !important;
+    background: #fff !important;
+    border: 1.5px solid #0f9d58 !important;
+    color: #14532d !important;
 }
 body.light-theme .filtro-tipo-btn.active {
-    background: #1d4ed8 !important;
-    border-color: #1d4ed8 !important;
+    background: #0f9d58 !important;
+    border-color: #0f9d58 !important;
     color: #fff !important;
-}
-body.light-theme .btn-primary {
-    background: #2563eb !important;
-    box-shadow: none !important;
 }
 body.light-theme .result-item {
     background: #fff !important;
-    border: 1px solid #e2e8f0 !important;
+    border: 1.5px solid #0f9d58 !important;
 }
-
-
-/* —— Login + botones primarios siempre visibles (tema claro) v3.64 —— */
+body.light-theme .result-item.selected {
+    border-color: #0f9d58 !important;
+    border-width: 2px !important;
+    background: #f0fdf4 !important;
+}
 body.light-theme .btn.btn-primary,
 body.light-theme .btn-primary,
-body.light-theme .login-btn,
-body.light-theme button.login-btn,
-body.light-theme #loginBtn {
+body.light-theme #loginBtn,
+body.light-theme .login-btn {
     background: #2563eb !important;
-    background-image: none !important;
-    color: #ffffff !important;
+    color: #fff !important;
     border: none !important;
     opacity: 1 !important;
-    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25) !important;
 }
-body.light-theme .btn.btn-primary:hover,
-body.light-theme #loginBtn:hover {
-    background: #1d4ed8 !important;
-    color: #ffffff !important;
-}
-body.light-theme .btn.btn-primary:disabled,
-body.light-theme #loginBtn:disabled {
-    background: #2563eb !important;
-    color: #ffffff !important;
-    opacity: 0.85 !important;
-}
-body.light-theme .login-overlay {
-    background: #f4f6f8 !important;
-}
+body.light-theme .login-overlay { background: #f3f4f6 !important; }
 body.light-theme .login-card {
-    background: #ffffff !important;
-    border: 1px solid #e2e8f0 !important;
-    box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08) !important;
+    background: #fff !important;
+    border: 1.5px solid #0f9d58 !important;
 }
-body.light-theme .login-card h2 {
-    color: #0f172a !important;
-}
-body.light-theme .login-field label {
-    color: #334155 !important;
-}
-body.light-theme .login-field input {
-    background: #f8fafc !important;
-    border: 1px solid #cbd5e1 !important;
-    color: #0f172a !important;
+body.light-theme .login-logo img {
+    border: 1.5px solid #0f9d58 !important;
 }

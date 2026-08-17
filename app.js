@@ -786,9 +786,22 @@
          * - no es código de servicio
          * - si ya se subió Laive (hay tipos), solo los que tienen Fríos/Secos
          */
+
+        /** Promos/combos (PROM, CBM) no forman parte del Excel base Laive para conteo. */
+        function esPromoOCombo(item) {
+            const desc = String(getDescripcion(item) || '').toUpperCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            const cod = String(getCodigo(item) || '');
+            if (/\bPROM\b|\bPROM\.|PROM\s|\bCBM\b|COMBO\b|PACK\s*PROMO/.test(desc)) return true;
+            if (/^9\d{3}$/.test(cod) && /PROM/.test(desc)) return true;
+            if (/^900\d+/.test(cod) && /PROM/.test(desc)) return true;
+            return false;
+        }
+
         function esProductoBuscableInventario(item) {
             if (!item) return false;
             if (esCodigoServicioOBasura(item)) return false;
+            if (esPromoOCombo(item)) return false;
             // Todo lo activo (habilitado por Laive / base), CON o SIN stock
             const activoItem = item.activo !== false && item.Activo !== false && item.ACTIVO !== false;
             return !!activoItem;
