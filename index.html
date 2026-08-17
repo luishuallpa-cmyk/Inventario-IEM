@@ -155,6 +155,9 @@
         <!-- Tarjeta de producto seleccionado (visible solo en móvil) -->
         <div class="producto-activo-card" id="productoActivoCard">
             <div class="pa-header">
+                <div class="pa-img-wrap" id="paImgWrap" style="display:none;">
+                    <img class="pa-img" id="paImagen" src="" alt="" loading="lazy" decoding="async">
+                </div>
                 <div class="pa-info">
                     <div class="pa-descripcion" id="paDescripcion"></div>
                     <div class="pa-codigo" id="paCodigo"></div>
@@ -374,6 +377,23 @@
                             </button>
                         </div>
                         <p class="admin-status" id="adminStatus"></p>
+
+                        <hr class="admin-sep" style="margin:1.2rem 0;border:none;border-top:1px solid var(--card-border,#e2e8f0);">
+                        <h3 class="admin-subtitle">🖼️ Imágenes Laive → Supabase</h3>
+                        <p class="admin-lead">Asocia fotos oficiales de <a href="https://laive.pe/productos/busqueda" target="_blank" rel="noopener">laive.pe</a> a cada producto y las guarda en la columna <code>imagen_url</code>.</p>
+                        <ul class="admin-tips">
+                            <li><strong>Paso 1 (solo una vez):</strong> en Supabase → SQL Editor ejecuta:<br>
+                                <code style="font-size:0.75rem;display:inline-block;margin-top:0.25rem;">ALTER TABLE productos ADD COLUMN IF NOT EXISTS imagen_url text;</code>
+                            </li>
+                            <li><strong>Paso 2:</strong> pulsa el botón de abajo para hacer matching y guardar las URLs</li>
+                            <li>Solo se escriben matches con confianza alta (no inventa fotos)</li>
+                        </ul>
+                        <div class="admin-actions">
+                            <button type="button" class="btn btn-success" id="adminSyncImagenesBtn">
+                                <span class="btn-icon">🖼️</span><span class="btn-label"> Sincronizar imágenes a Supabase</span>
+                            </button>
+                        </div>
+                        <p class="admin-status" id="adminImagenesStatus"></p>
                     </div>
 
                     <div class="admin-tab" id="adminTabCatalogo" data-admin-panel="catalogo" hidden>
@@ -549,8 +569,9 @@
         </div>
     </div>
 
-<script src="config.js?v=3.86"></script>
-<script src="app.js?v=3.86"></script>
+<script src="config.js?v=3.88"></script>
+<script src="laive-images.js?v=3.88"></script>
+<script src="app.js?v=3.88"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {
