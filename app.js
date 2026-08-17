@@ -2285,8 +2285,10 @@
             let n = 0, totalCajas = 0, totalUni = 0;
             html += '<header class="inv-preview-head inv-report-head">' +
                 '<div class="inv-report-logo-wrap"><img class="inv-report-logo" src="logo-iem.png" alt="IEM GROUP"></div>' +
+                '<div class="inv-report-head-text">' +
                 '<h1>REPORTE DE INVENTARIO FÍSICO</h1>' +
-                '<p class="inv-preview-meta">' + new Date().toLocaleString('es-PE') + ' · Conteo físico</p></header>';
+                '<p class="inv-preview-meta">' + new Date().toLocaleString('es-PE') + ' · Conteo físico</p>' +
+                '</div></header>';
 
             bloques.forEach(function (bloque, idxBloque) {
                 const breakCls = (idxBloque > 0) ? ' page-break-before' : '';
@@ -2374,11 +2376,12 @@
                 '*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}' +
                 '#iemPdfPage{margin:0;padding:0;font-family:Arial,Segoe UI,sans-serif;color:#111!important;font-size:11px;background:#fff!important}' +
                 '#iemPdfPage, #iemPdfPage td, #iemPdfPage th, #iemPdfPage p, #iemPdfPage span, #iemPdfPage div, #iemPdfPage strong{color:#111!important}' +
-                '#iemPdfPage .inv-report-logo-wrap{margin:0 0 6px}' +
+                '#iemPdfPage .inv-report-logo-wrap{margin:0;position:absolute;left:0;top:0}' +
                 '#iemPdfPage .inv-report-logo{height:42px;width:auto;display:block}' +
-                '#iemPdfPage .inv-preview-head{border-bottom:2px solid #1d4ed8;padding-bottom:10px;margin-bottom:14px;text-align:center}' +
-                '#iemPdfPage .inv-preview-head h1{margin:6px 0 0;font-size:16px;color:#0f172a!important}' +
-                '#iemPdfPage .inv-preview-meta{margin:6px 0 0;color:#334155!important;font-size:11px}' +
+                '#iemPdfPage .inv-preview-head{position:relative;min-height:50px;border-bottom:2px solid #1d4ed8;padding-bottom:10px;margin-bottom:14px;text-align:center}' +
+                '#iemPdfPage .inv-report-head-text{display:block}' +
+                '#iemPdfPage .inv-preview-head h1{margin:0;font-size:16px;color:#0f172a!important}' +
+                '#iemPdfPage .inv-preview-meta{position:absolute;left:0;top:46px;margin:0;color:#334155!important;font-size:11px}' +
                 '#iemPdfPage .inv-report-tipo-block{page-break-inside:auto}' +
                 '#iemPdfPage .inv-report-tipo-block.page-break-before{page-break-before:always;break-before:page}' +
                 '#iemPdfPage .inv-report-tipo-titulo{margin:16px 0 8px;font-size:13px;color:#fff!important;background:#0f766e!important;padding:6px 10px;font-weight:800;letter-spacing:.03em;border-radius:4px;page-break-after:avoid;break-after:avoid-page}' +
@@ -2653,8 +2656,10 @@
             // Cabecera simple para gerencia: logo + título + fecha
             html += '<header class="inv-preview-head inv-report-head">' +
                 '<div class="inv-report-logo-wrap"><img class="inv-report-logo" src="logo-iem.png" alt="IEM GROUP"></div>' +
+                '<div class="inv-report-head-text">' +
                 '<h1>REPORTE DE INVENTARIO POR ALMACÉN</h1>' +
-                '<p class="inv-preview-meta">' + new Date().toLocaleString('es-PE') + '</p></header>';
+                '<p class="inv-preview-meta">' + new Date().toLocaleString('es-PE') + '</p>' +
+                '</div></header>';
 
             bloques.forEach(function (bloque, idxBloque) {
                 // SECOS / OTROS empiezan en hoja nueva (no dejan el título solo al final de Fríos)
