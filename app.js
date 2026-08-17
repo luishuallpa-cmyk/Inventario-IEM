@@ -3258,52 +3258,84 @@
                 const codigosVistos = new Set();
 
                 if (esLaive) {
-                    showToast('📋 Excel base: guía por CÓDIGO SAP (fábrica). No adivina Uniflex. Sin tocar stock...', 'info');
-                    // Códigos que YA existen en tu catálogo (existencias = códigos principales)
+                    showToast('📋 Excel base: guía por CÓDIGO SAP (fábrica). Sin tocar stock...', 'info');
+                    // Cargar TODO el catálogo desde la nube (activos e inactivos) para cruzar SAP
                     const codigosExistentes = new Set();
-                    (currentData || []).forEach(function (item) {
-                        const c = String(getCodigo(item) || '').trim();
-                        if (c) codigosExistentes.add(c);
-                    });
-                    if (!codigosExistentes.size) {
-                        try {
-                            const { data: existentes } = await supabaseClient
+                    const byCodigo = Object.create(null);
+                    const byFabrica = Object.create(null);
+                    try {
+                        const PAGE = 1000;
+                        let from = 0;
+                        let totalLoad = 0;
+                        for (;;) {
+                            let { data: batch, error: errCat } = await supabaseClient
                                 .from('productos')
-                                .select('codigo');
-                            (existentes || []).forEach(function (p) {
+                                .select('codigo,codigo_fabrica,descripcion,linea,tipo_almacen,activo')
+                                .order('codigo', { ascending: true })
+                                .range(from, from + PAGE - 1);
+                            if (errCat && /tipo_almacen/i.test(errCat.message || '')) {
+                                const r0 = await supabaseClient
+                                    .from('productos')
+                                    .select('codigo,codigo_fabrica,descripcion,linea,activo')
+                                    .order('codigo', { ascending: true })
+                                    .range(from, from + PAGE - 1);
+                                batch = r0.data; errCat = r0.error;
+                            }
+                            if (errCat) throw errCat;
+                            if (!batch || !batch.length) break;
+                            batch.forEach(function (p) {
                                 const c = String(p.codigo || '').trim();
-                                if (c) codigosExistentes.add(c);
+                                if (!c) return;
+                                codigosExistentes.add(c);
+                                const it = {
+                                    Codigo: c,
+                                    codigo: c,
+                                    CodigoFabrica: p.codigo_fabrica || '',
+                                    codigo_fabrica: p.codigo_fabrica || '',
+                                    descripcion: p.descripcion || c,
+                                    Producto: p.descripcion || c,
+                                    linea: p.linea || '',
+                                    tipo_almacen: p.tipo_almacen || '',
+                                    activo: p.activo
+                                };
+                                byCodigo[c] = it;
+                                const f = String(p.codigo_fabrica || '').trim();
+                                if (f) {
+                                    if (!byFabrica[f]) byFabrica[f] = [];
+                                    if (byFabrica[f].indexOf(c) < 0) byFabrica[f].push(c);
+                                }
                             });
-                        } catch (eLoad) {
-                            console.warn(eLoad);
+                            totalLoad += batch.length;
+                            if (batch.length < PAGE) break;
+                            from += PAGE;
+                            if (from >= 100000) break;
                         }
+                        showToast('Catálogo en nube: ' + totalLoad + ' productos para cruzar SAP...', 'info');
+                    } catch (eLoad) {
+                        console.warn(eLoad);
+                        // Fallback: memoria
+                        (currentData || []).forEach(function (item) {
+                            const c = String(getCodigo(item) || '').trim();
+                            if (!c) return;
+                            codigosExistentes.add(c);
+                            byCodigo[c] = item;
+                            const f = String(getCodigoFabrica(item) || '').trim();
+                            if (f) {
+                                if (!byFabrica[f]) byFabrica[f] = [];
+                                if (byFabrica[f].indexOf(c) < 0) byFabrica[f].push(c);
+                            }
+                        });
                     }
                     if (!codigosExistentes.size) {
-                        showToast('No hay catálogo cargado. Sube primero existencias y luego el Excel Laive.', 'error');
+                        showToast('No hay catálogo en Supabase. Sube primero existencias y luego el Excel Laive.', 'error');
                         return;
                     }
 
-                    // Guía por CÓDIGO SAP (fabricación). No se elige cuál Uniflex de la lista es “el nuestro”.
-                    // 1) Productos que ya tienen ese codigo_fabrica = SAP
-                    // 2) Si en la celda Uniflex aparece un código que YA está en existencias, se le asigna el SAP
-                    //    (sin adivinar: solo cruza lo que ya tienes; el nombre Laive no se usa)
                     const habilitados = new Set();
                     let bloqueados = 0;
                     let filasSap = 0;
                     let sinMatch = 0;
-
-                    // Mapas desde catálogo actual + posibles filas solo-código de Supabase
-                    const byCodigo = Object.create(null);
-                    const byFabrica = Object.create(null);
-                    (currentData || []).forEach(function (it) {
-                        const c = String(getCodigo(it) || '').trim();
-                        const f = String(getCodigoFabrica(it) || '').trim();
-                        if (c) byCodigo[c] = it;
-                        if (f) {
-                            if (!byFabrica[f]) byFabrica[f] = [];
-                            byFabrica[f].push(c);
-                        }
-                    });
+                    let tiposAsignados = 0;
 
                     function pushUpdate(codigo, meta) {
                         if (!codigo || !codigosExistentes.has(codigo)) return false;
@@ -3321,29 +3353,31 @@
                         const tipoNuevo = (!tipoYa && meta.tipo_almacen)
                             ? normalizarTipoAlmacen(meta.tipo_almacen)
                             : '';
-                        if (tipoNuevo) guardarTipoAlmacenCodigo(codigo, tipoNuevo);
-                        // descripcion obligatoria en Supabase (NOT NULL): reutilizar la de existencias
+                        if (tipoNuevo) {
+                            guardarTipoAlmacenCodigo(codigo, tipoNuevo);
+                            tiposAsignados++;
+                        }
                         let descPrev = '';
                         if (itemPrev) {
                             try {
-                                descPrev = String(getDescripcion(itemPrev) || itemPrev.descripcion || '').trim();
+                                descPrev = String(getDescripcion(itemPrev) || itemPrev.descripcion || itemPrev.Producto || '').trim();
                             } catch (e) {
-                                descPrev = String(itemPrev.descripcion || '').trim();
+                                descPrev = String(itemPrev.descripcion || itemPrev.Producto || '').trim();
                             }
                         }
                         const rowUp = {
                             codigo: codigo,
-                            codigo_fabrica: meta.sap, // SAP = fabricación
-                            descripcion: descPrev || codigo, // no usar nombre Laive; evita null
-                            // NO pisar descripción real si ya hay una en el objeto al fusionar
+                            codigo_fabrica: meta.sap,
+                            descripcion: descPrev || codigo,
                             unidad_ref: meta.unidad_ref || null,
                             factor_empaque: meta.factor_empaque || 1,
                             marca: 'LAIVE',
                             activo: meta.activo !== false,
                             actualizado_en: new Date().toISOString()
                         };
-                        // Solo manda tipo_almacen a la nube cuando es asignación nueva
+                        // Asignar tipo solo si aún no tiene (no pisar FRIOS/SECOS previos)
                         if (tipoNuevo) rowUp.tipo_almacen = tipoNuevo;
+                        else if (tipoYa) rowUp.tipo_almacen = tipoYa;
                         if (lineaExistente) rowUp.linea = lineaExistente;
                         if (!rowUp.activo) bloqueados++;
                         habilitados.add(codigo);
@@ -3383,21 +3417,21 @@
                         if (!matched) sinMatch++;
                     });
 
-                    // Desactivar productos de catálogo (4–5 dígitos) que no recibieron match en este Excel base
-                    const desactivarOtros = [];
-                    codigosExistentes.forEach(function (c) {
-                        if (habilitados.has(c)) return;
-                        if (typeof esCodigoProductoUniflex === 'function' && !esCodigoProductoUniflex(c)) return;
-                        desactivarOtros.push(c);
-                    });
-
                     if (sinMatch > 0) {
-                        showToast('SAP sin producto en existencias: ' + sinMatch + ' filas (no se crean códigos nuevos).', 'info');
+                        showToast('SAP sin match en catálogo: ' + sinMatch + ' filas (no se crean códigos nuevos).', 'info');
                     }
 
-                    // Guardar lista de habilitados y desactivar el resto por lotes
+                    // Solo desactivar Uniflex 4–5 dígitos fuera de lista si hubo matches suficientes
+                    const desactivarOtros = [];
+                    if (habilitados.size >= 10) {
+                        codigosExistentes.forEach(function (c) {
+                            if (habilitados.has(c)) return;
+                            if (typeof esCodigoProductoUniflex === 'function' && !esCodigoProductoUniflex(c)) return;
+                            desactivarOtros.push(c);
+                        });
+                    }
                     if (desactivarOtros.length) {
-                        showToast('Deshabilitando ' + desactivarOtros.length + ' productos que no están en el Excel Laive...', 'info');
+                        showToast('Deshabilitando ' + desactivarOtros.length + ' Uniflex fuera del Excel Laive...', 'info');
                         const TAM = 200;
                         for (let i = 0; i < desactivarOtros.length; i += TAM) {
                             const lote = desactivarOtros.slice(i, i + TAM);
@@ -3409,12 +3443,12 @@
                         }
                     }
 
-                    // Memo para mensaje final
                     window.__laiveImportStats = {
                         habilitados: habilitados.size,
                         omitidos: sinMatch,
                         desactivados: desactivarOtros.length,
-                        bloqueados: bloqueados
+                        bloqueados: bloqueados,
+                        tipos: tiposAsignados
                     };
                 } else {
                     filas.forEach(function (row) {
@@ -3548,9 +3582,10 @@
                 if (esValorado) extra = ' (valorado: solo stock del sistema)';
                 if (esLaive) {
                     const st = window.__laiveImportStats || {};
-                    extra = ' (Base/habilitados: ' + (st.habilitados || subidos) + ' habilitados'
+                    extra = ' (Base Laive: ' + (st.habilitados || subidos) + ' habilitados'
+                        + (st.tipos ? ', ' + st.tipos + ' Fríos/Secos nuevos' : '')
                         + (st.desactivados ? ', ' + st.desactivados + ' fuera de lista' : '')
-                        + (st.omitidos ? ', ' + st.omitidos + ' otras distrib.' : '')
+                        + (st.omitidos ? ', ' + st.omitidos + ' sin match SAP' : '')
                         + ', sin tocar stock)';
                 }
                 showToast('✅ ' + subidos + ' productos actualizados en Supabase' + extra + '.', 'success');
