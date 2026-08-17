@@ -985,12 +985,13 @@
                 const unidadesStock = factor === 1 ? cantidad : cantidad % factor;
                 const selectedClass = (idx === selectedIndex) ? ' selected' : '';
                 const imgUrl = item.imagen_url || item.imagen || item.image_url || '';
-                const imgHtml = imgUrl
-                    ? `<img class="result-thumb" src="${imgUrl}" alt="" loading="lazy" decoding="async" onerror="this.classList.add('result-thumb-empty');this.removeAttribute('src');this.alt='';">`
-                    : `<span class="result-thumb result-thumb-empty" aria-hidden="true">📦</span>`;
+                const thumbInner = imgUrl
+                    ? `<img class="result-thumb-img" src="${imgUrl}" alt="" loading="lazy" decoding="async" width="26" height="26" onerror="this.parentElement.classList.add('is-empty');this.remove();">`
+                    : '';
+                const thumbHtml = `<div class="result-thumb-wrap${imgUrl ? '' : ' is-empty'}" aria-hidden="${imgUrl ? 'false' : 'true'}">${thumbInner || '📦'}</div>`;
 
                 html += `<div class="result-item${selectedClass}" data-index="${idx}">
-                    ${imgHtml}
+                    ${thumbHtml}
                     <span class="codigo">${codigo}</span>
                     <span class="fabrica">${fabrica}</span>
                     <span class="descripcion">${desc}</span>
@@ -998,7 +999,7 @@
                     <span class="stock-cajas">${cajasStock}</span>
                     <span class="stock-unidades">${unidadesStock}</span>
                     <div class="row1">
-                        ${imgHtml}
+                        ${thumbHtml}
                         <span class="codigo">${codigo}</span>
                         <span class="fabrica">${fabrica}</span>
                         <span class="unidad">${unidad}</span>
