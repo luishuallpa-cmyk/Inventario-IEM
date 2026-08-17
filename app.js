@@ -2260,7 +2260,7 @@
             const bloques = [];
             if (filtroVista) {
                 bloques.push({
-                    titulo: (filtroVista === 'FRIOS' ? '❄️ FRÍOS' : '📦 SECOS') + ' (' + items.length + ')',
+                    titulo: (filtroVista === 'FRIOS' ? '❄️ FRÍOS' : '📦 SECOS') + ' · ' + items.length + ' productos',
                     grupos: agruparPorLineaVista(items),
                     esOtros: false
                 });
@@ -2272,10 +2272,10 @@
                     const t = getTipo(it);
                     return t !== 'FRIOS' && t !== 'SECOS';
                 });
-                if (frios.length) bloques.push({ titulo: '❄️ FRÍOS (' + frios.length + ')', grupos: agruparPorLineaVista(frios), esOtros: false });
-                if (secos.length) bloques.push({ titulo: '📦 SECOS (' + secos.length + ')', grupos: agruparPorLineaVista(secos), esOtros: false });
+                if (frios.length) bloques.push({ titulo: '❄️ FRÍOS · ' + frios.length + ' productos', grupos: agruparPorLineaVista(frios), esOtros: false });
+                if (secos.length) bloques.push({ titulo: '📦 SECOS · ' + secos.length + ' productos', grupos: agruparPorLineaVista(secos), esOtros: false });
                 if (otros.length) bloques.push({
-                    titulo: '⚠️ SIN CLASIFICAR (' + otros.length + ')',
+                    titulo: '⚠️ SIN CLASIFICAR · ' + otros.length + ' productos',
                     grupos: agruparPorLineaVista(otros),
                     esOtros: true
                 });
@@ -2284,10 +2284,12 @@
             let html = '<div class="inv-preview-doc inv-report-almacen inv-report-fisico">';
             let n = 0, totalCajas = 0, totalUni = 0;
             html += '<header class="inv-preview-head inv-report-head">' +
-                '<div class="inv-report-logo-wrap"><img class="inv-report-logo" src="logo-iem.png" alt="IEM GROUP"></div>' +
+                '<div class="inv-report-logo-wrap">' +
+                '<img class="inv-report-logo" src="logo-iem.png" alt="IEM GROUP">' +
+                '<p class="inv-preview-meta">' + new Date().toLocaleString('es-PE') + '</p>' +
+                '</div>' +
                 '<div class="inv-report-head-text">' +
                 '<h1>REPORTE DE INVENTARIO FÍSICO</h1>' +
-                '<p class="inv-preview-meta">' + new Date().toLocaleString('es-PE') + ' · Conteo físico</p>' +
                 '</div></header>';
 
             bloques.forEach(function (bloque, idxBloque) {
@@ -2299,7 +2301,7 @@
                     html += '<section class="inv-preview-linea"><h3 class="inv-preview-linea-h">' + escapeHtmlSes(grupo.linea) + '</h3>';
                     html += '<table class="inv-preview-table inv-report-table"><thead><tr>' +
                         '<th>Cod. Producto</th><th>Cod. Fábrica</th><th>Descripción</th>' +
-                        '<th>Unidad</th><th class="num">Cajas Completas</th><th class="num">Unidades Sueltas</th>' +
+                        '<th>Unidad</th><th class="num col-cajas">Cajas</th><th class="num col-sueltas">Sueltas</th>' +
                         '</tr></thead><tbody>';
                     (grupo.items || []).forEach(function (item) {
                         n++;
@@ -2376,12 +2378,12 @@
                 '*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}' +
                 '#iemPdfPage{margin:0;padding:0;font-family:Arial,Segoe UI,sans-serif;color:#111!important;font-size:11px;background:#fff!important}' +
                 '#iemPdfPage, #iemPdfPage td, #iemPdfPage th, #iemPdfPage p, #iemPdfPage span, #iemPdfPage div, #iemPdfPage strong{color:#111!important}' +
-                '#iemPdfPage .inv-report-logo-wrap{margin:0;position:absolute;left:0;top:0}' +
-                '#iemPdfPage .inv-report-logo{height:42px;width:auto;display:block}' +
-                '#iemPdfPage .inv-preview-head{position:relative;min-height:50px;border-bottom:2px solid #1d4ed8;padding-bottom:10px;margin-bottom:14px;text-align:center}' +
-                '#iemPdfPage .inv-report-head-text{display:block}' +
-                '#iemPdfPage .inv-preview-head h1{margin:0;font-size:16px;color:#0f172a!important}' +
-                '#iemPdfPage .inv-preview-meta{position:absolute;left:0;top:46px;margin:0;color:#334155!important;font-size:11px}' +
+                '#iemPdfPage .inv-report-logo-wrap{margin:0;position:absolute;left:0;top:2px;text-align:left}' +
+                '#iemPdfPage .inv-report-logo{height:36px;width:auto;display:block}' +
+                '#iemPdfPage .inv-preview-head{position:relative;min-height:48px;border-bottom:none;padding:0 0 8px 0;margin:0 0 12px 0;text-align:center}' +
+                '#iemPdfPage .inv-report-head-text{display:block;padding-top:6px}' +
+                '#iemPdfPage .inv-preview-head h1{margin:0;font-size:15px;color:#0f172a!important;font-weight:700;letter-spacing:.02em}' +
+                '#iemPdfPage .inv-preview-meta{position:static;margin:3px 0 0;color:#475569!important;font-size:9px;line-height:1.2}' +
                 '#iemPdfPage .inv-report-tipo-block{page-break-inside:auto}' +
                 '#iemPdfPage .inv-report-tipo-block.page-break-before{page-break-before:always;break-before:page}' +
                 '#iemPdfPage .inv-report-tipo-titulo{margin:16px 0 8px;font-size:13px;color:#fff!important;background:#0f766e!important;padding:6px 10px;font-weight:800;letter-spacing:.03em;border-radius:4px;page-break-after:avoid;break-after:avoid-page}' +
@@ -2392,7 +2394,13 @@
                 '#iemPdfPage .inv-preview-table th{background:#e2e8f0!important;color:#0f172a!important;text-align:left;padding:4px 6px;border:1px solid #94a3b8;font-weight:700}' +
                 '#iemPdfPage .inv-preview-table td{padding:3px 6px;border:1px solid #cbd5e1;vertical-align:top;color:#111!important}' +
                 '#iemPdfPage .mono{font-family:ui-monospace,Consolas,monospace;font-weight:600;color:#111!important}' +
-                '#iemPdfPage .num{text-align:right;font-variant-numeric:tabular-nums;min-width:70px;color:#111!important}' +
+                '#iemPdfPage .num{text-align:right;font-variant-numeric:tabular-nums;color:#111!important}' +
+                '#iemPdfPage .col-cajas,#iemPdfPage .col-sueltas{width:48px;max-width:52px;white-space:nowrap;padding-left:3px!important;padding-right:4px!important}' +
+                '#iemPdfPage .inv-preview-table th.col-cajas,#iemPdfPage .inv-preview-table th.col-sueltas{font-size:9px}' +
+                '#iemPdfPage .inv-preview-table td:nth-child(3){width:auto}' +
+                '#iemPdfPage .inv-preview-table th:nth-child(1),#iemPdfPage .inv-preview-table td:nth-child(1){width:52px}' +
+                '#iemPdfPage .inv-preview-table th:nth-child(2),#iemPdfPage .inv-preview-table td:nth-child(2){width:62px}' +
+                '#iemPdfPage .inv-preview-table th:nth-child(4),#iemPdfPage .inv-preview-table td:nth-child(4){width:70px;font-size:9px}' +
                 '#iemPdfPage .inv-preview-foot{margin-top:12px;padding-top:8px;border-top:2px solid #1d4ed8;font-size:11px;color:#0f172a!important}' +
                 (estilosExtra || '');
 
@@ -2630,7 +2638,7 @@
             const bloques = [];
             if (filtro) {
                 bloques.push({
-                    titulo: (filtro === 'FRIOS' ? '❄️ FRÍOS' : '📦 SECOS') + ' (' + items.length + ')',
+                    titulo: (filtro === 'FRIOS' ? '❄️ FRÍOS' : '📦 SECOS') + ' · ' + items.length + ' productos',
                     grupos: agruparPorLinea(items),
                     esOtros: false
                 });
@@ -2641,10 +2649,10 @@
                     const t = getTipoAlmacenReporte(it);
                     return t !== 'FRIOS' && t !== 'SECOS';
                 });
-                if (frios.length) bloques.push({ titulo: '❄️ FRÍOS (' + frios.length + ')', grupos: agruparPorLinea(frios), esOtros: false });
-                if (secos.length) bloques.push({ titulo: '📦 SECOS (' + secos.length + ')', grupos: agruparPorLinea(secos), esOtros: false });
+                if (frios.length) bloques.push({ titulo: '❄️ FRÍOS · ' + frios.length + ' productos', grupos: agruparPorLinea(frios), esOtros: false });
+                if (secos.length) bloques.push({ titulo: '📦 SECOS · ' + secos.length + ' productos', grupos: agruparPorLinea(secos), esOtros: false });
                 if (otros.length) bloques.push({
-                    titulo: '⚠️ SIN CLASIFICAR (' + otros.length + ')',
+                    titulo: '⚠️ SIN CLASIFICAR · ' + otros.length + ' productos',
                     grupos: agruparPorLinea(otros),
                     esOtros: true
                 });
@@ -2655,10 +2663,12 @@
             let n = 0, totalCajas = 0, totalUni = 0;
             // Cabecera simple para gerencia: logo + título + fecha
             html += '<header class="inv-preview-head inv-report-head">' +
-                '<div class="inv-report-logo-wrap"><img class="inv-report-logo" src="logo-iem.png" alt="IEM GROUP"></div>' +
+                '<div class="inv-report-logo-wrap">' +
+                '<img class="inv-report-logo" src="logo-iem.png" alt="IEM GROUP">' +
+                '<p class="inv-preview-meta">' + new Date().toLocaleString('es-PE') + '</p>' +
+                '</div>' +
                 '<div class="inv-report-head-text">' +
                 '<h1>REPORTE DE INVENTARIO POR ALMACÉN</h1>' +
-                '<p class="inv-preview-meta">' + new Date().toLocaleString('es-PE') + '</p>' +
                 '</div></header>';
 
             bloques.forEach(function (bloque, idxBloque) {
@@ -2671,7 +2681,7 @@
                     html += '<section class="inv-preview-linea"><h3 class="inv-preview-linea-h">' + escapeHtmlSes(grupo.linea) + '</h3>';
                     html += '<table class="inv-preview-table inv-report-table"><thead><tr>' +
                         '<th>Cod. Producto</th><th>Cod. Fábrica</th><th>Descripción</th>' +
-                        '<th>Unidad</th><th class="num">Cajas Completas</th><th class="num">Unidades Sueltas</th>' +
+                        '<th>Unidad</th><th class="num col-cajas">Cajas</th><th class="num col-sueltas">Sueltas</th>' +
                         '</tr></thead><tbody>';
                     (grupo.items || []).forEach(function (item) {
                         n++;

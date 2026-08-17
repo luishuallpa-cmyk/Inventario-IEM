@@ -854,32 +854,48 @@ body.light-theme .admin-barras-selected.has-product {
 body.light-theme .admin-vista-preview {
     background: #ffffff;
 }
-.inv-report-logo-wrap { margin: 0; position: absolute; left: 0; top: 0; }
-.inv-report-logo { height: 48px; width: auto; display: block; background: #fff; padding: 4px 8px; border-radius: 8px; border: 1px solid rgba(15,157,88,0.25); }
+.inv-report-logo-wrap {
+    margin: 0;
+    position: absolute;
+    left: 0;
+    top: 2px;
+    text-align: left;
+}
+.inv-report-logo {
+    height: 36px;
+    width: auto;
+    display: block;
+    background: #fff;
+    padding: 2px 6px;
+    border-radius: 6px;
+    border: 1px solid rgba(15,157,88,0.2);
+}
 .inv-preview-head {
     position: relative;
-    min-height: 58px;
+    min-height: 48px;
     text-align: center;
-    padding-bottom: 0.6rem;
-    margin-bottom: 0.6rem;
-    border-bottom: 1px solid var(--card-border);
+    padding-bottom: 0.45rem;
+    margin-bottom: 0.55rem;
+    border-bottom: none;
 }
 .inv-preview-head .inv-report-logo { margin: 0; }
 .inv-report-head-text {
     display: block;
+    padding-top: 0.35rem;
 }
 .inv-preview-head h1 {
-    font-size: 1.05rem;
+    font-size: 1.02rem;
     margin: 0;
     color: var(--heading-color);
+    font-weight: 700;
+    letter-spacing: 0.02em;
 }
 .inv-preview-meta {
-    position: absolute;
-    left: 0;
-    top: 54px;
-    font-size: 0.75rem;
+    position: static;
+    margin: 3px 0 0;
+    font-size: 0.68rem;
     color: var(--text-muted);
-    margin-top: 0;
+    line-height: 1.2;
 }
 .inv-preview-linea {
     margin-top: 1rem;
@@ -958,6 +974,24 @@ body.light-theme .inv-report-tipo-titulo.otros {
     border-bottom: 1px solid var(--divider);
     vertical-align: top;
 }
+.inv-preview-table th.col-cajas,
+.inv-preview-table th.col-sueltas,
+.inv-preview-table td.num.col-cajas,
+.inv-preview-table td.num.col-sueltas {
+    width: 3.2rem;
+    max-width: 3.5rem;
+    white-space: nowrap;
+    padding-left: 0.2rem;
+    padding-right: 0.25rem;
+    font-size: 0.65rem;
+}
+.inv-preview-table th:nth-child(1),
+.inv-preview-table td:nth-child(1) { width: 3.4rem; }
+.inv-preview-table th:nth-child(2),
+.inv-preview-table td:nth-child(2) { width: 4.2rem; }
+.inv-preview-table th:nth-child(4),
+.inv-preview-table td:nth-child(4) { width: 4.5rem; font-size: 0.65rem; }
+
 .inv-preview-table .mono { font-family: ui-monospace, monospace; font-weight: 700; }
 .inv-preview-table .num { text-align: right; font-variant-numeric: tabular-nums; }
 .inv-preview-table .diff-pos { color: var(--success); font-weight: 700; }
