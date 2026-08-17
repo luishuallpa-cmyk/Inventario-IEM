@@ -23,8 +23,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=3.54">
-    <link rel="stylesheet" href="admin.css?v=3.54">
+    <link rel="stylesheet" href="style.css?v=3.56">
+    <link rel="stylesheet" href="admin.css?v=3.56">
 </head>
 <body>
 <div class="login-overlay" id="loginOverlay">
@@ -321,6 +321,9 @@
                     <button type="button" class="admin-nav-btn" role="tab" aria-selected="false" data-admin-tab="reporte" id="tabBtn-reporte">
                         <span class="tab-ico" aria-hidden="true">📋</span><span class="tab-txt">Reporte sistema</span>
                     </button>
+                    <button type="button" class="admin-nav-btn" role="tab" aria-selected="false" data-admin-tab="pedidos" id="tabBtn-pedidos">
+                        <span class="tab-ico" aria-hidden="true">🛒</span><span class="tab-txt">Pedidos sugeridos</span>
+                    </button>
                     <button type="button" class="admin-nav-btn" role="tab" aria-selected="false" data-admin-tab="clientes" id="tabBtn-clientes">
                         <span class="tab-ico" aria-hidden="true">👤</span><span class="tab-txt">Clientes</span>
                     </button>
@@ -448,7 +451,30 @@
                         </div>
                     </div>
 
-                    <div class="admin-tab" id="adminTabClientes" data-admin-panel="clientes" hidden>
+                    
+                <div class="admin-tab" data-admin-panel="pedidos" role="tabpanel" hidden>
+                    <div class="admin-section">
+                        <h3 class="admin-section-title">🛒 Pedidos sugeridos (vendedores)</h3>
+                        <p class="admin-lead">Lo que envían los vendedores desde la PWA <strong>vendedores.html</strong>. Revisa, marca como atendido o rechazado.</p>
+                        <div class="admin-actions-row" style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;margin-bottom:0.75rem;">
+                            <button type="button" class="btn btn-outline btn-sm" id="adminRefreshPedidosBtn">
+                                <span class="btn-icon">↻</span><span class="btn-label"> Actualizar</span>
+                            </button>
+                            <select id="adminPedidosEstado" class="admin-select" style="min-width:140px;">
+                                <option value="">Todos los estados</option>
+                                <option value="pendiente" selected>Pendiente</option>
+                                <option value="atendido">Atendido</option>
+                                <option value="rechazado">Rechazado</option>
+                            </select>
+                            <input type="search" id="adminPedidosFiltro" placeholder="Vendedor, código, nota..." style="flex:1;min-width:160px;" autocomplete="off">
+                        </div>
+                        <div id="adminPedidosList" class="admin-pedidos-list">
+                            <p class="admin-sesiones-empty">Cargando…</p>
+                        </div>
+                        <div id="adminPedidoDetalle" class="admin-pedido-detalle" hidden></div>
+                    </div>
+                </div>
+<div class="admin-tab" id="adminTabClientes" data-admin-panel="clientes" hidden>
                         <h3 class="admin-subtitle">👤 Catálogo de clientes</h3>
                         <p class="admin-lead">Busca clientes del catálogo. No afecta el conteo de inventario.</p>
                         <div class="admin-catalog-search">
@@ -508,8 +534,8 @@
         </div>
     </div>
 
-<script src="config.js?v=3.54"></script>
-<script src="app.js?v=3.54"></script>
+<script src="config.js?v=3.56"></script>
+<script src="app.js?v=3.56"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {

@@ -47,15 +47,15 @@
         /* Tema claro cálido (crema / papel) — menos blanco puro, más cómodo a la vista */
         body.light-theme {
             color-scheme: light;
-            /* Fondo verde suave del logo · recuadros blancos */
-            --bg-gradient: linear-gradient(165deg, #e8f5ec 0%, #eef7f1 40%, #e3f0e8 100%);
+            /* Fondo verde IEM más presente · cards blancas con relieve */
+            --bg-gradient: linear-gradient(160deg, #cfe8d6 0%, #d9efdf 35%, #e5f3ea 70%, #eef7f1 100%);
             --card-bg: #ffffff;
-            --card-border: rgba(15, 157, 88, 0.14);
-            --card-shadow: 0 4px 20px rgba(15, 80, 50, 0.07);
-            --text-primary: #1a2420;
-            --text-secondary: #3d4a44;
-            --text-muted: #6b7a72;
-            --heading-color: #143528;
+            --card-border: rgba(15, 100, 55, 0.16);
+            --card-shadow: 0 6px 24px rgba(15, 70, 40, 0.1), 0 1px 3px rgba(15, 70, 40, 0.06);
+            --text-primary: #14201a;
+            --text-secondary: #334840;
+            --text-muted: #5a6e64;
+            --heading-color: #0f2e1c;
             --accent: #1d4ed8;
             --accent-2: #0f9d58;
             --accent-light: #34d399;
@@ -63,17 +63,17 @@
             --success: #15803d;
             --warning: #b45309;
             --danger: #b91c1c;
-            --input-bg: #f8fbf9;
-            --input-border: rgba(15, 100, 60, 0.16);
+            --input-bg: #f3faf6;
+            --input-border: rgba(15, 100, 55, 0.2);
             --input-focus: #0f9d58;
-            --table-header-bg: rgba(15, 157, 88, 0.08);
-            --table-row-alt: rgba(15, 157, 88, 0.03);
-            --badge-bg: rgba(15, 157, 88, 0.1);
+            --table-header-bg: rgba(15, 157, 88, 0.1);
+            --table-row-alt: rgba(15, 157, 88, 0.04);
+            --badge-bg: rgba(15, 157, 88, 0.14);
             --badge-text: #14532d;
-            --divider: rgba(15, 100, 60, 0.12);
-            --shadow-color: rgba(15, 80, 50, 0.08);
+            --divider: rgba(15, 100, 55, 0.14);
+            --shadow-color: rgba(15, 70, 40, 0.1);
             --brand-green: #0f9d58;
-            --brand-green-soft: rgba(15, 157, 88, 0.12);
+            --brand-green-soft: rgba(15, 157, 88, 0.16);
         }
 
         body {
@@ -1967,16 +1967,16 @@ body.modo-vendedor .vendedor-only-banner {
 }
 
 
-/* móvil tema claro: fondo y recuadros blancos (más limpio en pantalla chica) */
+/* móvil tema claro: fondo verde suave · cards blancas */
 @media (max-width: 768px) {
     body.light-theme {
-        --bg-gradient: #ffffff;
+        --bg-gradient: linear-gradient(180deg, #d4ebd9 0%, #e8f5ec 50%, #f2faf5 100%);
         --card-bg: #ffffff;
-        --card-border: rgba(15, 157, 88, 0.12);
-        --card-shadow: 0 2px 12px rgba(15, 80, 50, 0.06);
-        --input-bg: #f7faf8;
+        --card-border: rgba(15, 100, 55, 0.14);
+        --card-shadow: 0 3px 14px rgba(15, 70, 40, 0.08);
+        --input-bg: #f3faf6;
     }
     body.light-theme .card {
-        border-color: rgba(15, 157, 88, 0.14);
+        border-color: rgba(15, 100, 55, 0.16);
     }
 }
