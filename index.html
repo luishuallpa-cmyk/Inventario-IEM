@@ -23,8 +23,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=3.73">
-    <link rel="stylesheet" href="admin.css?v=3.73">
+    <link rel="stylesheet" href="style.css?v=3.77">
+    <link rel="stylesheet" href="admin.css?v=3.77">
 </head>
 <body>
 <div class="login-overlay" id="loginOverlay">
@@ -333,7 +333,7 @@
                 </nav>
                 <div class="admin-panel-body">
                     <div class="admin-tab active" id="adminTabSubir" data-admin-panel="subir">
-                        <p class="admin-lead">Elige el tipo de Excel: <strong>Existencias</strong> (stock) o <strong>Base / habilitados Laive</strong> (solo marca qué se puede reponer y vender, sin tocar stock). La base solo usa códigos de 8 dígitos que ya están en tu catálogo (el nombre puede variar).</p>
+                        <p class="admin-lead">Elige el tipo de Excel: <strong>Existencias</strong> (stock) o <strong>Base / habilitados Laive</strong> (solo marca qué se puede reponer y vender, sin tocar stock). La base se guía por CÓDIGO SAP (fábrica); no adivina Uniflex. 0460, 0835) que ya están en tu catálogo (el nombre puede variar).</p>
                         <ul class="admin-tips">
                             <li>Formato: <strong>.xlsx / .xls / .csv</strong></li>
                             <li>Acepta <strong>inventario valorado</strong> o <strong>existencias</strong> (con Línea/Marca)</li>
@@ -355,7 +355,7 @@
                             </label>
                             <label class="admin-check" style="display:flex;align-items:flex-start;gap:0.5rem;margin-bottom:0.4rem;">
                                 <input type="radio" name="adminImportModo" id="adminModoBase" value="base">
-                                <span><strong>Excel base / habilitados (Laive)</strong> — solo habilita códigos para reposición y venta. <em>No modifica el inventario (stock)</em>. Solo códigos Uniflex de 8 dígitos que ya existen en tu catálogo (evita duplicados de otras distribuidoras).</span>
+                                <span><strong>Excel base / habilitados (Laive)</strong> — solo habilita códigos para reposición y venta. <em>No modifica el inventario (stock)</em>. Se guía por <strong>CÓDIGO SAP</strong> (= código de fábrica). No elige cuál Uniflex de la lista es el vuestro. Cruza SAP o Uniflex que ya existan en existencias; <em>no crea códigos</em> ni cambia stock ni nombres.</span>
                             </label>
                         </div>
                         <label class="admin-check" title="Útil cuando solo cambian nombres o líneas" id="adminSoloCatalogoWrap">
@@ -545,8 +545,8 @@
         </div>
     </div>
 
-<script src="config.js?v=3.73"></script>
-<script src="app.js?v=3.73"></script>
+<script src="config.js?v=3.77"></script>
+<script src="app.js?v=3.77"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {

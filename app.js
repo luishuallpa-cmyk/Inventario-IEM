@@ -599,12 +599,17 @@
                     };
                     });
                     try { localStorage.setItem(TIPO_ALMACEN_KEY, JSON.stringify(mapTipo)); } catch (e) {}
-                    // Índice de búsqueda precalculado (menos trabajo en cada tecla)
+                    // Índices: búsqueda y lookup O(1) por código / barras
+                    window._mapCodigo = Object.create(null);
+                    window._mapBarras = Object.create(null);
                     currentData.forEach(function (item) {
-                        item._sb = [
-                            getCodigo(item), getCodigoFabrica(item), getCodigoBarras(item),
-                            getDescripcion(item), getUnidadRef(item), getLinea(item), getMarca(item)
-                        ].join('\u0001').toUpperCase();
+                        var c = String(getCodigo(item) || '').trim();
+                        var f = String(getCodigoFabrica(item) || '').trim();
+                        var b = String(getCodigoBarras(item) || '').trim();
+                        item._sb = [c, f, b, getDescripcion(item), getUnidadRef(item), getLinea(item), getMarca(item)].join('\u0001').toUpperCase();
+                        if (c) window._mapCodigo[c.toUpperCase()] = item;
+                        if (f) window._mapCodigo[f.toUpperCase()] = item;
+                        if (b) window._mapBarras[b] = item;
                     });
                     guardarRespaldo(currentData);
                     aplicarBarrasLocalADatos();
@@ -851,14 +856,23 @@
                 limpiarCantidades();
                 return;
             }
+            const termCompact = term.replace(/\s/g, '');
+            const termUpper = term.toUpperCase();
+            const enPedido = (typeof modoPedido !== 'undefined' && modoPedido);
+            const pareceBarras = /^[0-9]{8,}$/.test(termCompact);
+
+            // Atajo O(1): código o barras exactos
+            var hitExact = null;
+            if (window._mapBarras && window._mapBarras[termCompact]) hitExact = window._mapBarras[termCompact];
+            else if (window._mapCodigo && window._mapCodigo[termUpper]) hitExact = window._mapCodigo[termUpper];
+            if (hitExact) {
+                filteredData = [hitExact];
+                renderResults(filteredData);
+                return;
+            }
+
             const palabras = term.split(/\s+/).filter(p => p.length > 0);
             const palabrasUpper = palabras.map(p => p.toUpperCase());
-
-            // Inventario: solo con stock, EXCEPTO si buscas por código de barras
-            // o código interno exacto (así el escáner encuentra el producto aunque stock sea 0).
-            const enPedido = (typeof modoPedido !== 'undefined' && modoPedido);
-            const termUpper = term.toUpperCase();
-            const pareceBarras = /^[0-9]{8,}$/.test(term.replace(/\s/g, ''));
 
             filteredData = currentData.filter(item => {
                 const cod = String(getCodigo(item) || '').toUpperCase();
@@ -2993,30 +3007,34 @@
             return c;
         }
 
-        /** Excel base: solo códigos de exactamente 8 dígitos (Uniflex principal).
-         *  El nombre puede variar o duplicarse en el Excel; se agrupa por código. */
+        /**
+         * Excel base Laive (Reporte de Pedido de Reposición):
+         * Uniflex real es 4 dígitos (0460, 0835) y a veces 5 (8593, 90027).
+         * NO son 4–5 dígitos. El nombre puede variar; se agrupa por código.
+         * Códigos de otras dist. suelen ir en la misma celda separados por coma.
+         */
         function esCodigoProductoUniflex(c) {
             c = String(c || '').trim();
-            // Solo dígitos, exactamente 8 (no 4, no 9+, no letras)
-            if (!/^\d{8}$/.test(c)) return false;
+            if (!/^\d{4,5}$/.test(c)) return false;
             return true;
         }
 
-        /** Extrae candidatos de un campo Uniflex (puede traer varios separados por coma). */
-        function extraerCodigos8Digitos(raw) {
+        /** Extrae Uniflex de una celda (coma/punto y coma). Normaliza a 4 dígitos si viene corto. */
+        function extraerCodigosUniflexLaive(raw) {
             var out = [];
             var vistos = {};
-            String(raw || '').split(/[,;|/\s]+/).forEach(function (s) {
+            String(raw || '').split(/[,;|/]+/).forEach(function (s) {
                 s = String(s || '').trim();
-                // Si viene con ceros a la izquierda o espacios
-                if (/^\d+$/.test(s) && s.length > 8) {
-                    // a veces pegan varios sin separador: no adivinar
-                    return;
-                }
-                // normalizar: solo aceptar exactamente 8 dígitos
-                if (/^\d{8}$/.test(s)) {
-                    if (!vistos[s]) { vistos[s] = true; out.push(s); }
-                }
+                if (!s) return;
+                // solo dígitos
+                if (!/^\d+$/.test(s)) return;
+                // rellenar a 4 si es 1–3 dígitos (ej. 835 → 0835)
+                if (s.length > 0 && s.length < 4) s = ('0000' + s).slice(-4);
+                // Laive principal: 4 o 5 dígitos. Evitar basura muy larga.
+                if (!/^\d{4,5}$/.test(s)) return;
+                if (vistos[s]) return;
+                vistos[s] = true;
+                out.push(s);
             });
             return out;
         }
@@ -3026,17 +3044,18 @@
          * Usa CÓDIGO UNIFLEX (puede haber varios separados por coma) o, si no hay, CÓDIGO SAP.
          * No pisa el stock diario.
          */
-        function filaLaiveAProductos(row) {
+        /**
+         * Excel base Laive: se guía por CÓDIGO SAP (fabricación).
+         * NO se elige “cuál Uniflex es el nuestro”: el nombre puede no coincidir entre dist.
+         * Devuelve metadatos de la fila (SAP + tipo + lista Uniflex cruda para cruce opcional).
+         */
+        function filaLaiveMeta(row) {
             const sap = String(valorColumna(row, [
                 'CÓDIGO SAP', 'CODIGO SAP', 'Codigo SAP', 'Código SAP', 'CodigoSAP', 'SAP'
             ])).trim();
             const uniflexRaw = String(valorColumna(row, [
                 'CÓDIGO UNIFLEX', 'CODIGO UNIFLEX', 'Codigo Uniflex', 'Código Uniflex',
                 'CodigoUniflex', 'UNIFLEX'
-            ])).trim();
-            const nombre = String(valorColumna(row, [
-                'NOMBRE DE PRODUCTO', 'Nombre de Producto', 'NOMBRE', 'Nombre',
-                'NOMBRE PRODUCTO', 'Descripcion', 'Descripción'
             ])).trim();
             const tipo = String(valorColumna(row, [
                 'TIPO DE PRODUCTO', 'Tipo de Producto', 'TIPO', 'Tipo'
@@ -3048,40 +3067,27 @@
                 'BLOQUEADO', 'Bloqueado', 'BLOCKED'
             ])).trim().toUpperCase();
             const activo = !(bloqueado === 'SI' || bloqueado === 'SÍ' || bloqueado === 'S' || bloqueado === 'YES' || bloqueado === '1' || bloqueado === 'TRUE');
-
-            if (!nombre && !sap && !uniflexRaw) return [];
-
-            // Solo códigos de exactamente 8 dígitos (nombre puede variar/duplicar; se une por código)
-            let codigos = typeof extraerCodigos8Digitos === 'function'
-                ? extraerCodigos8Digitos(uniflexRaw)
+            if (!sap) return null;
+            const tipoNorm = normalizarTipoAlmacen(tipo);
+            const uniflexLista = typeof extraerCodigosUniflexLaive === 'function'
+                ? extraerCodigosUniflexLaive(uniflexRaw)
                 : [];
-            if (!codigos.length && sap && /^\d{8}$/.test(String(sap).trim())) {
-                codigos = [String(sap).trim()];
-            }
-            if (!codigos.length) return [];
-
             const factor = (typeof parseFactorDesdeTexto === 'function')
                 ? (parseFactorDesdeTexto(um) || 1)
                 : 1;
+            return {
+                sap: sap,
+                uniflexLista: uniflexLista,
+                tipo_almacen: tipoNorm || null,
+                unidad_ref: um || null,
+                factor_empaque: factor,
+                activo: activo
+            };
+        }
 
-            const tipoNorm = normalizarTipoAlmacen(tipo);
-            return codigos.map(function (codigo) {
-                if (tipoNorm) guardarTipoAlmacenCodigo(codigo, tipoNorm);
-                return {
-                    codigo: codigo,
-                    codigo_fabrica: sap || null,
-                    descripcion: nombre || ('Producto ' + codigo),
-                    unidad_ref: um || null,
-                    factor_empaque: factor,
-                    // sin stock_teorico → no se pisa el inventario diario
-                    // NO guardar Frios/Secos en linea (linea = categoría del almacén)
-                    linea: null,
-                    tipo_almacen: tipoNorm || null,
-                    marca: 'LAIVE',
-                    activo: activo,
-                    actualizado_en: new Date().toISOString()
-                };
-            });
+        /** Compat: si algo llama filaLaiveAProductos, no inventa códigos nuevos. */
+        function filaLaiveAProductos(row) {
+            return [];
         }
 
         function filaExcelAProducto(row) {
@@ -3195,7 +3201,7 @@
                 const codigosVistos = new Set();
 
                 if (esLaive) {
-                    showToast('📋 Excel base / habilitados: solo códigos de 8 dígitos que ya están en tu catálogo (sin tocar stock)...', 'info');
+                    showToast('📋 Excel base: guía por CÓDIGO SAP (fábrica). No adivina Uniflex. Sin tocar stock...', 'info');
                     // Códigos que YA existen en tu catálogo (existencias = códigos principales)
                     const codigosExistentes = new Set();
                     (currentData || []).forEach(function (item) {
@@ -3220,56 +3226,80 @@
                         return;
                     }
 
-                    // Set de códigos habilitados por este Excel (coinciden con existencias)
+                    // Guía por CÓDIGO SAP (fabricación). No se elige cuál Uniflex de la lista es “el nuestro”.
+                    // 1) Productos que ya tienen ese codigo_fabrica = SAP
+                    // 2) Si en la celda Uniflex aparece un código que YA está en existencias, se le asigna el SAP
+                    //    (sin adivinar: solo cruza lo que ya tienes; el nombre Laive no se usa)
                     const habilitados = new Set();
-                    let omitidosOtros = 0;
                     let bloqueados = 0;
+                    let filasSap = 0;
+                    let sinMatch = 0;
 
-                    filas.forEach(function (row) {
-                        const lista = filaLaiveAProductos(row);
-                        lista.forEach(function (p) {
-                            if (!p || !p.codigo) return;
-                            // Solo códigos principales que ya tienes
-                            if (!codigosExistentes.has(p.codigo)) {
-                                omitidosOtros++;
-                                return;
-                            }
-                            // No pisar stock ni la línea/categoría; solo habilitar + Frios/Secos + SAP
-                            if (p.tipo_almacen) guardarTipoAlmacenCodigo(p.codigo, p.tipo_almacen);
-                            // Conservar Linea de existencias (si el upsert no manda el campo, a veces se pierde)
-                            let lineaExistente = null;
-                            const itemPrev = (currentData || []).find(function (it) {
-                                return String(getCodigo(it) || '').trim() === String(p.codigo).trim();
-                            });
-                            if (itemPrev) {
-                                const linPrev = String(getLinea(itemPrev) || '').trim();
-                                if (linPrev && !normalizarTipoAlmacen(linPrev)) lineaExistente = linPrev;
-                            }
-                            const rowUp = {
-                                codigo: p.codigo,
-                                codigo_fabrica: p.codigo_fabrica || null,
-                                descripcion: p.descripcion,
-                                unidad_ref: p.unidad_ref || null,
-                                factor_empaque: p.factor_empaque || 1,
-                                marca: p.marca || 'LAIVE',
-                                activo: p.activo !== false, // BLOQUEADO=SI → false
-                                actualizado_en: new Date().toISOString()
-                            };
-                            if (lineaExistente) rowUp.linea = lineaExistente;
-                            if (!rowUp.activo) bloqueados++;
-                            habilitados.add(p.codigo);
-                            if (codigosVistos.has(p.codigo)) {
-                                const idx = productos.findIndex(function (x) { return x.codigo === p.codigo; });
-                                if (idx >= 0) productos[idx] = rowUp;
-                            } else {
-                                codigosVistos.add(p.codigo);
-                                productos.push(rowUp);
-                            }
-                        });
+                    // Mapas desde catálogo actual + posibles filas solo-código de Supabase
+                    const byCodigo = Object.create(null);
+                    const byFabrica = Object.create(null);
+                    (currentData || []).forEach(function (it) {
+                        const c = String(getCodigo(it) || '').trim();
+                        const f = String(getCodigoFabrica(it) || '').trim();
+                        if (c) byCodigo[c] = it;
+                        if (f) {
+                            if (!byFabrica[f]) byFabrica[f] = [];
+                            byFabrica[f].push(c);
+                        }
                     });
 
-                    // Desactivar solo productos Uniflex 8 dígitos que NO vinieron en el Excel base
-                    // (no toca códigos de servicio / basura; no borra ni cambia stock)
+                    function pushUpdate(codigo, meta) {
+                        if (!codigo || !codigosExistentes.has(codigo)) return false;
+                        if (meta.tipo_almacen) guardarTipoAlmacenCodigo(codigo, meta.tipo_almacen);
+                        let lineaExistente = null;
+                        const itemPrev = byCodigo[codigo];
+                        if (itemPrev) {
+                            const linPrev = String(getLinea(itemPrev) || '').trim();
+                            if (linPrev && !normalizarTipoAlmacen(linPrev)) lineaExistente = linPrev;
+                        }
+                        const rowUp = {
+                            codigo: codigo,
+                            codigo_fabrica: meta.sap, // SAP = fabricación
+                            // NO pisar descripción (nombres difieren entre distribuidoras)
+                            unidad_ref: meta.unidad_ref || null,
+                            factor_empaque: meta.factor_empaque || 1,
+                            marca: 'LAIVE',
+                            activo: meta.activo !== false,
+                            actualizado_en: new Date().toISOString()
+                        };
+                        if (lineaExistente) rowUp.linea = lineaExistente;
+                        if (!rowUp.activo) bloqueados++;
+                        habilitados.add(codigo);
+                        if (codigosVistos.has(codigo)) {
+                            const idx = productos.findIndex(function (x) { return x.codigo === codigo; });
+                            if (idx >= 0) productos[idx] = rowUp;
+                        } else {
+                            codigosVistos.add(codigo);
+                            productos.push(rowUp);
+                        }
+                        return true;
+                    }
+
+                    filas.forEach(function (row) {
+                        const meta = typeof filaLaiveMeta === 'function' ? filaLaiveMeta(row) : null;
+                        if (!meta || !meta.sap) return;
+                        filasSap++;
+                        let matched = false;
+                        // A) Por SAP ya guardado como codigo_fabrica
+                        const porSap = byFabrica[meta.sap] || [];
+                        porSap.forEach(function (c) {
+                            if (pushUpdate(c, meta)) matched = true;
+                        });
+                        // B) Por Uniflex que YA existen en tu catálogo (cualquiera de la lista, sin elegir “el correcto”)
+                        (meta.uniflexLista || []).forEach(function (u) {
+                            if (codigosExistentes.has(u)) {
+                                if (pushUpdate(u, meta)) matched = true;
+                            }
+                        });
+                        if (!matched) sinMatch++;
+                    });
+
+                    // Desactivar productos de catálogo (4–5 dígitos) que no recibieron match en este Excel base
                     const desactivarOtros = [];
                     codigosExistentes.forEach(function (c) {
                         if (habilitados.has(c)) return;
@@ -3277,8 +3307,8 @@
                         desactivarOtros.push(c);
                     });
 
-                    if (omitidosOtros > 0) {
-                        showToast('Omitidos ' + omitidosOtros + ' Uniflex de otras distribuidoras (no están en existencias).', 'info');
+                    if (sinMatch > 0) {
+                        showToast('SAP sin producto en existencias: ' + sinMatch + ' filas (no se crean códigos nuevos).', 'info');
                     }
 
                     // Guardar lista de habilitados y desactivar el resto por lotes
@@ -3298,7 +3328,7 @@
                     // Memo para mensaje final
                     window.__laiveImportStats = {
                         habilitados: habilitados.size,
-                        omitidos: omitidosOtros,
+                        omitidos: sinMatch,
                         desactivados: desactivarOtros.length,
                         bloqueados: bloqueados
                     };
@@ -3322,7 +3352,7 @@
                 if (!productos.length) {
                     showToast(
                         esLaive
-                            ? 'Ningún código 8 dígitos del Excel coincide con tu catálogo. Primero sube existencias; el Excel base solo habilita códigos que ya tienes.'
+                            ? 'Ningún código 4–5 dígitos del Excel coincide con tu catálogo. Primero sube existencias; el Excel base solo habilita códigos que ya tienes.'
                             : 'No se encontraron productos con código (Uniflex/SAP o código interno).',
                         'error'
                     );
@@ -3892,7 +3922,7 @@
                 for (;;) {
                     const { data, error } = await supabaseClient
                         .from('clientes')
-                        .select('*')
+                        .select('id,codigo,nombre,ruc,direccion,distrito,activo')
                         .order('nombre', { ascending: true })
                         .range(from, from + PAGE - 1);
                     if (error) throw error;
@@ -4929,7 +4959,7 @@
             try {
                 const { data, error } = await supabaseClient
                     .from('pedidos_sugeridos')
-                    .select('*')
+                    .select('id,vendedor_codigo,vendedor_nombre,ruta,items,total_cajas,total_unidades,notas,estado,created_at')
                     .order('created_at', { ascending: false })
                     .limit(100);
                 if (error) throw error;
