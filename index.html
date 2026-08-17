@@ -23,8 +23,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=3.86">
-    <link rel="stylesheet" href="admin.css?v=3.86">
+    <link rel="stylesheet" href="style.css?v=3.94">
+    <link rel="stylesheet" href="admin.css?v=3.94">
 </head>
 <body>
 <div class="login-overlay" id="loginOverlay">
@@ -362,9 +362,9 @@
                                 <span><strong>3 · Base Laive</strong> — habilita por <strong>CÓDIGO SAP</strong>; Fríos/Secos solo si aún no tiene tipo. <em>No toca stock</em>.</span>
                             </label>
                         </div>
-                        <label class="admin-check" title="Útil cuando solo cambian nombres o líneas" id="adminSoloCatalogoWrap">
-                            <input type="checkbox" id="adminSoloCatalogo">
-                            Solo catálogo (nombres / línea / marca) — <strong>no modificar stock</strong> (solo aplica a Existencias)
+                        <label class="admin-check" title="Existencias no modifica stock; el stock solo lo actualiza Inventario valorado" id="adminSoloCatalogoWrap" style="opacity:.85">
+                            <input type="checkbox" id="adminSoloCatalogo" checked disabled>
+                            Existencias = solo catálogo (nombre, códigos, línea, marca…) — stock lo pone el <strong>Inventario valorado</strong>
                         </label>
                         <div class="admin-file-name" id="adminFileName"></div>
                         <div class="admin-actions">
@@ -549,8 +549,8 @@
         </div>
     </div>
 
-<script src="config.js?v=3.86"></script>
-<script src="app.js?v=3.86"></script>
+<script src="config.js?v=3.94"></script>
+<script src="app.js?v=3.94"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {

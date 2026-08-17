@@ -2991,7 +2991,14 @@
                     break;
                 }
             }
-            const headers = (raw[headerIdx] || []).map(function (h) { return String(h || '').trim(); });
+            const headers = (raw[headerIdx] || []).map(function (h, j) {
+                const t = String(h || '').trim();
+                // Existencias: la 1.ª columna suele ser el NOMBRE del producto
+                // con encabezado vacío o solo un espacio. Si se omite, la
+                // descripción se pierde y se toma Unidad Ref / código fábrica.
+                if (!t) return j === 0 ? 'Producto' : ('__EMPTY_' + j);
+                return t;
+            });
             const filas = [];
             for (let r = headerIdx + 1; r < raw.length; r++) {
                 const line = raw[r] || [];
@@ -3141,26 +3148,35 @@
 
             let descripcion = String(valorColumna(row, [
                 'InventarioProductoDescripcion', 'Producto', 'descripcion', 'Descripcion',
-                'Descripción', 'Nombre', 'producto'
+                'Descripción', 'Nombre', 'producto', 'NOMBRE DE PRODUCTO'
             ])).trim();
 
-            // Existencias: a veces la descripción es la única columna sin título
+            // Existencias: columna sin título (XLSX → __EMPTY / __EMPTY_0 / "")
             if (!descripcion) {
                 for (const k of Object.keys(row)) {
-                    if (/^__EMPTY/i.test(k) || k === '') {
+                    if (/^__EMPTY/i.test(k) || k === '' || k === ' ') {
                         const v = String(row[k] || '').trim();
-                        if (v && v !== codigo) { descripcion = v; break; }
+                        if (v && v !== codigo && v.length > 3 && !/^\d+$/.test(v) && !/^[A-Z]{2,4}\s*[\/\*xX]/.test(v)) {
+                            descripcion = v;
+                            break;
+                        }
                     }
                 }
             }
-            // Último recurso: primera columna cuyo valor no sea el código
+            // No usar Unidad Ref / códigos como descripción
+            if (descripcion && (/^[A-Z]{2,4}\s*[\/\*xX]/.test(descripcion) || /^\d{5,}$/.test(descripcion) || /^(TRUE|FALSE)$/i.test(descripcion))) {
+                descripcion = '';
+            }
+            // Último recurso: valor largo que parezca nombre de producto
             if (!descripcion) {
                 for (const k of Object.keys(row)) {
+                    if (/^(Codigo|Código|CodigoFabrica|Unidad|Stock|Linea|Línea|Marca|Activo)/i.test(String(k))) continue;
                     const v = String(row[k] || '').trim();
-                    if (v && v !== codigo && !/^(TRUE|FALSE|\d+[\/]\d+)$/i.test(v)) {
-                        // evitar tomar linea/marca numéricos cortos como desc si ya hay campos
-                        if (v.length > 3) { descripcion = v; break; }
-                    }
+                    if (!v || v === codigo) continue;
+                    if (/^(TRUE|FALSE|\d+[\/]\d+)$/i.test(v)) continue;
+                    if (/^\d+$/.test(v)) continue;
+                    if (/^[A-Z]{2,4}\s*[\/\*xX]/.test(v)) continue; // PQT/PQT, CJ*12
+                    if (v.length > 5) { descripcion = v; break; }
                 }
             }
             if (!descripcion) return null;
@@ -3339,12 +3355,9 @@
 
                     function pushUpdate(codigo, meta) {
                         if (!codigo || !codigosExistentes.has(codigo)) return false;
-                        let lineaExistente = null;
                         let tipoYa = '';
                         const itemPrev = byCodigo[codigo];
                         if (itemPrev) {
-                            const linPrev = String(getLinea(itemPrev) || '').trim();
-                            if (linPrev && !normalizarTipoAlmacen(linPrev)) lineaExistente = linPrev;
                             tipoYa = normalizarTipoAlmacen(
                                 itemPrev.tipo_almacen || itemPrev.TipoAlmacen || ''
                             ) || (leerMapaTipoAlmacen()[codigo] || '');
@@ -3357,34 +3370,22 @@
                             guardarTipoAlmacenCodigo(codigo, tipoNuevo);
                             tiposAsignados++;
                         }
-                        let descPrev = '';
-                        if (itemPrev) {
-                            try {
-                                descPrev = String(getDescripcion(itemPrev) || itemPrev.descripcion || itemPrev.Producto || '').trim();
-                            } catch (e) {
-                                descPrev = String(itemPrev.descripcion || itemPrev.Producto || '').trim();
-                            }
-                        }
+                        // Base Laive: SOLO guía de habilitación.
+                        // NO toca descripcion, marca, linea, unidad_ref, factor ni stock.
+                        // (Antes reescribía nombres/marca y desordenaba el catálogo.)
                         const rowUp = {
                             codigo: codigo,
-                            codigo_fabrica: meta.sap,
-                            descripcion: descPrev || codigo,
-                            unidad_ref: meta.unidad_ref || null,
-                            factor_empaque: meta.factor_empaque || 1,
-                            marca: 'LAIVE',
+                            codigo_fabrica: meta.sap || null,
                             activo: meta.activo !== false,
                             actualizado_en: new Date().toISOString()
                         };
-                        // Asignar tipo solo si aún no tiene (no pisar FRIOS/SECOS previos)
                         if (tipoNuevo) rowUp.tipo_almacen = tipoNuevo;
                         else if (tipoYa) rowUp.tipo_almacen = tipoYa;
-                        if (lineaExistente) rowUp.linea = lineaExistente;
                         if (!rowUp.activo) bloqueados++;
                         habilitados.add(codigo);
                         if (codigosVistos.has(codigo)) {
                             const idx = productos.findIndex(function (x) { return x.codigo === codigo; });
                             if (idx >= 0) {
-                                // Fusionar: no borrar tipo_almacen previo en el objeto local
                                 const prev = productos[idx];
                                 productos[idx] = Object.assign({}, prev, rowUp);
                                 if (!rowUp.tipo_almacen && prev.tipo_almacen) {
@@ -3483,9 +3484,10 @@
                             }
                             return;
                         }
-                        if (soloCatalogo) {
-                            delete p.stock_teorico;
-                        }
+                        // Existencias (modo 1): NUNCA toca stock.
+                        // Solo catálogo: nombre, código, cód. fábrica, unidad, factor, línea, marca, activo.
+                        // El stock lo actualiza únicamente el inventario valorado (modo 2).
+                        delete p.stock_teorico;
                         if (codigosVistos.has(p.codigo)) {
                             const idx = productos.findIndex(function (x) { return x.codigo === p.codigo; });
                             if (idx >= 0) productos[idx] = p;
@@ -3537,6 +3539,55 @@
                                 showToast('⏳ Stock: ' + subidos + ' / ' + productos.length + '...', 'info');
                             }
                         }
+                    } else if (esLaive) {
+                        // Base Laive: UPDATE campo a campo (no upsert) para no pisar
+                        // descripcion / marca / unidad / stock del catálogo de existencias.
+                        const CONCURRENCY = 25;
+                        for (let j = 0; j < lote.length; j += CONCURRENCY) {
+                            const chunk = lote.slice(j, j + CONCURRENCY);
+                            const results = await Promise.all(chunk.map(function (r) {
+                                const patch = {
+                                    activo: r.activo !== false,
+                                    actualizado_en: r.actualizado_en || new Date().toISOString()
+                                };
+                                if (r.codigo_fabrica) patch.codigo_fabrica = r.codigo_fabrica;
+                                if (r.tipo_almacen) patch.tipo_almacen = r.tipo_almacen;
+                                return supabaseClient
+                                    .from('productos')
+                                    .update(patch)
+                                    .eq('codigo', r.codigo);
+                            }));
+                            const failed = results.find(function (x) { return x && x.error; });
+                            if (failed) {
+                                // Si falta tipo_almacen, reintentar el lote sin esa columna
+                                if (failed.error && /tipo_almacen/i.test(failed.error.message || '')) {
+                                    const results2 = await Promise.all(chunk.map(function (r) {
+                                        const patch = {
+                                            activo: r.activo !== false,
+                                            actualizado_en: r.actualizado_en || new Date().toISOString()
+                                        };
+                                        if (r.codigo_fabrica) patch.codigo_fabrica = r.codigo_fabrica;
+                                        return supabaseClient
+                                            .from('productos')
+                                            .update(patch)
+                                            .eq('codigo', r.codigo);
+                                    }));
+                                    const failed2 = results2.find(function (x) { return x && x.error; });
+                                    if (failed2) {
+                                        error = failed2.error;
+                                        break;
+                                    }
+                                    showToast('Aviso: crea la columna tipo_almacen en productos (SQL) para guardar Fríos/Secos.', 'info');
+                                } else {
+                                    error = failed.error;
+                                    break;
+                                }
+                            }
+                            subidos += chunk.length;
+                            if (productos.length > 40) {
+                                showToast('⏳ Base Laive: ' + subidos + ' / ' + productos.length + '...', 'info');
+                            }
+                        }
                     } else {
                         let res = await supabaseClient.from('productos').upsert(lote, { onConflict: 'codigo' });
                         error = res.error;
@@ -3578,7 +3629,8 @@
                     }
                     if (error) throw error;
                 }
-                let extra = soloCatalogo ? ' (sin cambiar stock)' : '';
+                let extra = '';
+                if (!esLaive && !esValorado) extra = ' (existencias: catálogo, sin tocar stock)';
                 if (esValorado) extra = ' (valorado: solo stock del sistema)';
                 if (esLaive) {
                     const st = window.__laiveImportStats || {};
