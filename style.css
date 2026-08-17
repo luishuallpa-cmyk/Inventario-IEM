@@ -1986,24 +1986,26 @@ body.modo-vendedor .vendedor-only-banner {
 
 
 
-/* —— Tema claro: verde logo sólido (sin transparencia) v3.66 —— */
+
+
+/* —— Tema claro: fondo exterior VERDE sólido · cards blancas · botón rojo Laive v3.67 —— */
 body.light-theme {
-    --bg-gradient: #f3f4f6 !important;
+    --bg-gradient: #0f9d58 !important;
     --card-bg: #ffffff !important;
-    --card-border: #0f9d58 !important;
+    --card-border: #e5e7eb !important;
     --text-primary: #0f172a !important;
     --text-secondary: #334155 !important;
     --text-muted: #64748b !important;
     --input-bg: #ffffff !important;
-    --input-border: #0f9d58 !important;
+    --input-border: #d1d5db !important;
     --input-focus: #0f9d58 !important;
     --brand-green: #0f9d58 !important;
 }
 body.light-theme .header,
 body.light-theme .card {
     background: #ffffff !important;
-    border: 1.5px solid #0f9d58 !important;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important;
 }
 body.light-theme input[type="text"],
 body.light-theme input[type="search"],
@@ -2013,19 +2015,19 @@ body.light-theme .search-row input,
 body.light-theme .login-field input,
 body.light-theme textarea {
     background: #ffffff !important;
-    border: 1.5px solid #0f9d58 !important;
+    border: 1px solid #d1d5db !important;
     color: #0f172a !important;
 }
 body.light-theme input:focus,
 body.light-theme .search-row input:focus,
 body.light-theme .login-field input:focus {
     border-color: #0f9d58 !important;
-    box-shadow: 0 0 0 3px rgba(15, 157, 88, 0.18) !important;
+    box-shadow: 0 0 0 3px rgba(15, 157, 88, 0.2) !important;
 }
 body.light-theme .filtro-tipo-btn {
     background: #fff !important;
-    border: 1.5px solid #0f9d58 !important;
-    color: #14532d !important;
+    border: 1px solid #d1d5db !important;
+    color: #334155 !important;
 }
 body.light-theme .filtro-tipo-btn.active {
     background: #0f9d58 !important;
@@ -2034,27 +2036,39 @@ body.light-theme .filtro-tipo-btn.active {
 }
 body.light-theme .result-item {
     background: #fff !important;
-    border: 1.5px solid #0f9d58 !important;
+    border: 1px solid #e5e7eb !important;
 }
 body.light-theme .result-item.selected {
     border-color: #0f9d58 !important;
-    border-width: 2px !important;
     background: #f0fdf4 !important;
 }
+/* Botón primario / Entrar = rojo Laive */
 body.light-theme .btn.btn-primary,
 body.light-theme .btn-primary,
 body.light-theme #loginBtn,
 body.light-theme .login-btn {
-    background: #2563eb !important;
-    color: #fff !important;
+    background: #C8102E !important;
+    color: #ffffff !important;
     border: none !important;
     opacity: 1 !important;
+    box-shadow: 0 2px 8px rgba(200, 16, 46, 0.25) !important;
 }
-body.light-theme .login-overlay { background: #f3f4f6 !important; }
+body.light-theme .btn.btn-primary:hover,
+body.light-theme #loginBtn:hover {
+    background: #a50d24 !important;
+}
+/* Login: todo el fondo alrededor en verde */
+body.light-theme .login-overlay {
+    background: #0f9d58 !important;
+}
 body.light-theme .login-card {
-    background: #fff !important;
-    border: 1.5px solid #0f9d58 !important;
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
 }
 body.light-theme .login-logo img {
-    border: 1.5px solid #0f9d58 !important;
+    border: 1px solid #e5e7eb !important;
+}
+body.light-theme .login-card h2 {
+    color: #0f172a !important;
 }

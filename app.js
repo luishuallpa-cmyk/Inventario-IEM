@@ -801,8 +801,7 @@
         function esProductoBuscableInventario(item) {
             if (!item) return false;
             if (esCodigoServicioOBasura(item)) return false;
-            if (esPromoOCombo(item)) return false;
-            // Todo lo activo (habilitado por Laive / base), CON o SIN stock
+            // PROM/CBM SÍ en inventario (conteo). Se filtran solo en vendedores.
             const activoItem = item.activo !== false && item.Activo !== false && item.ACTIVO !== false;
             return !!activoItem;
         }
