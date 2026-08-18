@@ -2895,6 +2895,115 @@
             }
         }
 
+        /**
+         * Busca imágenes en el catálogo público mayorista Laive (WooCommerce)
+         * y rellena imagen_url solo en productos que aún no tienen imagen.
+         * Empareja por codigo_fabrica === SKU del mayorista.
+         */
+        async function buscarImagenesFaltantesLaive() {
+            if (!esAdmin()) {
+                showToast('Solo el administrador puede buscar imágenes.', 'error');
+                return;
+            }
+            if (!supabaseClient) {
+                showToast('Sin conexión a Supabase.', 'error');
+                return;
+            }
+            const statusEl = document.getElementById('adminImgBuscarStatus');
+            const btn = document.getElementById('btnBuscarImagenesLaive');
+            function setStatus(t) { if (statusEl) statusEl.textContent = t || ''; }
+            if (btn) { btn.disabled = true; btn.textContent = 'Buscando…'; }
+            setStatus('Descargando catálogo mayorista Laive…');
+            try {
+                const mapSkuImg = Object.create(null);
+                let page = 1;
+                let totalPages = 1;
+                while (page <= totalPages && page <= 20) {
+                    const res = await fetch('https://mayorista.laive.pe/wp-json/wc/store/v1/products?per_page=100&page=' + page);
+                    if (!res.ok) throw new Error('Mayorista respondió ' + res.status);
+                    const totalH = res.headers.get('X-WP-TotalPages');
+                    if (totalH) totalPages = parseInt(totalH, 10) || totalPages;
+                    const lista = await res.json();
+                    if (!Array.isArray(lista) || !lista.length) break;
+                    lista.forEach(function (p) {
+                        const sku = String(p.sku || '').trim();
+                        const src = p.images && p.images[0] && p.images[0].src ? String(p.images[0].src).trim() : '';
+                        if (sku && src && /^https?:\/\//i.test(src)) {
+                            mapSkuImg[sku] = src;
+                        }
+                    });
+                    setStatus('Catálogo mayorista: página ' + page + '/' + totalPages + ' · ' + Object.keys(mapSkuImg).length + ' con imagen');
+                    page += 1;
+                }
+                const nCatalogo = Object.keys(mapSkuImg).length;
+                if (!nCatalogo) {
+                    showToast('No se obtuvieron imágenes del mayorista.', 'error');
+                    setStatus('');
+                    return;
+                }
+
+                const sinImg = (currentData || []).filter(function (item) {
+                    return !getImagenUrl(item);
+                });
+                setStatus('Emparejando ' + sinImg.length + ' sin imagen con ' + nCatalogo + ' del mayorista…');
+
+                let actualizados = 0;
+                let sinMatch = 0;
+                const BATCH = 15;
+                const pendientes = [];
+                sinImg.forEach(function (item) {
+                    const fab = String(getCodigoFabrica(item) || '').trim();
+                    const url = fab && mapSkuImg[fab] ? mapSkuImg[fab] : '';
+                    if (!url) { sinMatch++; return; }
+                    pendientes.push({ codigo: String(getCodigo(item) || '').trim(), url: url, item: item });
+                });
+
+                for (let i = 0; i < pendientes.length; i += BATCH) {
+                    const chunk = pendientes.slice(i, i + BATCH);
+                    await Promise.all(chunk.map(async function (row) {
+                        if (!row.codigo) return;
+                        let { error } = await supabaseClient
+                            .from('productos')
+                            .update({ imagen_url: row.url })
+                            .eq('codigo', row.codigo);
+                        if (error) {
+                            console.warn('No se actualizó', row.codigo, error);
+                            return;
+                        }
+                        row.item.imagen_url = row.url;
+                        row.item.ImagenUrl = row.url;
+                        const k = row.codigo.toUpperCase();
+                        if (window._mapCodigo && window._mapCodigo[k]) {
+                            window._mapCodigo[k].imagen_url = row.url;
+                            window._mapCodigo[k].ImagenUrl = row.url;
+                        }
+                        actualizados++;
+                    }));
+                    setStatus('Guardando en Supabase… ' + actualizados + '/' + pendientes.length);
+                }
+
+                const msg = 'Listo: ' + actualizados + ' imágenes nuevas. Sin coincidencia SKU: ' + sinMatch + '. Catálogo Laive: ' + nCatalogo + '.';
+                setStatus(msg);
+                showToast(msg, actualizados ? 'success' : 'info');
+                const inp = document.getElementById('adminCatalogInput');
+                if (typeof buscarCatalogoAdmin === 'function') {
+                    buscarCatalogoAdmin(inp ? inp.value : '');
+                }
+                if (typeof filteredData !== 'undefined' && filteredData && filteredData.length && typeof renderResults === 'function') {
+                    renderResults(filteredData);
+                }
+            } catch (e) {
+                console.error('buscarImagenesFaltantesLaive', e);
+                setStatus('Error: ' + ((e && e.message) || e));
+                showToast('No se pudo buscar imágenes: ' + ((e && e.message) || e), 'error');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = '🔍 Buscar imágenes faltantes (Laive)';
+                }
+            }
+        }
+
         async function borrarTodasImagenesAdmin() {
             if (!esAdmin()) {
                 showToast('Solo el administrador puede borrar imágenes.', 'error');
@@ -4656,6 +4765,12 @@
             if (btnBorrarTodasImagenes) {
                 btnBorrarTodasImagenes.addEventListener('click', function () {
                     borrarTodasImagenesAdmin();
+                });
+            }
+            const btnBuscarImagenesLaive = document.getElementById('btnBuscarImagenesLaive');
+            if (btnBuscarImagenesLaive) {
+                btnBuscarImagenesLaive.addEventListener('click', function () {
+                    buscarImagenesFaltantesLaive();
                 });
             }
             // Admin: herramienta códigos de barras / QR
