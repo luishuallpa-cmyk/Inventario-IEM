@@ -2186,7 +2186,7 @@ body.light-theme .login-card h2 {
 }
 
 
-/* PC: logo, iconos e imágenes de producto más grandes */
+/* PC: logo, iconos e imágenes de producto más grandes (sin chocar con el código) */
 @media (min-width: 641px) {
     .header .logo {
         padding: 0.4rem 0.75rem;
@@ -2200,26 +2200,45 @@ body.light-theme .login-card h2 {
         height: 96px !important;
         max-width: 280px !important;
     }
-    /* Imágenes de producto en resultados */
+    /* Ampliar columna de imagen para que no se solape con el código */
+    .result-item {
+        grid-template-columns: 80px 78px 100px 1fr 80px 60px 60px !important;
+        gap: 0.4rem 0.7rem !important;
+        padding: 0.55rem 0.85rem !important;
+        align-items: center;
+    }
     .result-item .prod-img,
     .result-item .prod-img-placeholder {
-        width: 72px !important;
-        height: 72px !important;
+        width: 68px !important;
+        height: 68px !important;
+        max-width: 68px;
+        max-height: 68px;
         border-radius: 12px;
+        object-fit: contain;
     }
     .result-item .prod-img-placeholder {
-        font-size: 1.5rem;
+        font-size: 1.4rem;
+    }
+    .result-item .codigo {
+        font-size: 0.9rem;
+        letter-spacing: 0.02em;
     }
     body.modo-seleccion .pa-img {
-        width: 96px !important;
-        height: 96px !important;
+        width: 88px !important;
+        height: 88px !important;
     }
 }
 
 @media (min-width: 1024px) {
+    .result-item {
+        grid-template-columns: 96px 84px 110px 1fr 88px 64px 64px !important;
+        gap: 0.45rem 0.85rem !important;
+    }
     .result-item .prod-img,
     .result-item .prod-img-placeholder {
-        width: 88px !important;
-        height: 88px !important;
+        width: 80px !important;
+        height: 80px !important;
+        max-width: 80px;
+        max-height: 80px;
     }
 }
