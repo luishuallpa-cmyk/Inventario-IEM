@@ -2786,16 +2786,7 @@
                         return;
                     }
                     list.innerHTML = hits0.map(function (item) {
-                        const cod = escapeHtmlSes(getCodigo(item));
-                        const desc = escapeHtmlSes(getDescripcion(item));
-                        const lin = escapeHtmlSes(getLinea(item) || '-');
-                        const mar = escapeHtmlSes(getMarca(item) || '-');
-                        const cant = getCantidad(item);
-                        return '<div class="admin-catalog-item stock-cero">' +
-                            '<div class="aci-cod">' + cod + '</div>' +
-                            '<div class="aci-desc">' + desc + '</div>' +
-                            '<div class="aci-meta">Línea: ' + lin + ' · Marca: ' + mar +
-                            ' · Stock: <strong>' + cant + '</strong></div></div>';
+                        return htmlCatalogoItemAdmin(item);
                     }).join('');
                     return;
                 }
@@ -2819,22 +2810,82 @@
                 return;
             }
             list.innerHTML = hits.map(function (item) {
-                const cod = escapeHtmlSes(getCodigo(item));
-                const desc = escapeHtmlSes(getDescripcion(item));
-                const lin = escapeHtmlSes(getLinea(item) || '-');
-                const mar = escapeHtmlSes(getMarca(item) || '-');
-                const cant = getCantidad(item);
-                const activoItem = item.activo !== false && item.Activo !== false;
-                const stockClass = cant <= 0 ? 'stock-cero' : '';
-                const estado = activoItem
-                    ? ''
-                    : ' · <span style="color:#f59e0b">Inactivo</span>';
-                return '<div class="admin-catalog-item ' + stockClass + '">' +
-                    '<div class="aci-cod">' + cod + '</div>' +
-                    '<div class="aci-desc">' + desc + '</div>' +
-                    '<div class="aci-meta">Línea: ' + lin + ' · Marca: ' + mar +
-                    ' · Stock: <strong>' + cant + '</strong>' + estado + '</div></div>';
+                return htmlCatalogoItemAdmin(item);
             }).join('');
+        }
+
+        function htmlCatalogoItemAdmin(item) {
+            const cod = escapeHtmlSes(getCodigo(item));
+            const desc = escapeHtmlSes(getDescripcion(item));
+            const lin = escapeHtmlSes(getLinea(item) || '-');
+            const mar = escapeHtmlSes(getMarca(item) || '-');
+            const cant = getCantidad(item);
+            const imgUrl = getImagenUrl(item);
+            const activoItem = item.activo !== false && item.Activo !== false;
+            const stockClass = cant <= 0 ? ' stock-cero' : '';
+            const estado = activoItem ? '' : ' · <span style="color:#f59e0b">Inactivo</span>';
+            const imgHtml = imgUrl
+                ? '<img class="aci-img" src="' + escapeHtmlSes(imgUrl) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">'
+                : '<span class="aci-img aci-img-ph" aria-hidden="true">📦</span>';
+            return '<div class="admin-catalog-item' + stockClass + '" data-codigo="' + cod + '">' +
+                imgHtml +
+                '<div class="aci-body">' +
+                '<div class="aci-cod">' + cod + '</div>' +
+                '<div class="aci-desc">' + desc + '</div>' +
+                '<div class="aci-meta">Línea: ' + lin + ' · Marca: ' + mar +
+                ' · Stock: <strong>' + cant + '</strong>' + estado + '</div>' +
+                '<div class="aci-img-row">' +
+                '<input type="url" class="aci-img-input" data-codigo="' + cod + '" placeholder="URL de imagen (https://...)" value="' + escapeHtmlSes(imgUrl) + '">' +
+                '<button type="button" class="btn btn-sm btn-primary aci-img-save" data-codigo="' + cod + '">Guardar imagen</button>' +
+                (imgUrl ? '<button type="button" class="btn btn-sm btn-danger aci-img-clear" data-codigo="' + cod + '" title="Quitar imagen">✕</button>' : '') +
+                '</div></div></div>';
+        }
+
+        async function guardarImagenProductoAdmin(codigo, urlNueva) {
+            if (!esAdmin()) {
+                showToast('Solo el administrador puede editar imágenes.', 'error');
+                return false;
+            }
+            const cod = String(codigo || '').trim();
+            if (!cod) return false;
+            const url = String(urlNueva || '').trim();
+            if (url && !/^https?:\/\//i.test(url)) {
+                showToast('La URL debe empezar con http:// o https://', 'error');
+                return false;
+            }
+            try {
+                const { error } = await supabaseClient
+                    .from('productos')
+                    .update({ imagen_url: url || null })
+                    .eq('codigo', cod);
+                if (error) throw error;
+                // Actualizar en memoria
+                (currentData || []).forEach(function (item) {
+                    if (String(getCodigo(item) || '') === cod) {
+                        item.imagen_url = url;
+                        item.ImagenUrl = url;
+                    }
+                });
+                if (window._mapCodigo && window._mapCodigo[cod.toUpperCase()]) {
+                    window._mapCodigo[cod.toUpperCase()].imagen_url = url;
+                    window._mapCodigo[cod.toUpperCase()].ImagenUrl = url;
+                }
+                showToast(url ? 'Imagen actualizada.' : 'Imagen eliminada.', 'success');
+                // Refrescar lista admin si está abierta
+                const inp = document.getElementById('adminCatalogInput');
+                if (typeof buscarCatalogoAdmin === 'function') {
+                    buscarCatalogoAdmin(inp ? inp.value : '');
+                }
+                // Refrescar resultados de búsqueda principal si hay
+                if (typeof filteredData !== 'undefined' && filteredData && filteredData.length && typeof renderResults === 'function') {
+                    renderResults(filteredData);
+                }
+                return true;
+            } catch (e) {
+                console.error('guardarImagenProductoAdmin', e);
+                showToast('No se pudo guardar: ' + ((e && e.message) || e), 'error');
+                return false;
+            }
         }
 
         // ============================================================
@@ -4504,6 +4555,30 @@
                     buscarCatalogoAdmin(inp ? inp.value : '');
                 });
             }
+            // Admin catálogo: guardar / limpiar URL de imagen
+            const adminCatalogList = document.getElementById('adminCatalogList');
+            if (adminCatalogList) {
+                adminCatalogList.addEventListener('click', function (e) {
+                    const btn = e.target.closest('.aci-img-save, .aci-img-clear');
+                    if (!btn) return;
+                    e.preventDefault();
+                    const cod = btn.getAttribute('data-codigo');
+                    if (!cod) return;
+                    if (btn.classList.contains('aci-img-clear')) {
+                        confirmarAccion('¿Quitar la imagen de este producto?', 'Quitar', 'danger').then(function (ok) {
+                            if (ok) guardarImagenProductoAdmin(cod, '');
+                        });
+                        return;
+                    }
+                    const row = btn.closest('.admin-catalog-item');
+                    const input = row ? row.querySelector('.aci-img-input') : null;
+                    const url = input ? input.value : '';
+                    btn.disabled = true;
+                    guardarImagenProductoAdmin(cod, url).finally(function () {
+                        btn.disabled = false;
+                    });
+                });
+            }
             // Admin: herramienta códigos de barras / QR
             const adminBarrasInput = document.getElementById('adminBarrasInput');
             if (adminBarrasInput) {
@@ -4822,6 +4897,9 @@
 
         const SESSION_KEY = 'iem_sesion_activa';
         const AUTH_EMAIL_DOMAIN = 'iem.local'; // luis → luis@iem.local
+        // Sesión válida con actividad en los últimos 20 minutos.
+        // F5 / recarga NO debe cerrar sesión si aún no venció la inactividad.
+        const SESSION_IDLE_MS = 20 * 60 * 1000;
 
         // Aplicar clase vendedor desde la URL lo antes posible
         (function () {
@@ -4869,11 +4947,17 @@
             try {
                 localStorage.setItem(SESSION_KEY, JSON.stringify({
                     ts: Date.now(),
-                    usuario: usuario,
-                    rol: rol,
+                    usuario: usuario || usuarioActual || '',
+                    rol: rol || rolUsuario || '',
                     deviceId: deviceId
                 }));
             } catch (e) {}
+        }
+
+        /** Renueva el timestamp de actividad (llamar en uso real de la app). */
+        function tocarSesion() {
+            if (!usuarioActual) return;
+            guardarMetaSesion(usuarioActual, rolUsuario);
         }
 
         function leerMetaSesion() {
@@ -4882,7 +4966,8 @@
                 if (!raw) return null;
                 const data = JSON.parse(raw);
                 if (!data || !data.ts) return null;
-                if (!mismoDia(data.ts)) return null;
+                // Expiración por inactividad (20 min). F5 no borra el ts, así que no cierra.
+                if (Date.now() - data.ts > SESSION_IDLE_MS) return null;
                 if (data.deviceId && data.deviceId !== deviceId) return null;
                 return data;
             } catch (e) {
@@ -5249,19 +5334,39 @@
             cerrarSesion();
         });
 
-        // Arranque: si hay sesión Auth válida + meta del día, entrar
+        // Arranque: si Supabase Auth tiene sesión y no venció la inactividad (20 min), entrar.
+        // F5/recarga NO cierra sesión: solo reinicia la app y renueva el ping de actividad.
         (async function arrancarSesion() {
             try {
-                const meta = leerMetaSesion();
                 const { data: { session } } = await supabaseClient.auth.getSession();
-                if (session && meta) {
-                    const ok = await aplicarSesionAuth(session);
-                    if (ok) return;
-                }
-                if (session && !meta) {
-                    // Sesión Auth de otro día/dispositivo → cerrar y pedir login
-                    try { await supabaseClient.auth.signOut(); } catch (e) {}
-                    try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+                if (session) {
+                    const meta = leerMetaSesion();
+                    // Si hay meta vigente → entrar. Si no hay meta (primer load tras login en otra pestaña
+                    // o se perdió localStorage) pero Auth sigue vivo y fue reciente, recreamos meta.
+                    // Solo cerramos si la meta existe y YA venció por inactividad.
+                    if (meta) {
+                        const ok = await aplicarSesionAuth(session);
+                        if (ok) return;
+                    } else {
+                        // Meta ausente: intentar restaurar una vez (evita logout en F5 si solo falló leer meta)
+                        // Si el usuario llevaba >20 min sin actividad, no habrá meta válida y pediremos login.
+                        // Para no “resucitar” sesiones muertas, exigimos que el access_token no esté caducado
+                        // (getSession ya lo contempla) y creamos meta fresca solo si no había registro de idle.
+                        try {
+                            const raw = localStorage.getItem(SESSION_KEY);
+                            if (raw) {
+                                const old = JSON.parse(raw);
+                                if (old && old.ts && (Date.now() - old.ts > SESSION_IDLE_MS)) {
+                                    try { await supabaseClient.auth.signOut(); } catch (e2) {}
+                                    try { localStorage.removeItem(SESSION_KEY); } catch (e2) {}
+                                    mostrarLogin();
+                                    return;
+                                }
+                            }
+                        } catch (e3) {}
+                        const ok = await aplicarSesionAuth(session);
+                        if (ok) return;
+                    }
                 }
             } catch (e) {
                 console.warn('arrancarSesion', e);
@@ -5270,30 +5375,43 @@
         })();
 
         // Escuchar cambios de Auth (logout en otra pestaña, etc.)
+        // IMPORTANTE: ignorar eventos iniciales para no cerrar en F5 por carrera de timing.
         try {
+            let authReady = false;
+            setTimeout(function () { authReady = true; }, 1500);
             supabaseClient.auth.onAuthStateChange(function (event, session) {
-                if (event === 'SIGNED_OUT') {
+                if (event === 'SIGNED_OUT' && authReady) {
                     usuarioActual = '';
                     rolUsuario = '';
                     try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
                     if (appContainer && !appContainer.classList.contains('oculto')) {
                         mostrarLogin();
                     }
+                } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
+                    tocarSesion();
                 }
             });
         } catch (e) {}
 
-        // Cierre si cambió el día (meta local)
+        // Renovar actividad con uso real (clics, teclas, toques)
+        ['click', 'keydown', 'touchstart', 'pointerdown'].forEach(function (ev) {
+            document.addEventListener(ev, function () {
+                if (usuarioActual) tocarSesion();
+            }, { passive: true, capture: true });
+        });
+
+        // Cierre solo por inactividad real (20 min sin tocar la app)
         setInterval(() => {
-            if (!appContainer.classList.contains('oculto') && !leerMetaSesion()) {
+            if (!appContainer.classList.contains('oculto') && usuarioActual && !leerMetaSesion()) {
                 borrarSesionActiva();
                 try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
                 try { supabaseClient.auth.signOut(); } catch (e) {}
                 usuarioActual = '';
                 rolUsuario = '';
+                showToast('Sesión cerrada por inactividad (20 min).', 'info');
                 mostrarLogin();
             }
-        }, 60000);
+        }, 30000);
 
         // ============================================================
         // PEDIDOS SUGERIDOS (PWA vendedores → admin)
