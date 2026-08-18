@@ -1,5 +1,5 @@
 /* IEM Inventario — SW optimizado: precache UI, red prioritaria en JS/CSS */
-const CACHE = 'iem-inventario-v4.0';
+const CACHE = 'iem-inventario-v4.0.1';
 const PRECACHE = [
   './',
   './index.html',
@@ -37,7 +37,7 @@ self.addEventListener('fetch', (event) => {
   if (url.hostname.indexOf('supabase') !== -1) return;
   if (url.hostname.indexOf('cdn') !== -1 || url.hostname.indexOf('unpkg') !== -1) return;
 
-  const isAppShell = /\\.(js|css)(\\?|$)/.test(url.pathname) || /index\\.html$/.test(url.pathname) || url.pathname.endsWith('/');
+  const isAppShell = /\.(js|css)(\?|$)/.test(url.pathname) || /index\.html$/.test(url.pathname) || url.pathname.endsWith('/');
   if (isAppShell && url.origin === self.location.origin) {
     // Network-first para no quedar con JS viejo
     event.respondWith(
