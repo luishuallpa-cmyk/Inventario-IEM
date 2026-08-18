@@ -551,7 +551,7 @@
                 const conActivos = (currentData || []).filter(function (x) {
                     return x.activo !== false && x.Activo !== false;
                 }).length;
-                fileStatus.textContent = '📦 Habilitados: ' + buscables + ' · Con stock: ' + conStock + ' (se listan también sin stock)';
+                fileStatus.textContent = '📦 Habilitados: ' + buscables + ' · Con stock: ' + conStock + ' (sin stock OK excepto PROM/CBM)';
                 fileStatus.style.display = '';
             } else {
                 // Almacén / conteo: sin números de catálogo
@@ -851,20 +851,31 @@
          * - si ya se subió Laive (hay tipos), solo los que tienen Fríos/Secos
          */
 
-        /** Promos/combos (PROM, CBM, COMBO). */
+        /** Promos/combos (PROM, CBM, COMBO). Detección amplia por nombre, código y línea. */
         function esPromoOCombo(item) {
             const desc = String(getDescripcion(item) || '').toUpperCase()
                 .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-            const cod = String(getCodigo(item) || '').toUpperCase();
+            const cod = String(getCodigo(item) || '').toUpperCase().trim();
+            const fab = String(getCodigoFabrica(item) || '').toUpperCase().trim();
             const linea = String(getLinea(item) || '').toUpperCase()
                 .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-            const blob = desc + ' ' + cod + ' ' + linea;
-            if (/\bPROM\b|\bPROMO\b|\bPROMOS\b|\bPROMOCION\b|\bPROM\.|PROM\s/.test(blob)) return true;
-            if (/\bCBM\b|\bCOMBO\b|PACK\s*PROMO|PACK\s*PROM/.test(blob)) return true;
-            if (/^9\d{3}$/.test(cod) && /PROM|CBM|COMBO/.test(desc)) return true;
+            const blob = desc + ' ' + cod + ' ' + fab + ' ' + linea;
+            // Nombre empieza o contiene PROM. / PROM / CBM / COMBO
+            if (/^PROM[\s.]|^CBM[\s.]|^COMBO[\s.]/.test(desc)) return true;
+            if (/PROM|PROMO|PROMOS|PROMOCION|CBM|COMBO|PACK\s*PROM/.test(blob)) return true;
+            // Códigos 9xxx típicos de promo en el catálogo
+            if (/^9\d{3,}$/.test(cod) && /PROM|CBM|COMBO|PACK/.test(desc)) return true;
             if (/^900\d+/.test(cod)) return true;
-            if (/PROM|CBM|COMBO/.test(cod)) return true;
+            if (/PROM|CBM|COMBO/.test(cod) || /PROM|CBM|COMBO/.test(fab)) return true;
             return false;
+        }
+
+        /** Stock teórico del sistema (unidades). */
+        function stockTeoricoNum(item) {
+            var n = 0;
+            try { n = Number(getCantidad(item)); } catch (e) { n = 0; }
+            if (!isFinite(n) || n < 0) n = 0;
+            return n;
         }
 
         function esProductoBuscableInventario(item) {
@@ -872,8 +883,8 @@
             if (esCodigoServicioOBasura(item)) return false;
             const activoItem = item.activo !== false && item.Activo !== false && item.ACTIVO !== false;
             if (!activoItem) return false;
-            // PROM/CBM con stock 0 no se habilitan en búsqueda (solo con inventario > 0)
-            if (esPromoOCombo(item) && getCantidad(item) <= 0) return false;
+            // PROM/CBM con inventario 0: NO se habilitan ni en búsqueda ni por código exacto
+            if (esPromoOCombo(item) && stockTeoricoNum(item) <= 0) return false;
             return true;
         }
 
@@ -912,11 +923,16 @@
             const enPedido = (typeof modoPedido !== 'undefined' && modoPedido);
             const pareceBarras = /^[0-9]{8,}$/.test(termCompact);
 
-            // Atajo O(1): código o barras exactos
+            // Atajo O(1): código o barras exactos (también respeta filtro PROM/CBM stock 0)
             var hitExact = null;
             if (window._mapBarras && window._mapBarras[termCompact]) hitExact = window._mapBarras[termCompact];
             else if (window._mapCodigo && window._mapCodigo[termUpper]) hitExact = window._mapCodigo[termUpper];
             if (hitExact) {
+                if (!enPedido && !esProductoBuscableInventario(hitExact)) {
+                    filteredData = [];
+                    renderResults(filteredData);
+                    return;
+                }
                 filteredData = [hitExact];
                 renderResults(filteredData);
                 return;
@@ -932,15 +948,15 @@
                 const matchBarras = bar && (bar === termUpper || bar.indexOf(termUpper) !== -1);
                 const matchCodigoExacto = cod === termUpper || fab === termUpper;
 
-                // Inventario: solo base Laive (Fríos/Secos) + activos; sin códigos de servicio.
-                // Escáner: permite código exacto aunque esté fuera de lista.
+                // Inventario: activos + PROM/CBM solo si stock > 0. Sin excepciones por código exacto
+                // para promos en cero (si no, seguían apareciendo al buscar el código).
                 if (!enPedido) {
-                    if (!esProductoBuscableInventario(item)) {
-                        if (!(matchBarras || matchCodigoExacto)) return false;
-                    }
+                    if (!esProductoBuscableInventario(item)) return false;
                 } else {
                     const activoItem = item.activo !== false && item.Activo !== false && item.ACTIVO !== false;
                     if (!activoItem && !(matchBarras || matchCodigoExacto)) return false;
+                    // En modo pedido tampoco listar PROM/CBM sin stock
+                    if (esPromoOCombo(item) && stockTeoricoNum(item) <= 0) return false;
                 }
 
                 // Filtro Frios / Secos
