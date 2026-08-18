@@ -304,11 +304,15 @@
         .header .logo {
             display: flex;
             align-items: center;
-            background: #ffffff;
+            background: #ffffff !important;
             padding: 0.3rem 0.55rem;
             border-radius: 12px;
             border: 1px solid rgba(10, 120, 76, 0.35);
             box-shadow: 0 2px 10px rgba(10, 120, 76, 0.12);
+        }
+        /* Logo siempre legible en tema oscuro y claro */
+        .header .logo img {
+            background: #ffffff;
         }
         .header .logo img {
             height: 38px;
