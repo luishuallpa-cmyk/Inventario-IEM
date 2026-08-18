@@ -2242,3 +2242,60 @@ body.light-theme .login-card h2 {
         max-height: 80px;
     }
 }
+
+
+/* —— Optimización rendimiento + diseño v4.1 —— */
+.result-list {
+  content-visibility: auto;
+  contain: content;
+}
+.result-item {
+  contain: layout style;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 56px;
+  transition: border-color 0.12s ease, background 0.12s ease !important;
+}
+/* Menos blur en móvil (caro en GPU) */
+@media (max-width: 640px) {
+  .header, .card, .result-item, .login-card {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+@media (min-width: 641px) {
+  .result-item {
+    min-height: 76px;
+    border-radius: 16px;
+  }
+  .result-item .descripcion {
+    font-size: 0.88rem;
+    line-height: 1.35;
+  }
+  .result-item .codigo {
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+  .result-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  }
+  body.light-theme .result-item:hover {
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+  }
+}
+/* Imágenes de producto: no bloquear layout */
+.result-item .prod-img {
+  background: #fff;
+  content-visibility: auto;
+}
+/* Focus visible accesible */
+.search-row input:focus-visible,
+.login-field input:focus-visible {
+  outline: 2px solid var(--accent, #2563eb);
+  outline-offset: 2px;
+}
+/* Scroll suave de resultados sin jank */
+.result-list {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}

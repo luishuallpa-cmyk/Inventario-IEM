@@ -563,7 +563,7 @@
                 const conActivos = (currentData || []).filter(function (x) {
                     return x.activo !== false && x.Activo !== false;
                 }).length;
-                fileStatus.textContent = '📦 Habilitados: ' + buscables + ' · Con stock: ' + conStock + ' (sin stock OK excepto PROM/CBM)';
+                fileStatus.textContent = '📦 Habilitados: ' + buscables + ' · Con stock: ' + conStock + ' (sin stock OK excepto PROM/CMB/CBM)';
                 fileStatus.style.display = '';
             } else {
                 // Almacén / conteo: sin números de catálogo
@@ -658,6 +658,7 @@
                             item.TipoAlmacen = tip;
                         }
                         item._sb = [c, f, b, getDescripcion(item), getUnidadRef(item), getLinea(item), getMarca(item)].join('\u0001').toUpperCase();
+                        marcarFlagsProducto(item);
                         if (c) window._mapCodigo[c.toUpperCase()] = item;
                         if (f) window._mapCodigo[f.toUpperCase()] = item;
                         if (b) window._mapBarras[b] = item;
@@ -863,7 +864,7 @@
          * - si ya se subió Laive (hay tipos), solo los que tienen Fríos/Secos
          */
 
-        /** Promos/combos (PROM, CBM, COMBO). Detección amplia por nombre, código y línea. */
+        /** Promos/combos: PROM, CBM, CMB (así vienen en el catálogo), COMBO, PACK. */
         function esPromoOCombo(item) {
             const desc = String(getDescripcion(item) || '').toUpperCase()
                 .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -872,13 +873,13 @@
             const linea = String(getLinea(item) || '').toUpperCase()
                 .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
             const blob = desc + ' ' + cod + ' ' + fab + ' ' + linea;
-            // Nombre empieza o contiene PROM. / PROM / CBM / COMBO
-            if (/^PROM[\s.]|^CBM[\s.]|^COMBO[\s.]/.test(desc)) return true;
-            if (/PROM|PROMO|PROMOS|PROMOCION|CBM|COMBO|PACK\s*PROM/.test(blob)) return true;
-            // Códigos 9xxx típicos de promo en el catálogo
-            if (/^9\d{3,}$/.test(cod) && /PROM|CBM|COMBO|PACK/.test(desc)) return true;
+            if (/^(PROM|PROMO|CBM|CMB|COMBO|PACK)[\s.0-9(]/.test(desc)) return true;
+            if (/\bPROM\b|\bPROMO\b|\bPROMOS\b|\bPROMOCION\b|\bPROM\./.test(blob)) return true;
+            if (/\bCMB\d*\b|\bCBM\d*\b|\bCOMBO\b|PACK\s*PROM/.test(blob)) return true;
+            if (/CMB\d*\(|CBM\d*\(/.test(desc)) return true;
+            if (/^9\d{3,}$/.test(cod) && /PROM|CBM|CMB|COMBO|PACK/.test(desc)) return true;
             if (/^900\d+/.test(cod)) return true;
-            if (/PROM|CBM|COMBO/.test(cod) || /PROM|CBM|COMBO/.test(fab)) return true;
+            if (/PROM|CBM|CMB|COMBO/.test(cod) || /PROM|CBM|CMB|COMBO/.test(fab)) return true;
             return false;
         }
 
@@ -890,12 +891,29 @@
             return n;
         }
 
+        function marcarFlagsProducto(item) {
+            if (!item) return item;
+            try {
+                item._esPromo = esPromoOCombo(item);
+                item._stockN = stockTeoricoNum(item);
+                var activo = item.activo !== false && item.Activo !== false && item.ACTIVO !== false;
+                var basura = false;
+                try { basura = esCodigoServicioOBasura(item); } catch (e) { basura = false; }
+                // PROM/CMB/CBM con stock 0 no buscables
+                item._buscable = !!(activo && !basura && !(item._esPromo && item._stockN <= 0));
+            } catch (e2) {
+                item._buscable = (item.activo !== false);
+            }
+            return item;
+        }
+
         function esProductoBuscableInventario(item) {
             if (!item) return false;
+            // Flag precalculado al cargar catálogo (mucho más rápido en cada tecla)
+            if (item._buscable === true || item._buscable === false) return item._buscable;
             if (esCodigoServicioOBasura(item)) return false;
             const activoItem = item.activo !== false && item.Activo !== false && item.ACTIVO !== false;
             if (!activoItem) return false;
-            // PROM/CBM con inventario 0: NO se habilitan ni en búsqueda ni por código exacto
             if (esPromoOCombo(item) && stockTeoricoNum(item) <= 0) return false;
             return true;
         }
@@ -2597,7 +2615,7 @@
             }
             // PROM / CBM sin match claro → por defecto fríos (promos lácteas)
             const cod = String(getCodigo(item) || '').toUpperCase();
-            if (/^(PROM|CBM|COMBO|PACK)/.test(cod) || /\b(PROM|PROMO|CBM|COMBO)\b/.test(d)) {
+            if (/^(PROM|CBM|CMB|COMBO|PACK)/.test(cod) || /\b(PROM|PROMO|CBM|CMB|COMBO)\b/.test(d)) {
                 return 'FRIOS';
             }
             return '';
@@ -2664,7 +2682,7 @@
                 if (reglas[i][0].test(d)) return reglas[i][1];
             }
             const cod = String(getCodigo(item) || '').toUpperCase();
-            if (/^(PROM|CBM)/.test(cod) || /\b(PROM|PROMO|CBM|COMBO)\b/.test(d)) {
+            if (/^(PROM|CBM|CMB)/.test(cod) || /\b(PROM|PROMO|CBM|CMB|COMBO)\b/.test(d)) {
                 return 'PROMOS / COMBOS';
             }
             return 'SIN LÍNEA';
@@ -4962,7 +4980,7 @@
                     limpiarCantidades();
                 }
                 clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(performSearch, 300);
+                debounceTimer = setTimeout(performSearch, 180);
             });
 
             // btnAgregar se enlaza más abajo (modo pedido + agregarProducto)
