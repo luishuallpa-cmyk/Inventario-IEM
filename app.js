@@ -851,23 +851,30 @@
          * - si ya se subió Laive (hay tipos), solo los que tienen Fríos/Secos
          */
 
-        /** Promos/combos (PROM, CBM) no forman parte del Excel base Laive para conteo. */
+        /** Promos/combos (PROM, CBM, COMBO). */
         function esPromoOCombo(item) {
             const desc = String(getDescripcion(item) || '').toUpperCase()
                 .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-            const cod = String(getCodigo(item) || '');
-            if (/\bPROM\b|\bPROM\.|PROM\s|\bCBM\b|COMBO\b|PACK\s*PROMO/.test(desc)) return true;
-            if (/^9\d{3}$/.test(cod) && /PROM/.test(desc)) return true;
-            if (/^900\d+/.test(cod) && /PROM/.test(desc)) return true;
+            const cod = String(getCodigo(item) || '').toUpperCase();
+            const linea = String(getLinea(item) || '').toUpperCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            const blob = desc + ' ' + cod + ' ' + linea;
+            if (/\bPROM\b|\bPROMO\b|\bPROMOS\b|\bPROMOCION\b|\bPROM\.|PROM\s/.test(blob)) return true;
+            if (/\bCBM\b|\bCOMBO\b|PACK\s*PROMO|PACK\s*PROM/.test(blob)) return true;
+            if (/^9\d{3}$/.test(cod) && /PROM|CBM|COMBO/.test(desc)) return true;
+            if (/^900\d+/.test(cod)) return true;
+            if (/PROM|CBM|COMBO/.test(cod)) return true;
             return false;
         }
 
         function esProductoBuscableInventario(item) {
             if (!item) return false;
             if (esCodigoServicioOBasura(item)) return false;
-            // PROM/CBM SÍ en inventario (conteo). Se filtran solo en vendedores.
             const activoItem = item.activo !== false && item.Activo !== false && item.ACTIVO !== false;
-            return !!activoItem;
+            if (!activoItem) return false;
+            // PROM/CBM con stock 0 no se habilitan en búsqueda (solo con inventario > 0)
+            if (esPromoOCombo(item) && getCantidad(item) <= 0) return false;
+            return true;
         }
 
         function setFiltroTipoLaive(tipo) {
