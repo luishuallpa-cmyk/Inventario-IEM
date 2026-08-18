@@ -96,7 +96,14 @@
         // ============================================================
         const SUPABASE_URL = (window.IEM_CONFIG && window.IEM_CONFIG.SUPABASE_URL) || '';
         const SUPABASE_ANON_KEY = (window.IEM_CONFIG && window.IEM_CONFIG.SUPABASE_ANON_KEY) || '';
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: true,
+                storage: window.localStorage
+            }
+        });
 
         const GOOGLE_SHEETS_CSV_URL = '';
         const SCRIPT_URL = '';
@@ -2790,7 +2797,7 @@
                     }).join('');
                     return;
                 }
-                list.innerHTML = '<p class="admin-sesiones-empty">Escribe para buscar. Incluye productos con y sin stock.</p>';
+                list.innerHTML = '<p class="admin-sesiones-empty">Escribe un código o nombre para buscar.<br><br><strong>Para editar la URL de imagen:</strong> busca el producto y en cada resultado verás el campo de URL + botón «Guardar imagen».</p>';
                 if (countEl) countEl.textContent = String((currentData || []).length);
                 return;
             }
@@ -5038,9 +5045,8 @@
                 if (!raw) return null;
                 const data = JSON.parse(raw);
                 if (!data || !data.ts) return null;
-                // Expiración por inactividad (20 min). F5 no borra el ts, así que no cierra.
+                // Solo inactividad (20 min). No validamos deviceId aquí para que F5 no cierre sesión.
                 if (Date.now() - data.ts > SESSION_IDLE_MS) return null;
-                if (data.deviceId && data.deviceId !== deviceId) return null;
                 return data;
             } catch (e) {
                 return null;
@@ -5406,38 +5412,17 @@
             cerrarSesion();
         });
 
-        // Arranque: si Supabase Auth tiene sesión y no venció la inactividad (20 min), entrar.
-        // F5/recarga NO cierra sesión: solo reinicia la app y renueva el ping de actividad.
+        // Arranque: si Supabase Auth tiene sesión válida → entrar SIEMPRE.
+        // F5 / recarga NO cierra sesión. La inactividad de 20 min solo aplica
+        // mientras la app ya está abierta (intervalo de abajo), no al recargar.
         (async function arrancarSesion() {
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
-                if (session) {
-                    const meta = leerMetaSesion();
-                    // Si hay meta vigente → entrar. Si no hay meta (primer load tras login en otra pestaña
-                    // o se perdió localStorage) pero Auth sigue vivo y fue reciente, recreamos meta.
-                    // Solo cerramos si la meta existe y YA venció por inactividad.
-                    if (meta) {
-                        const ok = await aplicarSesionAuth(session);
-                        if (ok) return;
-                    } else {
-                        // Meta ausente: intentar restaurar una vez (evita logout en F5 si solo falló leer meta)
-                        // Si el usuario llevaba >20 min sin actividad, no habrá meta válida y pediremos login.
-                        // Para no “resucitar” sesiones muertas, exigimos que el access_token no esté caducado
-                        // (getSession ya lo contempla) y creamos meta fresca solo si no había registro de idle.
-                        try {
-                            const raw = localStorage.getItem(SESSION_KEY);
-                            if (raw) {
-                                const old = JSON.parse(raw);
-                                if (old && old.ts && (Date.now() - old.ts > SESSION_IDLE_MS)) {
-                                    try { await supabaseClient.auth.signOut(); } catch (e2) {}
-                                    try { localStorage.removeItem(SESSION_KEY); } catch (e2) {}
-                                    mostrarLogin();
-                                    return;
-                                }
-                            }
-                        } catch (e3) {}
-                        const ok = await aplicarSesionAuth(session);
-                        if (ok) return;
+                if (session && session.user) {
+                    const ok = await aplicarSesionAuth(session);
+                    if (ok) {
+                        tocarSesion(); // renueva actividad al recargar
+                        return;
                     }
                 }
             } catch (e) {
@@ -5447,32 +5432,35 @@
         })();
 
         // Escuchar cambios de Auth (logout en otra pestaña, etc.)
-        // IMPORTANTE: ignorar eventos iniciales para no cerrar en F5 por carrera de timing.
+        // No cerrar por eventos iniciales de F5 (SIGNED_OUT falso / carrera).
         try {
-            let authReady = false;
-            setTimeout(function () { authReady = true; }, 1500);
+            let authBootDone = false;
+            setTimeout(function () { authBootDone = true; }, 2500);
             supabaseClient.auth.onAuthStateChange(function (event, session) {
-                if (event === 'SIGNED_OUT' && authReady) {
+                if (event === 'SIGNED_OUT') {
+                    // Solo reaccionar si el usuario ya estaba dentro y el boot terminó
+                    if (!authBootDone) return;
+                    if (!usuarioActual) return;
                     usuarioActual = '';
                     rolUsuario = '';
                     try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
                     if (appContainer && !appContainer.classList.contains('oculto')) {
                         mostrarLogin();
                     }
-                } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
-                    tocarSesion();
+                } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') && session) {
+                    if (usuarioActual) tocarSesion();
                 }
             });
         } catch (e) {}
 
-        // Renovar actividad con uso real (clics, teclas, toques)
-        ['click', 'keydown', 'touchstart', 'pointerdown'].forEach(function (ev) {
+        // Renovar actividad con uso real (clics, teclas, toques, scroll)
+        ['click', 'keydown', 'touchstart', 'pointerdown', 'scroll'].forEach(function (ev) {
             document.addEventListener(ev, function () {
                 if (usuarioActual) tocarSesion();
             }, { passive: true, capture: true });
         });
 
-        // Cierre solo por inactividad real (20 min sin tocar la app)
+        // Cierre solo por inactividad real (20 min sin tocar la app YA ABIERTA)
         setInterval(() => {
             if (!appContainer.classList.contains('oculto') && usuarioActual && !leerMetaSesion()) {
                 borrarSesionActiva();

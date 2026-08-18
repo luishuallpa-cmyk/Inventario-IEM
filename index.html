@@ -23,8 +23,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=3.96">
-    <link rel="stylesheet" href="admin.css?v=3.96">
+    <link rel="stylesheet" href="style.css?v=3.97">
+    <link rel="stylesheet" href="admin.css?v=3.97">
 </head>
 <body>
 <div class="login-overlay" id="loginOverlay">
@@ -95,7 +95,7 @@
                         <span class="hmi-icon">👥</span><span class="hmi-label">Sesiones</span>
                     </button>
                     <div class="header-menu-footer">
-                        <span class="version">v3.21 · Admin</span>
+                        <span class="version">v3.97 · Admin</span>
                     </div>
                 </div>
             </div>
@@ -382,7 +382,7 @@
                         <p class="admin-lead">Catálogo de consulta: todos los códigos (activos e inactivos), con o sin stock. No es el conteo de inventario; solo sirve para ubicar productos.</p>
                         <div class="admin-warning-box" role="note">
                             <div class="admin-warning-title">⚠️ Imágenes del catálogo</div>
-                            <p class="admin-warning-text">Si las URLs están mal o son incorrectas, puedes borrarlas todas de golpe. Esta acción pone <code>imagen_url</code> en vacío en <strong>todos</strong> los productos y no se puede deshacer desde aquí.</p>
+                            <p class="admin-warning-text"><strong>Editar una imagen:</strong> escribe el código o nombre en el buscador de abajo → en cada resultado aparece la URL y el botón «Guardar imagen».<br><br><strong>Borrar todas:</strong> si las URLs están mal, usa el botón rojo. Vacía <code>imagen_url</code> en <strong>todos</strong> los productos (no se deshace desde aquí).</p>
                             <button type="button" class="btn btn-danger btn-sm" id="btnBorrarTodasImagenes">🗑️ Borrar todas las imágenes</button>
                         </div>
                         <div class="admin-catalog-search">
@@ -556,7 +556,7 @@
     </div>
 
 <script src="config.js?v=3.96"></script>
-<script src="app.js?v=3.96"></script>
+<script src="app.js?v=3.97"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {
