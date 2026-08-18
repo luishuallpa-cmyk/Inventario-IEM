@@ -939,8 +939,8 @@
             if (!term) {
                 filteredData = [];
                 resultList.innerHTML = (typeof modoPedido !== 'undefined' && modoPedido)
-                    ? '<div class="empty-message">Escribe un código o nombre · Catálogo completo (existencias)</div>'
-                    : '<div class="empty-message">Escribe un código o nombre · Productos habilitados (Laive / activos)</div>';
+                    ? '<div class="empty-message"><span class="empty-title">Busca un producto</span>Escribe código SAP, interno o parte del nombre.<span class="empty-hint">Catálogo completo (existencias)</span></div>'
+                    : '<div class="empty-message"><span class="empty-title">Busca un producto</span>Prueba código SAP, código interno o parte del nombre.<span class="empty-hint">Solo habilitados Laive · PROM/CMB con stock 0 no se listan</span></div>';
                 resultCount.textContent = '0';
                 cajasCount.textContent = '0';
                 unidadesCount.textContent = '0';
@@ -1021,7 +1021,7 @@
             const totalHit = items ? items.length : 0;
             if (items && items.length > MAX_SHOW) items = items.slice(0, MAX_SHOW);
             if (!items || items.length === 0) {
-                resultList.innerHTML = `<div class="empty-message">🔎 No se encontraron productos</div>`;
+                resultList.innerHTML = `<div class="empty-message"><span class="empty-title">Sin resultados</span>No hay productos con ese criterio.<span class="empty-hint">Revisa el código o prueba menos letras · PROM/CMB en cero no aparecen</span></div>`;
                 resultCount.textContent = '0';
                 cajasCount.textContent = '0';
                 unidadesCount.textContent = '0';

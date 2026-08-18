@@ -27,6 +27,7 @@
             --accent-gradient: #2563eb;
             --success: #16a34a;
             --brand-green: #0A784C;
+            --brand-green-glow: rgba(10, 120, 76, 0.35);
             --brand-green-soft: rgba(21, 128, 61, 0.15);
             --warning: #f59e0b;
             --danger: #ef4444;
@@ -47,19 +48,19 @@
         /* Tema claro cálido (crema / papel) — menos blanco puro, más cómodo a la vista */
         body.light-theme {
             color-scheme: light;
-            /* Fondo claro = verde oscuro del logo; cards blancas; el usuario elige tema */
+            /* Fondo = verde Laive; cards blancas; acento de marca */
             --bg-gradient: #0A784C;
             --card-bg: #ffffff;
-            --card-border: #e2e8f0;
-            --card-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+            --card-border: #e5ebe7;
+            --card-shadow: 0 2px 10px rgba(10, 60, 35, 0.07);
             --text-primary: #14201a;
             --text-secondary: #334840;
             --text-muted: #5a6e64;
             --heading-color: #0f2e1c;
-            --accent: #1d4ed8;
-            --accent-2: #475569;
-            --accent-light: #3b82f6;
-            --accent-gradient: #1d4ed8;
+            --accent: #0A784C;
+            --accent-2: #3d6b54;
+            --accent-light: #12a06a;
+            --accent-gradient: #0A784C;
             --success: #0A784C;
             --warning: #b45309;
             --danger: #b91c1c;
@@ -1027,8 +1028,34 @@
         .empty-message {
             text-align: center;
             color: var(--text-muted);
-            padding: 1.5rem;
-            font-size: 0.85rem;
+            padding: 1.75rem 1.25rem;
+            font-size: 0.9rem;
+            line-height: 1.55;
+            max-width: 420px;
+            margin: 0.5rem auto;
+        }
+        .empty-message .empty-title {
+            display: block;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--heading-color);
+            margin-bottom: 0.35rem;
+        }
+        .empty-message .empty-hint {
+            display: block;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+        .empty-message kbd {
+            display: inline-block;
+            padding: 0.1rem 0.4rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-family: ui-monospace, monospace;
+            background: var(--badge-bg);
+            color: var(--badge-text);
+            border: 1px solid var(--card-border);
         }
 
         .diff-totales {
@@ -2298,4 +2325,63 @@ body.light-theme .login-card h2 {
 .result-list {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+}
+
+
+/* —— Diseño: jerarquía resultados PC + acentos Laive —— */
+@media (min-width: 641px) {
+  .result-item {
+    grid-template-columns: 96px 88px 110px 1fr 88px 64px 64px !important;
+    gap: 0.5rem 0.9rem !important;
+    padding: 0.65rem 1rem !important;
+    min-height: 84px;
+    align-items: center;
+  }
+  .result-item .prod-img,
+  .result-item .prod-img-placeholder {
+    width: 72px !important;
+    height: 72px !important;
+    max-width: 72px;
+    max-height: 72px;
+    border-radius: 12px;
+  }
+  .result-item .codigo {
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.02em;
+    color: var(--heading-color);
+  }
+  .result-item .fabrica {
+    font-size: 0.72rem;
+    opacity: 0.9;
+  }
+  .result-item .descripcion {
+    font-size: 0.9rem !important;
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-secondary);
+  }
+  .result-item .unidad {
+    font-size: 0.7rem;
+  }
+}
+body.light-theme .result-item {
+  box-shadow: 0 1px 4px rgba(10, 60, 35, 0.05);
+}
+body.light-theme .result-item:hover {
+  border-color: rgba(10, 120, 76, 0.45) !important;
+  box-shadow: 0 4px 14px rgba(10, 60, 35, 0.1) !important;
+}
+body.light-theme .btn-primary {
+  background: #0A784C !important;
+  border-color: #0A784C !important;
+}
+body.light-theme .btn-primary:hover {
+  filter: brightness(1.06);
+}
+/* Acento verde suave en oscuro (badges / focus) */
+body:not(.light-theme) .filtro-tipo-btn.active {
+  box-shadow: 0 0 0 2px rgba(10, 120, 76, 0.25);
 }
