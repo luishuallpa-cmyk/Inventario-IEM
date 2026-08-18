@@ -5528,16 +5528,29 @@
         });
 
         // Arranque: si Supabase Auth tiene sesión válida → entrar SIEMPRE.
-        // F5 / recarga NO cierra sesión. La inactividad de 20 min solo aplica
-        // mientras la app ya está abierta (intervalo de abajo), no al recargar.
+        // F5 / recarga / pull-to-refresh NO debe cerrar sesión.
+        // La inactividad de 20 min solo aplica mientras la app ya está abierta.
         (async function arrancarSesion() {
             try {
-                const { data: { session } } = await supabaseClient.auth.getSession();
+                const { data: { session }, error: sessErr } = await supabaseClient.auth.getSession();
+                if (sessErr) console.warn('getSession', sessErr);
                 if (session && session.user) {
                     const ok = await aplicarSesionAuth(session);
                     if (ok) {
                         tocarSesion(); // renueva actividad al recargar
                         return;
+                    }
+                }
+                // Fallback: meta local reciente + reintento de sesión (carrera autoRefresh)
+                const meta = leerMetaSesion();
+                if (meta && meta.usuario) {
+                    const { data: { session: s2 } } = await supabaseClient.auth.getSession();
+                    if (s2 && s2.user) {
+                        const ok2 = await aplicarSesionAuth(s2);
+                        if (ok2) {
+                            tocarSesion();
+                            return;
+                        }
                     }
                 }
             } catch (e) {
@@ -5547,15 +5560,20 @@
         })();
 
         // Escuchar cambios de Auth (logout en otra pestaña, etc.)
-        // No cerrar por eventos iniciales de F5 (SIGNED_OUT falso / carrera).
+        // No cerrar por eventos iniciales de F5 / recarga (SIGNED_OUT falso / carrera).
         try {
             let authBootDone = false;
-            setTimeout(function () { authBootDone = true; }, 2500);
+            // Más margen al arrancar (PWA / red lenta) para no tomar SIGNED_OUT de carrera
+            setTimeout(function () { authBootDone = true; }, 4000);
             supabaseClient.auth.onAuthStateChange(function (event, session) {
                 if (event === 'SIGNED_OUT') {
-                    // Solo reaccionar si el usuario ya estaba dentro y el boot terminó
                     if (!authBootDone) return;
                     if (!usuarioActual) return;
+                    // Si aún hay meta de sesión válida, no cerrar (posible carrera de refresh)
+                    if (leerMetaSesion()) {
+                        console.warn('SIGNED_OUT ignorado: meta de sesión aún válida');
+                        return;
+                    }
                     usuarioActual = '';
                     rolUsuario = '';
                     try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
@@ -5564,6 +5582,11 @@
                     }
                 } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') && session) {
                     if (usuarioActual) tocarSesion();
+                    else if (authBootDone && session.user) {
+                        aplicarSesionAuth(session).then(function (ok) {
+                            if (ok) tocarSesion();
+                        });
+                    }
                 }
             });
         } catch (e) {}
@@ -5683,8 +5706,12 @@
             _pedidoDetalleId = r.id;
             const items = Array.isArray(r.items) ? r.items : [];
             let filas = items.map(function (it, i) {
+                var img = it.imagen_url
+                    ? '<img class="apd-thumb" src="' + escHtmlPed(it.imagen_url) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">'
+                    : '<span class="apd-thumb-ph">📦</span>';
                 return '<tr>' +
                     '<td>' + (i + 1) + '</td>' +
+                    '<td class="apd-img-cell">' + img + '</td>' +
                     '<td class="mono">' + escHtmlPed(it.codigo) + '</td>' +
                     '<td>' + escHtmlPed(it.descripcion) + '</td>' +
                     '<td class="num">' + (Number(it.cajas) || 0) + '</td>' +
@@ -5692,7 +5719,7 @@
                     '<td>' + escHtmlPed(it.linea || '') + '</td>' +
                     '</tr>';
             }).join('');
-            if (!filas) filas = '<tr><td colspan="6" class="empty-message">Sin ítems</td></tr>';
+            if (!filas) filas = '<tr><td colspan="7" class="empty-message">Sin ítems</td></tr>';
             det.hidden = false;
             det.innerHTML =
                 '<div class="apd-head">' +
@@ -5703,7 +5730,7 @@
                 ' · Estado: <strong>' + escHtmlPed(r.estado || 'pendiente') + '</strong></p>' +
                 (r.notas ? '<p class="apd-notas">' + escHtmlPed(r.notas) + '</p>' : '') +
                 '<div class="table-wrap"><table class="diff-table apd-table"><thead><tr>' +
-                '<th>#</th><th>Código</th><th>Descripción</th><th>Cajas</th><th>Unid.</th><th>Línea</th>' +
+                '<th>#</th><th></th><th>Código</th><th>Descripción</th><th>Cajas</th><th>Unid.</th><th>Línea</th>' +
                 '</tr></thead><tbody>' + filas + '</tbody></table></div>' +
                 '<div class="apd-actions">' +
                 '<button type="button" class="btn btn-success btn-sm" data-ped-estado="atendido">✓ Marcar atendido</button> ' +

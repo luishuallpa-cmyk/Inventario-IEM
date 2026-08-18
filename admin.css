@@ -1202,3 +1202,13 @@ body:not(.light-theme) .apc-estado.bad { color: #f87171; }
 .apd-actions { margin-top: 0.75rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .apd-table .mono { font-family: ui-monospace, monospace; font-weight: 600; }
 .apd-table .num { text-align: right; }
+.apd-table .apd-img-cell { width: 44px; padding: 0.25rem; vertical-align: middle; }
+.apd-thumb {
+  width: 40px; height: 40px; object-fit: contain; border-radius: 8px;
+  background: #fff; border: 1px solid var(--card-border, #334155); display: block;
+}
+.apd-thumb-ph {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: 8px; background: rgba(148,163,184,0.15);
+  font-size: 1rem;
+}

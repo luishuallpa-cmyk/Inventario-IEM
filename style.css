@@ -1332,9 +1332,17 @@
                 gap: 0.6rem;
                 margin-bottom: 0.7rem;
             }
+            /* Imagen a la derecha (zona libre) para no comprimir el texto del producto */
+            body.modo-seleccion .pa-header-right {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+                gap: 0.45rem;
+                flex-shrink: 0;
+            }
             body.modo-seleccion .pa-img {
-                width: 56px;
-                height: 56px;
+                width: 64px;
+                height: 64px;
                 object-fit: contain;
                 border-radius: 12px;
                 background: #fff;
@@ -1929,6 +1937,36 @@ body.es-admin.modo-seleccion .pa-scan-btn {
     opacity: 0.95;
 }
 
+/* ============================================================
+   PC / escritorio: iconos del header más grandes (más espacio)
+   ============================================================ */
+@media (min-width: 641px) {
+    .header .theme-toggle {
+        width: 44px;
+        height: 44px;
+        font-size: 1.25rem;
+    }
+    .btn-logout {
+        width: 44px !important;
+        height: 44px !important;
+        min-height: 44px !important;
+    }
+    .btn-logout-svg {
+        width: 22px !important;
+        height: 22px !important;
+    }
+    .header-menu-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 1.2rem;
+    }
+    .header-menu-icon {
+        font-size: 1.2rem;
+    }
+    .header-actions {
+        gap: 0.5rem;
+    }
+}
 
 /* toast over admin */
 .toast {
