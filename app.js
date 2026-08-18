@@ -322,6 +322,7 @@
         const paStock = document.getElementById('paStock');
         const paTotalValor = document.getElementById('paTotalValor');
         const paTotalUnidad = document.getElementById('paTotalUnidad');
+        const paImg = document.getElementById('paImg');
         const conversionHint = document.getElementById('conversionHint');
         const btnCambiarProducto = document.getElementById('btnCambiarProducto');
 
@@ -427,6 +428,7 @@
         function getCodigoFabrica(item) { return getField(item, 'CodigoFabrica', 'CódigoFábrica', 'Cod. Fabrica', 'CodigoFabrica', 'CodFabrica'); }
         function getCodigoBarras(item) { return getField(item, 'CodigoBarras', 'codigo_barras', 'EAN', 'Barcode', 'CodBarras', 'CódigoBarras'); }
         function getDescripcion(item) { return getField(item, 'Producto', 'Descripción', 'InventarioProductoDescripcion', 'Descripcion', 'Nombre'); }
+        function getImagenUrl(item) { return getField(item, 'imagen_url', 'ImagenUrl', 'Imagen', 'image_url', 'foto', 'Foto'); }
         function getUnidadRef(item) { return getField(item, 'Unidad Ref', 'Uni. Ref.', 'Unidad', 'InventarioProductoUnidadReferenciaAbreviacion', 'UnidadRef'); }
         function getCantidad(item) {
             const val = getField(item, 'InventarioProductoCantidad', 'Cantidad', 'Stock', 'Stock Fisico');
@@ -563,16 +565,24 @@
                     // - Vista Admin → Catálogo: todos, para ubicar códigos aunque estén desactivados.
                     let { data, error } = await supabaseClient
                         .from('productos')
-                        .select('codigo,codigo_fabrica,codigo_barras,descripcion,unidad_ref,factor_empaque,stock_teorico,linea,marca,activo,tipo_almacen')
+                        .select('codigo,codigo_fabrica,codigo_barras,descripcion,unidad_ref,factor_empaque,stock_teorico,linea,marca,activo,tipo_almacen,imagen_url')
                         .order('codigo', { ascending: true })
                         .range(from, from + PAGE - 1);
                     if (error && /tipo_almacen/i.test(error.message || '')) {
                         const r0 = await supabaseClient
                             .from('productos')
-                            .select('codigo,codigo_fabrica,codigo_barras,descripcion,unidad_ref,factor_empaque,stock_teorico,linea,marca,activo')
+                            .select('codigo,codigo_fabrica,codigo_barras,descripcion,unidad_ref,factor_empaque,stock_teorico,linea,marca,activo,imagen_url')
                             .order('codigo', { ascending: true })
                             .range(from, from + PAGE - 1);
                         data = r0.data; error = r0.error;
+                    }
+                    if (error && /imagen_url/i.test(error.message || '')) {
+                        const r1 = await supabaseClient
+                            .from('productos')
+                            .select('codigo,codigo_fabrica,codigo_barras,descripcion,unidad_ref,factor_empaque,stock_teorico,linea,marca,activo,tipo_almacen')
+                            .order('codigo', { ascending: true })
+                            .range(from, from + PAGE - 1);
+                        data = r1.data; error = r1.error;
                     }
                     if (error) throw error;
                     if (!data || !data.length) break;
@@ -601,6 +611,8 @@
                         Marca: p.marca || '',
                         activo: p.activo !== false,
                         Activo: p.activo !== false,
+                        imagen_url: p.imagen_url || '',
+                        ImagenUrl: p.imagen_url || '',
                         InventarioProductoCodigo: p.codigo,
                         InventarioProductoDescripcion: p.descripcion,
                         InventarioProductoUnidadReferenciaAbreviacion: p.unidad_ref || '',
@@ -968,25 +980,32 @@
                 const cajasStock = factor === 1 ? 0 : Math.floor(cantidad / factor);
                 const unidadesStock = factor === 1 ? cantidad : cantidad % factor;
                 const selectedClass = (idx === selectedIndex) ? ' selected' : '';
+                const imgUrl = getImagenUrl(item);
+                const imgHtml = imgUrl
+                    ? `<img class="prod-img" src="${imgUrl}" alt="" loading="lazy" decoding="async" onerror="this.classList.add('img-broken');this.removeAttribute('src');this.outerHTML='<span class=\\'prod-img prod-img-placeholder\\' aria-hidden=\\'true\\'>📦</span>';">`
+                    : `<span class="prod-img prod-img-placeholder" aria-hidden="true">📦</span>`;
 
                 html += `<div class="result-item${selectedClass}" data-index="${idx}">
+                    ${imgHtml}
                     <span class="codigo">${codigo}</span>
                     <span class="fabrica">${fabrica}</span>
                     <span class="descripcion">${desc}</span>
                     <span class="unidad">${unidad}</span>
                     <span class="stock-cajas">${cajasStock}</span>
                     <span class="stock-unidades">${unidadesStock}</span>
-                    <div class="row1">
-                        <span class="codigo">${codigo}</span>
-                        <span class="fabrica">${fabrica}</span>
-                        <span class="unidad">${unidad}</span>
-                    </div>
-                    <div class="row2">
-                        <span class="descripcion">${desc}</span>
-                        <span class="stock">
-                            <span class="cajas">${cajasStock} cj</span>
-                            <span class="unidades">${unidadesStock} und</span>
-                        </span>
+                    <div class="result-body">
+                        <div class="row1">
+                            <span class="codigo">${codigo}</span>
+                            <span class="fabrica">${fabrica}</span>
+                            <span class="unidad">${unidad}</span>
+                        </div>
+                        <div class="row2">
+                            <span class="descripcion">${desc}</span>
+                            <span class="stock">
+                                <span class="cajas">${cajasStock} cj</span>
+                                <span class="unidades">${unidadesStock} und</span>
+                            </span>
+                        </div>
                     </div>
                 </div>`;
             });
@@ -1181,6 +1200,17 @@
                 ? `${unidadesStock} unidades`
                 : `${cajasStock} cajas, ${unidadesStock} unidades`;
             paTotalUnidad.textContent = getUnidadRef(item) || '';
+            if (paImg) {
+                const url = getImagenUrl(item);
+                if (url) {
+                    paImg.src = url;
+                    paImg.style.display = '';
+                    paImg.onerror = function () { paImg.style.display = 'none'; };
+                } else {
+                    paImg.removeAttribute('src');
+                    paImg.style.display = 'none';
+                }
+            }
             actualizarTotalCalculado();
         }
 
@@ -1197,6 +1227,10 @@
             vencBlock.classList.add('hidden');
             document.body.classList.remove('modo-seleccion');
             paTotalValor.textContent = '0';
+            if (paImg) {
+                paImg.removeAttribute('src');
+                paImg.style.display = 'none';
+            }
         }
 
         // Regresa de la tarjeta de producto seleccionado a la lista de
