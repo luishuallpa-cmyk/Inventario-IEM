@@ -223,11 +223,23 @@
         }, 10000);
 
         function escapeHtmlSes(s) {
-            return String(s || '')
+            return String(s == null ? '' : s)
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;');
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+        // Alias global de escape (XSS en listados / HTML dinámico)
+        function escapeHtml(s) { return escapeHtmlSes(s); }
+
+        /** Solo permite http(s) o rutas relativas para src de imágenes. */
+        function safeImageUrl(url) {
+            var u = String(url || '').trim();
+            if (!u) return '';
+            if (/^https?:\/\//i.test(u)) return u;
+            if (/^\//.test(u) || /^\.\//.test(u)) return u;
+            return '';
         }
 
         async function cargarSesionesActivas() {
@@ -1002,18 +1014,18 @@
 
             let html = '';
             items.forEach((item, idx) => {
-                const codigo = getCodigo(item);
-                const fabrica = getCodigoFabrica(item);
-                const desc = getDescripcion(item);
-                const unidad = getUnidadRef(item);
+                const codigo = escapeHtml(getCodigo(item));
+                const fabrica = escapeHtml(getCodigoFabrica(item));
+                const desc = escapeHtml(getDescripcion(item));
+                const unidad = escapeHtml(getUnidadRef(item));
                 const cantidad = getCantidad(item);
                 const factor = getFactorFinal(item);
                 const cajasStock = factor === 1 ? 0 : Math.floor(cantidad / factor);
                 const unidadesStock = factor === 1 ? cantidad : cantidad % factor;
                 const selectedClass = (idx === selectedIndex) ? ' selected' : '';
-                const imgUrl = getImagenUrl(item);
+                const imgUrl = safeImageUrl(getImagenUrl(item));
                 const imgHtml = imgUrl
-                    ? `<img class="prod-img" src="${imgUrl}" alt="" loading="lazy" decoding="async" onerror="this.classList.add('img-broken');this.removeAttribute('src');this.outerHTML='<span class=\\'prod-img prod-img-placeholder\\' aria-hidden=\\'true\\'>📦</span>';">`
+                    ? `<img class="prod-img" src="${escapeHtml(imgUrl)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.classList.add('img-broken');this.removeAttribute('src');this.outerHTML='<span class=\\'prod-img prod-img-placeholder\\' aria-hidden=\\'true\\'>📦</span>';">`
                     : `<span class="prod-img prod-img-placeholder" aria-hidden="true">📦</span>`;
 
                 html += `<div class="result-item${selectedClass}" data-index="${idx}">
@@ -5523,17 +5535,20 @@
                     email: email,
                     password: clave
                 });
+                // No reutilizar la clave en memoria más de lo necesario
+                try { loginClave.value = ''; } catch (eClr) {}
                 if (error) throw error;
                 if (!data || !data.session) throw new Error('Sin sesión');
 
                 loginIntentos = 0;
-                loginClave.value = '';
                 const ok = await aplicarSesionAuth(data.session);
                 if (!ok) {
                     loginClave.focus();
                 }
             } catch (e) {
-                console.error('Login error:', e);
+                try { loginClave.value = ''; } catch (eClr2) {}
+                // No volcar detalles internos al log (pueden filtrar info de Auth)
+                console.warn('Login fallido');
                 loginIntentos += 1;
                 if (loginIntentos >= LOGIN_MAX_INTENTOS) {
                     loginBloqueoHasta = Date.now() + LOGIN_BLOQUEO_MS;
@@ -5541,12 +5556,12 @@
                     loginError.textContent = 'Demasiados intentos. Espere 60 segundos.';
                 } else {
                     const msg = String((e && e.message) || e || '');
-                    if (/invalid login|invalid credentials|email not confirmed/i.test(msg)) {
+                    if (/invalid login|invalid credentials|email not confirmed|invalid_grant/i.test(msg)) {
                         loginError.textContent = 'Usuario o clave incorrectos.';
-                    } else if (/failed to fetch|network/i.test(msg)) {
+                    } else if (/failed to fetch|network|Load failed/i.test(msg)) {
                         loginError.textContent = 'Sin conexión. Intente de nuevo.';
                     } else {
-                        loginError.textContent = 'No se pudo iniciar sesión. Revise usuario/clave o que el usuario exista en Authentication.';
+                        loginError.textContent = 'No se pudo iniciar sesión. Revise usuario/clave.';
                     }
                 }
                 loginError.classList.remove('hidden');
