@@ -2184,3 +2184,20 @@ body.light-theme .login-logo img {
 body.light-theme .login-card h2 {
     color: #0f172a !important;
 }
+
+
+/* PC: logo e iconos más grandes */
+@media (min-width: 641px) {
+    .header .logo {
+        padding: 0.4rem 0.75rem;
+        border-radius: 14px;
+    }
+    .header .logo img {
+        height: 52px !important;
+        max-width: 220px !important;
+    }
+    .login-logo img {
+        height: 96px !important;
+        max-width: 280px !important;
+    }
+}

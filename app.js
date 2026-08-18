@@ -11,6 +11,7 @@
                     descargas: '📊 Descargas',
                     vista: '👁️ Vista previa',
                     reporte: '📋 Reporte sistema',
+                    pedidos: '🛒 Pedidos sugeridos',
                     clientes: '👤 Clientes',
                     sesiones: '👥 Sesiones'
                 };
@@ -5437,6 +5438,19 @@
             }
             usuarioActual = perfil.usuario;
             rolUsuario = perfil.rol;
+            // Cuentas de vendedor NO entran a Inventario (solo a la PWA de pedidos)
+            if (String(rolUsuario || '').toLowerCase() === 'vendedor') {
+                try { await supabaseClient.auth.signOut(); } catch (e) {}
+                try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+                usuarioActual = '';
+                rolUsuario = '';
+                if (loginError) {
+                    loginError.textContent = 'Esta cuenta es de vendedor. Usa la app de Pedidos / Reposición, no Inventario.';
+                    loginError.classList.remove('hidden');
+                }
+                showToast('Cuenta vendedor: entra por la app de pedidos.', 'error');
+                return false;
+            }
             guardarMetaSesion(usuarioActual, rolUsuario);
             mostrarApp();
             return true;
