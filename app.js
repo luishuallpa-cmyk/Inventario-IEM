@@ -5416,13 +5416,24 @@
             if (!session || !session.user) return false;
             const perfil = await cargarPerfil(session.user.id, session.user.email);
             if (!perfil.ok) {
-                try { await supabaseClient.auth.signOut(); } catch (e) {}
-                try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
-                if (loginError) {
-                    loginError.textContent = perfil.motivo || 'Usuario no autorizado.';
-                    loginError.classList.remove('hidden');
+                // Solo cerrar Auth si el usuario está explícitamente desactivado.
+                // Errores de red / tabla no deben botar la sesión al jalar/recargar.
+                var motivo = String(perfil.motivo || '');
+                if (/desactiv/i.test(motivo)) {
+                    try { await supabaseClient.auth.signOut(); } catch (e) {}
+                    try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+                    if (loginError) {
+                        loginError.textContent = motivo || 'Usuario no autorizado.';
+                        loginError.classList.remove('hidden');
+                    }
+                    return false;
                 }
-                return false;
+                // Fallback: mantener sesión con datos del email
+                usuarioActual = split_part_email(session.user.email);
+                rolUsuario = (usuarioActual === 'luis') ? 'admin' : 'usuario';
+                guardarMetaSesion(usuarioActual, rolUsuario);
+                mostrarApp();
+                return true;
             }
             usuarioActual = perfil.usuario;
             rolUsuario = perfil.rol;
@@ -5528,48 +5539,69 @@
         });
 
         // Arranque: si Supabase Auth tiene sesión válida → entrar SIEMPRE.
-        // F5 / recarga / pull-to-refresh NO debe cerrar sesión.
-        // La inactividad de 20 min solo aplica mientras la app ya está abierta.
+        // F5 / recarga / pull-to-refresh ("jalar") NO debe cerrar sesión.
+        // La inactividad de 20 min solo aplica con la app YA abierta, no al recargar.
+        let authBootDone = false;
+        let arranqueEnCurso = true;
+
+        async function obtenerSesionConReintentos() {
+            // Tras pull-to-refresh a veces getSession tarda o llega null un instante
+            var intentos = 0;
+            while (intentos < 5) {
+                try {
+                    var res = await supabaseClient.auth.getSession();
+                    if (res && res.data && res.data.session && res.data.session.user) {
+                        return res.data.session;
+                    }
+                    // Si hay error de red, reintentar
+                    if (res && res.error) console.warn('getSession', res.error);
+                } catch (e) {
+                    console.warn('getSession try', e);
+                }
+                intentos++;
+                await new Promise(function (r) { setTimeout(r, 200 + intentos * 150); });
+            }
+            return null;
+        }
+
         (async function arrancarSesion() {
             try {
-                const { data: { session }, error: sessErr } = await supabaseClient.auth.getSession();
-                if (sessErr) console.warn('getSession', sessErr);
+                var session = await obtenerSesionConReintentos();
                 if (session && session.user) {
-                    const ok = await aplicarSesionAuth(session);
+                    var ok = await aplicarSesionAuth(session);
                     if (ok) {
                         tocarSesion(); // renueva actividad al recargar
+                        arranqueEnCurso = false;
                         return;
-                    }
-                }
-                // Fallback: meta local reciente + reintento de sesión (carrera autoRefresh)
-                const meta = leerMetaSesion();
-                if (meta && meta.usuario) {
-                    const { data: { session: s2 } } = await supabaseClient.auth.getSession();
-                    if (s2 && s2.user) {
-                        const ok2 = await aplicarSesionAuth(s2);
-                        if (ok2) {
-                            tocarSesion();
-                            return;
-                        }
                     }
                 }
             } catch (e) {
                 console.warn('arrancarSesion', e);
             }
+            arranqueEnCurso = false;
+            // Solo login si realmente no hay sesión de Auth
+            try {
+                var last = await supabaseClient.auth.getSession();
+                if (last && last.data && last.data.session && last.data.session.user) {
+                    var ok2 = await aplicarSesionAuth(last.data.session);
+                    if (ok2) {
+                        tocarSesion();
+                        return;
+                    }
+                }
+            } catch (e2) {}
             mostrarLogin();
         })();
 
         // Escuchar cambios de Auth (logout en otra pestaña, etc.)
-        // No cerrar por eventos iniciales de F5 / recarga (SIGNED_OUT falso / carrera).
+        // Ignorar SIGNED_OUT durante arranque / pull-to-refresh (carrera con token refresh).
         try {
-            let authBootDone = false;
-            // Más margen al arrancar (PWA / red lenta) para no tomar SIGNED_OUT de carrera
-            setTimeout(function () { authBootDone = true; }, 4000);
+            setTimeout(function () { authBootDone = true; }, 8000);
             supabaseClient.auth.onAuthStateChange(function (event, session) {
                 if (event === 'SIGNED_OUT') {
-                    if (!authBootDone) return;
+                    if (!authBootDone || arranqueEnCurso) return;
                     if (!usuarioActual) return;
-                    // Si aún hay meta de sesión válida, no cerrar (posible carrera de refresh)
+                    // Si hay meta local o aún hay token en storage, no cerrar (falso positivo)
                     if (leerMetaSesion()) {
                         console.warn('SIGNED_OUT ignorado: meta de sesión aún válida');
                         return;
@@ -5581,8 +5613,9 @@
                         mostrarLogin();
                     }
                 } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') && session) {
-                    if (usuarioActual) tocarSesion();
-                    else if (authBootDone && session.user) {
+                    if (usuarioActual) {
+                        tocarSesion();
+                    } else if (session.user && !arranqueEnCurso) {
                         aplicarSesionAuth(session).then(function (ok) {
                             if (ok) tocarSesion();
                         });
@@ -5598,8 +5631,12 @@
             }, { passive: true, capture: true });
         });
 
-        // Cierre solo por inactividad real (20 min sin tocar la app YA ABIERTA)
-        setInterval(() => {
+        // Cierre solo por inactividad real (20 min sin tocar la app YA ABIERTA).
+        // Nunca aplica en los primeros segundos tras recargar.
+        var appAbiertaDesde = Date.now();
+        setInterval(function () {
+            if (Date.now() - appAbiertaDesde < 60000) return; // 1 min de gracia tras cargar
+            if (arranqueEnCurso) return;
             if (!appContainer.classList.contains('oculto') && usuarioActual && !leerMetaSesion()) {
                 borrarSesionActiva();
                 try { localStorage.removeItem(SESSION_KEY); } catch (e) {}

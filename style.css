@@ -76,6 +76,10 @@
             --brand-green-soft: rgba(10, 120, 76, 0.16);
         }
 
+        html {
+            /* Reduce el "jalar para actualizar" del navegador (iOS/Android) */
+            overscroll-behavior-y: none;
+        }
         body {
             font-family: var(--font);
             background: var(--bg-gradient);
@@ -91,6 +95,7 @@
             line-height: 1.55;
             font-size: 15px;
             -webkit-font-smoothing: antialiased;
+            overscroll-behavior-y: none;
             -moz-osx-font-smoothing: grayscale;
             text-rendering: optimizeLegibility;
         }
