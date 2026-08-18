@@ -5013,7 +5013,7 @@
         //   #/admin/barras  → sección Barras / QR
         // El botón "atrás" del navegador también funciona.
         // ============================================================
-        const ADMIN_TABS = ['subir', 'catalogo', 'barras', 'descargas', 'vista', 'reporte', 'clientes', 'sesiones'];
+        const ADMIN_TABS = ['subir', 'catalogo', 'barras', 'descargas', 'vista', 'reporte', 'pedidos', 'clientes', 'sesiones'];
         let _hashNavSilent = false;
 
         function parseHashRuta() {

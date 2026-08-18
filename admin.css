@@ -1212,3 +1212,12 @@ body:not(.light-theme) .apc-estado.bad { color: #f87171; }
   width: 40px; height: 40px; border-radius: 8px; background: rgba(148,163,184,0.15);
   font-size: 1rem;
 }
+@media (min-width: 641px) {
+  .apd-table .apd-img-cell { width: 72px; }
+  .apd-thumb {
+    width: 64px; height: 64px; border-radius: 10px;
+  }
+  .apd-thumb-ph {
+    width: 64px; height: 64px; font-size: 1.35rem; border-radius: 10px;
+  }
+}

@@ -2186,7 +2186,7 @@ body.light-theme .login-card h2 {
 }
 
 
-/* PC: logo e iconos más grandes */
+/* PC: logo, iconos e imágenes de producto más grandes */
 @media (min-width: 641px) {
     .header .logo {
         padding: 0.4rem 0.75rem;
@@ -2199,5 +2199,27 @@ body.light-theme .login-card h2 {
     .login-logo img {
         height: 96px !important;
         max-width: 280px !important;
+    }
+    /* Imágenes de producto en resultados */
+    .result-item .prod-img,
+    .result-item .prod-img-placeholder {
+        width: 72px !important;
+        height: 72px !important;
+        border-radius: 12px;
+    }
+    .result-item .prod-img-placeholder {
+        font-size: 1.5rem;
+    }
+    body.modo-seleccion .pa-img {
+        width: 96px !important;
+        height: 96px !important;
+    }
+}
+
+@media (min-width: 1024px) {
+    .result-item .prod-img,
+    .result-item .prod-img-placeholder {
+        width: 88px !important;
+        height: 88px !important;
     }
 }
