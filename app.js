@@ -2888,6 +2888,72 @@
             }
         }
 
+        async function borrarTodasImagenesAdmin() {
+            if (!esAdmin()) {
+                showToast('Solo el administrador puede borrar imágenes.', 'error');
+                return;
+            }
+            if (!supabaseClient) {
+                showToast('Sin conexión a Supabase.', 'error');
+                return;
+            }
+            const ok1 = await confirmarAccion(
+                '⚠️ ¿Borrar TODAS las imágenes del catálogo?\n\nSe vaciará imagen_url en todos los productos. Esta acción no se puede deshacer desde la app.',
+                'Continuar',
+                'danger'
+            );
+            if (!ok1) return;
+            const ok2 = await confirmarAccion(
+                'Última confirmación: se borrarán las URLs de imagen de TODOS los productos. ¿Seguro?',
+                'Sí, borrar todas',
+                'danger'
+            );
+            if (!ok2) return;
+            const btn = document.getElementById('btnBorrarTodasImagenes');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Borrando...';
+            }
+            try {
+                // PostgREST exige un filtro en UPDATE masivo; neq codigo '' cubre todas las filas con código
+                const { data, error } = await supabaseClient
+                    .from('productos')
+                    .update({ imagen_url: null })
+                    .neq('codigo', '')
+                    .select('codigo');
+                if (error) throw error;
+                const n = Array.isArray(data) ? data.length : 0;
+                (currentData || []).forEach(function (item) {
+                    item.imagen_url = '';
+                    item.ImagenUrl = '';
+                });
+                if (window._mapCodigo) {
+                    Object.keys(window._mapCodigo).forEach(function (k) {
+                        if (window._mapCodigo[k]) {
+                            window._mapCodigo[k].imagen_url = '';
+                            window._mapCodigo[k].ImagenUrl = '';
+                        }
+                    });
+                }
+                showToast(n ? ('Se borraron las imágenes de ' + n + ' productos.') : 'Imágenes borradas.', 'success');
+                const inp = document.getElementById('adminCatalogInput');
+                if (typeof buscarCatalogoAdmin === 'function') {
+                    buscarCatalogoAdmin(inp ? inp.value : '');
+                }
+                if (typeof filteredData !== 'undefined' && filteredData && filteredData.length && typeof renderResults === 'function') {
+                    renderResults(filteredData);
+                }
+            } catch (e) {
+                console.error('borrarTodasImagenesAdmin', e);
+                showToast('No se pudo borrar: ' + ((e && e.message) || e), 'error');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = '🗑️ Borrar todas las imágenes';
+                }
+            }
+        }
+
         // ============================================================
         // GUARDAR INVENTARIO EN DRIVE
         // ============================================================
@@ -4577,6 +4643,12 @@
                     guardarImagenProductoAdmin(cod, url).finally(function () {
                         btn.disabled = false;
                     });
+                });
+            }
+            const btnBorrarTodasImagenes = document.getElementById('btnBorrarTodasImagenes');
+            if (btnBorrarTodasImagenes) {
+                btnBorrarTodasImagenes.addEventListener('click', function () {
+                    borrarTodasImagenesAdmin();
                 });
             }
             // Admin: herramienta códigos de barras / QR
