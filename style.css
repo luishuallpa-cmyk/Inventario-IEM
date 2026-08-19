@@ -3111,3 +3111,190 @@ tr.row-sube { background: rgba(10,120,76,0.06); }
   body.modo-seleccion .pa-total-box { display: flex !important; }
   .pc-panel-conteo { display: block; }
 }
+
+
+/* —— Tarjetas resultado estilo catálogo vendedores (v4.2.7) —— */
+@media (min-width: 960px) {
+  body.modo-seleccion #resultList,
+  .result-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    padding: 0.15rem 0.1rem 0.5rem;
+  }
+
+  .result-item {
+    display: grid !important;
+    grid-template-columns: 72px minmax(0, 1fr);
+    grid-template-rows: auto;
+    align-items: start;
+    gap: 0.75rem 0.9rem;
+    padding: 0.7rem 0.85rem !important;
+    border-radius: 14px !important;
+    border: 1px solid var(--card-border) !important;
+    background: var(--input-bg) !important;
+    margin: 0 !important;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  }
+
+  .result-item:hover {
+    border-color: rgba(10, 120, 76, 0.45) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  }
+
+  .result-item.selected {
+    border-color: #0A784C !important;
+    box-shadow: 0 0 0 2px rgba(10, 120, 76, 0.25);
+    background: rgba(10, 120, 76, 0.08) !important;
+  }
+
+  /* Ocultar spans sueltos de layout antiguo en PC */
+  .result-item > .codigo,
+  .result-item > .fabrica,
+  .result-item > .descripcion,
+  .result-item > .unidad,
+  .result-item > .stock-cajas,
+  .result-item > .stock-unidades {
+    display: none !important;
+  }
+
+  .result-item > .prod-img,
+  .result-item > .prod-img-placeholder {
+    width: 72px !important;
+    height: 72px !important;
+    border-radius: 12px !important;
+    object-fit: contain;
+    background: #fff !important;
+    border: 1px solid rgba(0,0,0,0.06);
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .result-item > .prod-img-placeholder {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+  }
+
+  .result-item .result-body {
+    display: flex !important;
+    flex-direction: column;
+    gap: 0.28rem;
+    min-width: 0;
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .result-item .ri-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--heading-color);
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .result-item .ri-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.55rem;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+  }
+  .result-item .ri-meta .codigo {
+    display: inline !important;
+    font-family: ui-monospace, monospace;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+  .result-item .ri-meta .fabrica {
+    display: inline !important;
+    font-family: ui-monospace, monospace;
+  }
+  .result-item .ri-meta .unidad {
+    display: inline-block !important;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.12rem 0.5rem;
+    border-radius: 999px;
+    background: rgba(10, 120, 76, 0.12);
+    color: #0A784C;
+  }
+  body:not(.light-theme) .result-item .ri-meta .unidad {
+    background: rgba(34, 211, 238, 0.12);
+    color: #67e8f9;
+  }
+
+  .result-item .ri-stock {
+    display: flex;
+    gap: 0.65rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin-top: 0.1rem;
+  }
+  .result-item .ri-stock .cajas {
+    color: var(--heading-color);
+  }
+  .result-item .ri-stock .unidades {
+    color: var(--text-secondary);
+  }
+
+  body.light-theme .result-item {
+    background: #fff !important;
+    border-color: #e2e8f0 !important;
+  }
+  body.light-theme .result-item.selected {
+    background: #f0fdf4 !important;
+    border-color: #0A784C !important;
+  }
+  body.light-theme .result-item:hover {
+    border-color: #86efac !important;
+  }
+}
+
+/* Móvil: adaptar body nuevo sin romper layout */
+@media (max-width: 959px) {
+  .result-item .ri-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--heading-color);
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .result-item .ri-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.4rem;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+  }
+  .result-item .ri-meta .codigo,
+  .result-item .ri-meta .fabrica,
+  .result-item .ri-meta .unidad {
+    display: inline !important;
+  }
+  .result-item .ri-meta .unidad {
+    padding: 0.05rem 0.4rem;
+    border-radius: 12px;
+    background: var(--badge-bg, rgba(148,163,184,0.2));
+    font-size: 0.6rem;
+  }
+  .result-item .ri-stock {
+    display: flex;
+    gap: 0.45rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+  /* Ocultar filas viejas si aún existen en caché */
+  .result-item .row1,
+  .result-item .row2 {
+    display: none !important;
+  }
+}

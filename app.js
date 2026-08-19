@@ -1234,7 +1234,7 @@
                     ? `<img class="prod-img" src="${escapeHtml(imgUrl)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.classList.add('img-broken');this.removeAttribute('src');this.outerHTML='<span class=\\'prod-img prod-img-placeholder\\' aria-hidden=\\'true\\'>📦</span>';">`
                     : `<span class="prod-img prod-img-placeholder" aria-hidden="true">📦</span>`;
 
-                html += `<div class="result-item${selectedClass}" data-index="${idx}">
+                html += `<div class="result-item${selectedClass}" data-index="${idx}" role="option" aria-selected="${idx === selectedIndex ? 'true' : 'false'}">
                     ${imgHtml}
                     <span class="codigo">${codigo}</span>
                     <span class="fabrica">${fabrica}</span>
@@ -1243,17 +1243,15 @@
                     <span class="stock-cajas">${cajasStock}</span>
                     <span class="stock-unidades">${unidadesStock}</span>
                     <div class="result-body">
-                        <div class="row1">
-                            <span class="codigo">${codigo}</span>
-                            <span class="fabrica">${fabrica}</span>
+                        <div class="ri-title">${desc}</div>
+                        <div class="ri-meta">
+                            <span class="codigo">Cód: ${codigo}</span>
+                            <span class="fabrica">Fáb: ${fabrica || '—'}</span>
                             <span class="unidad">${unidad}</span>
                         </div>
-                        <div class="row2">
-                            <span class="descripcion">${desc}</span>
-                            <span class="stock">
-                                <span class="cajas">${cajasStock} cj</span>
-                                <span class="unidades">${unidadesStock} und</span>
-                            </span>
+                        <div class="ri-stock">
+                            <span class="cajas">${cajasStock} cajas</span>
+                            <span class="unidades">${unidadesStock} und</span>
                         </div>
                     </div>
                 </div>`;
