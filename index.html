@@ -29,7 +29,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <link rel="stylesheet" href="style.css?v=4.2.8-load">
-    <link rel="stylesheet" href="admin.css?v=3.100">
+    <link rel="stylesheet" href="admin.css?v=4.3.0-respaldos">
 </head>
 <body>
 <div id="globalLoading" class="global-loading" aria-live="polite" aria-busy="true" aria-label="Cargando">
@@ -90,6 +90,9 @@
                     </button>
                     <button type="button" class="header-menu-item" role="menuitem" data-admin-goto="descargas">
                         <span class="hmi-icon">📊</span><span class="hmi-label">Descargas</span>
+                    </button>
+                        <button type="button" class="header-menu-item" data-admin-tab="respaldos">
+                        <span class="hmi-icon">📦</span><span class="hmi-label">Respaldos</span>
                     </button>
                     <button type="button" class="header-menu-item" role="menuitem" data-admin-goto="vista">
                         <span class="hmi-icon">👁️</span><span class="hmi-label">Vista previa</span>
@@ -333,6 +336,9 @@
                     <button type="button" class="admin-nav-btn" role="tab" aria-selected="false" data-admin-tab="descargas" id="tabBtn-descargas">
                         <span class="tab-ico" aria-hidden="true">📊</span><span class="tab-txt">Descargas</span>
                     </button>
+                    <button type="button" class="admin-nav-btn" role="tab" aria-selected="false" data-admin-tab="respaldos" id="tabBtn-respaldos">
+                        <span class="tab-ico" aria-hidden="true">📦</span><span class="tab-txt">Respaldos</span>
+                    </button>
                     <button type="button" class="admin-nav-btn" role="tab" aria-selected="false" data-admin-tab="vista" id="tabBtn-vista">
                         <span class="tab-ico" aria-hidden="true">👁️</span><span class="tab-txt">Vista previa</span>
                     </button>
@@ -351,32 +357,16 @@
                 </nav>
                 <div class="admin-panel-body">
                     <div class="admin-tab active" id="adminTabSubir" data-admin-panel="subir">
-                        <p class="admin-lead">Elige el tipo de Excel: <strong>Existencias</strong> (solo cód. fábrica y códigos cortos) o <strong>Base / habilitados Laive</strong> (solo habilita por código SAP = fábrica; no toca Fríos/Secos ni códigos cortos de otras dist.). La base se guía por CÓDIGO SAP (fábrica); no adivina Uniflex. 0460, 0835) que ya están en tu catálogo (el nombre puede variar).</p>
+                        <p class="admin-lead">Sube un Excel según el tipo. La base de productos ya está en Supabase: <strong>Existencias</strong> solo corrige códigos cortos y cód. de fábrica; <strong>Valorado</strong> solo actualiza stock; <strong>Base Laive</strong> solo habilita por SAP (= fábrica).</p>
                         <ul class="admin-tips">
                             <li>Formato: <strong>.xlsx / .xls / .csv</strong></li>
-                            <li>Acepta <strong>inventario valorado</strong> o <strong>existencias</strong> (con Línea/Marca)</li>
-                            <li>No hace falta renombrar columnas</li>
-                            <li><strong>Existencias:</strong> solo normaliza códigos cortos y actualiza cód. de fábrica — no cambia nombres, línea ni stock</li>
-                            <li>Si el código ya existe, se actualiza (no se duplica)</li>
-                            <li>Stock tipo <code>5/0</code> se convierte a unidades (cajas × factor + unid.)</li>
-                            <li>Los <strong>códigos de barras / QR</strong> ya guardados <strong>no se borran</strong> si el Excel no los trae</li>
+                            <li><strong>1 · Existencias:</strong> solo códigos cortos + cód. de fábrica (no nombres ni stock)</li>
+                            <li><strong>2 · Valorado:</strong> solo stock del sistema</li>
+                            <li><strong>3 · Base Laive:</strong> solo habilita por SAP = fábrica (no Fríos/Secos ni códigos de otras dist.)</li>
+                            <li>No crea productos nuevos si el código no existe</li>
+                            <li>Los códigos de barras / QR ya guardados no se borran</li>
                         </ul>
-                        <div class="admin-warning-box" id="iemBackupReminder" role="note">
-                            <div class="admin-warning-title">📦 Respaldos diarios / mensuales</div>
-                            <p class="admin-warning-text">
-                                Descarga <strong>2 archivos</strong>:<br>
-                                • <strong>Excel del sistema</strong> (el que alimenta el stock) — si hubo varias subidas el mismo día, solo queda la <strong>última</strong>.<br>
-                                • <strong>Conteo físico</strong> del período.<br>
-                                Al descargar, se limpia en Supabase el conteo de <em>meses anteriores</em> (el catálogo y el stock actual no se borran).
-                            </p>
-                            <div style="display:flex;flex-wrap:wrap;gap:0.45rem;margin-top:0.5rem;">
-                                <button type="button" class="btn btn-primary btn-sm" id="btnDescargarExcelSistema">⬇️ Excel sistema (último del día)</button>
-                                <button type="button" class="btn btn-primary btn-sm" id="btnDescargarConteoMes">⬇️ Conteo del mes</button>
-                                <button type="button" class="btn btn-success btn-sm" id="btnDescargarAmbosYLimpiar">⬇️ Ambos + limpiar nube</button>
-                                <button type="button" class="btn btn-danger btn-sm" id="btnLimpiarCodigosSap">🧹 Quitar códigos SAP mal cargados</button>
-                            </div>
-                            <p class="admin-warning-text" id="iemBackupStatus" style="margin-top:0.5rem;margin-bottom:0;"></p>
-                        </div>
+                        
                             <div class="admin-drop-text">Arrastra el archivo aquí<br>o haz clic para elegir</div>
                             <input type="file" id="importExcelInput" accept=".xlsx,.xls,.csv" class="admin-file-input">
                         </div>
@@ -397,7 +387,7 @@
                         </div>
                         <label class="admin-check" title="Existencias no modifica stock; el stock solo lo actualiza Inventario valorado" id="adminSoloCatalogoWrap" style="opacity:.85">
                             <input type="checkbox" id="adminSoloCatalogo" checked disabled>
-                            Existencias = solo catálogo (nombre, códigos, línea, marca…) — stock lo pone el <strong>Inventario valorado</strong>
+                            Existencias = solo fábrica / códigos cortos — el stock lo pone el <strong>Inventario valorado</strong>
                         </label>
                         <div class="admin-file-name" id="adminFileName"></div>
                         <div class="admin-actions">
@@ -463,6 +453,28 @@
                             <button type="button" class="btn btn-primary" id="adminExportInvBtn" style="flex:1;">
                                 <span class="btn-icon">📊</span><span class="btn-label"> Descargar Excel (plano)</span>
                             </button>
+                        </div>
+                    </div>
+
+                    
+                    <div class="admin-tab" id="adminTabRespaldos" data-admin-panel="respaldos" hidden>
+                        <h3 class="admin-subtitle">📦 Respaldos mensuales</h3>
+                        <p class="admin-lead">Descarga el Excel del sistema y el conteo físico. Así no saturas Supabase: al usar «Ambos + limpiar nube» se borran conteos de meses anteriores (el catálogo no se toca).</p>
+                        <div class="admin-warning-box" id="iemBackupReminder" role="note">
+                            <div class="admin-warning-title">📦 Respaldos diarios / mensuales</div>
+                            <p class="admin-warning-text">
+                                Descarga <strong>2 archivos</strong>:<br>
+                                • <strong>Excel del sistema</strong> (el que alimenta el stock) — si hubo varias subidas el mismo día, solo queda la <strong>última</strong>.<br>
+                                • <strong>Conteo físico</strong> del período.<br>
+                                Al descargar, se limpia en Supabase el conteo de <em>meses anteriores</em> (el catálogo y el stock actual no se borran).
+                            </p>
+                            <div style="display:flex;flex-wrap:wrap;gap:0.45rem;margin-top:0.5rem;">
+                                <button type="button" class="btn btn-primary btn-sm" id="btnDescargarExcelSistema">⬇️ Excel sistema (último del día)</button>
+                                <button type="button" class="btn btn-primary btn-sm" id="btnDescargarConteoMes">⬇️ Conteo del mes</button>
+                                <button type="button" class="btn btn-success btn-sm" id="btnDescargarAmbosYLimpiar">⬇️ Ambos + limpiar nube</button>
+                                <button type="button" class="btn btn-danger btn-sm" id="btnLimpiarCodigosSap">🧹 Quitar códigos SAP mal cargados</button>
+                            </div>
+                            <p class="admin-warning-text" id="iemBackupStatus" style="margin-top:0.5rem;margin-bottom:0;"></p>
                         </div>
                     </div>
 
@@ -596,7 +608,7 @@
     </div>
 
 <script src="config.js?v=4.1.9"></script>
-<script src="app.js?v=4.2.8-load"></script>
+<script src="app.js?v=4.3.0-respaldos"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {
