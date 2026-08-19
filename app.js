@@ -1069,11 +1069,12 @@
             const linea = String(getLinea(item) || '').toUpperCase()
                 .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
             const blob = desc + ' ' + cod + ' ' + fab + ' ' + linea;
-            if (/^(PROM|PROMO|CBM|CMB|COMBO|PACK)[\s.0-9(]/.test(desc)) return true;
+            if (/^(PROM|PROMO|CBM|CMB|COMBO)[\s.0-9(]/.test(desc)) return true;
+            if (/^PACK\s*PROM/i.test(desc) || /\bPACK\s*PROMO?\b/i.test(desc)) return true;
             if (/\bPROM\b|\bPROMO\b|\bPROMOS\b|\bPROMOCION\b|\bPROM\./.test(blob)) return true;
             if (/\bCMB\d*\b|\bCBM\d*\b|\bCOMBO\b|PACK\s*PROM/.test(blob)) return true;
             if (/CMB\d*\(|CBM\d*\(/.test(desc)) return true;
-            if (/^9\d{3,}$/.test(cod) && /PROM|CBM|CMB|COMBO|PACK/.test(desc)) return true;
+            if (/^9\d{3,}$/.test(cod) && /PROM|CBM|CMB|COMBO/.test(desc)) return true;
             if (/^900\d+/.test(cod)) return true;
             if (/PROM|CBM|CMB|COMBO/.test(cod) || /PROM|CBM|CMB|COMBO/.test(fab)) return true;
             return false;
@@ -1207,12 +1208,46 @@
                     if (fdH && fdH === termDigits) { hitExact = itH; break; }
                 }
             }
-            if (hitExact) {
-                if (!enPedido && !esProductoBuscableInventario(hitExact)) {
-                    filteredData = [];
+            // Hit exacto inválido → no cortar la búsqueda
+            if (hitExact && !enPedido && !esProductoBuscableInventario(hitExact)) {
+                hitExact = null;
+            }
+
+            // Barrido por fábrica / SAP (siempre, es lo más fiable para 4 y 8 dígitos)
+            if (termDigits && termDigits.length >= 4 && termDigits.length <= 14) {
+                var hitsFab = [];
+                var hitsSap = [];
+                for (var hi = 0; hi < (currentData || []).length; hi++) {
+                    var itH = currentData[hi];
+                    if (!itH) continue;
+                    if (!enPedido && !esProductoBuscableInventario(itH)) continue;
+                    if (filtroTipoLaive) {
+                        var tipH = getTipoAlmacen(itH);
+                        if (tipH && tipH !== filtroTipoLaive) continue;
+                    }
+                    var rawFab = String(getCodigoFabrica(itH) || '').trim();
+                    var rawCod = String(getCodigo(itH) || '').trim();
+                    var fdH = soloDigitos(rawFab);
+                    var cdH = soloDigitos(rawCod);
+                    if (fdH === termDigits || rawFab === termCompact || rawFab.toUpperCase() === termUpper) {
+                        hitsFab.push(itH);
+                    } else if (cdH === termDigits || rawCod.toUpperCase() === termUpper || rawCod === termCompact) {
+                        hitsSap.push(itH);
+                    }
+                }
+                if (hitsFab.length) {
+                    filteredData = hitsFab;
                     renderResults(filteredData);
                     return;
                 }
+                if (hitsSap.length) {
+                    filteredData = hitsSap;
+                    renderResults(filteredData);
+                    return;
+                }
+            }
+
+            if (hitExact) {
                 filteredData = [hitExact];
                 renderResults(filteredData);
                 return;
@@ -1226,7 +1261,9 @@
                 const fab = String(getCodigoFabrica(item) || '').toUpperCase();
                 const bar = String(getCodigoBarras(item) || '').toUpperCase().trim();
                 const matchBarras = bar && (bar === termUpper || bar.indexOf(termUpper) !== -1);
-                const matchCodigoExacto = cod === termUpper || fab === termUpper;
+                const matchCodigoExacto = cod === termUpper || fab === termUpper
+                    || soloDigitos(fab) === termDigits
+                    || soloDigitos(cod) === termDigits;
 
                 // Inventario: activos + PROM/CBM solo si stock > 0. Sin excepciones por código exacto
                 // para promos en cero (si no, seguían apareciendo al buscar el código).
@@ -1312,11 +1349,12 @@
 
                 html += `<div class="result-item${selectedClass}" data-index="${idx}" role="option" aria-selected="${idx === selectedIndex ? 'true' : 'false'}">
                     ${imgHtml}
-                    <span class="codigo" hidden>${codigo}</span>
-                    <span class="fabrica" hidden>${fabrica}</span>
-                    <span class="unidad" hidden>${unidad}</span>
-                    <span class="stock-cajas" hidden>${cajasStock}</span>
-                    <span class="stock-unidades" hidden>${unidadesStock}</span>
+                    <span class="codigo">${codigo}</span>
+                    <span class="fabrica">${fabrica}</span>
+                    <span class="descripcion">${desc}</span>
+                    <span class="unidad">${unidad}</span>
+                    <span class="stock-cajas">${cajasStock}</span>
+                    <span class="stock-unidades">${unidadesStock}</span>
                     <div class="result-body">
                         <div class="ri-title">${desc}</div>
                         <div class="ri-meta">
