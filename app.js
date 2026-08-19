@@ -888,6 +888,7 @@
                         Object.keys(mapTipoSync).forEach(function (k) { prevMap[k] = mapTipoSync[k]; });
                         localStorage.setItem(TIPO_ALMACEN_KEY, JSON.stringify(prevMap));
                     } catch (eMap) {}
+                    try { reindexarCatalogo(); } catch (eR) {}
                     guardarRespaldo(currentData);
                     aplicarBarrasLocalADatos();
                     actualizarEstadoCatalogo();
@@ -914,6 +915,7 @@
             const respaldo = cargarRespaldo();
             if (respaldo) {
                 currentData = respaldo.data;
+                try { reindexarCatalogo(); } catch (e) { console.warn(e); }
                 const fechaTexto = formatearFechaRespaldo(respaldo.fechaISO);
                 actualizarEstadoCatalogo(); fileStatus.textContent = (fileStatus.textContent || '') + ' · respaldo ' + fechaTexto;
             } else {
@@ -929,6 +931,7 @@
 
         function useLocalData() {
             currentData = [...sampleData];
+            try { reindexarCatalogo(); } catch (e) {}
             fileStatus.textContent = `📋 ${currentData.length} registros de ejemplo`;
             // Bug #2: mismo cuidado que en loadFromGoogleSheets, para no interrumpir
             // una búsqueda o selección en curso si esto ocurre durante el auto-refresco.
@@ -1154,6 +1157,55 @@
             }
         }
 
+        /** Reconstruye índices de búsqueda (SAP, fábrica 8 dígitos, barras). */
+        function reindexarCatalogo() {
+            window._mapCodigo = Object.create(null);
+            window._mapBarras = Object.create(null);
+            window._mapFabrica = Object.create(null);
+            if (typeof normalizarCodigoBusqueda !== 'function') {
+                window.normalizarCodigoBusqueda = function (v) {
+                    if (v == null || v === '') return '';
+                    var s = String(v).trim();
+                    if (/^\d+\.0+$/.test(s)) s = s.replace(/\.0+$/, '');
+                    if (/e/i.test(s) && !isNaN(Number(s))) {
+                        try { s = String(Math.round(Number(s))); } catch (e) {}
+                    }
+                    return s.trim();
+                };
+            }
+            if (typeof soloDigitos !== 'function') {
+                window.soloDigitos = function (v) { return String(v || '').replace(/\D/g, ''); };
+            }
+            function indexKey(map, key, item) {
+                if (!key || !item) return;
+                var s = normalizarCodigoBusqueda(key);
+                if (!s) return;
+                map[s] = item;
+                map[s.toUpperCase()] = item;
+                var dig = soloDigitos(s);
+                if (dig) {
+                    map[dig] = item;
+                    var noz = dig.replace(/^0+/, '') || '0';
+                    if (noz !== dig) map[noz] = item;
+                }
+            }
+            (currentData || []).forEach(function (item) {
+                if (!item) return;
+                var c = normalizarCodigoBusqueda(getCodigo(item));
+                var f = normalizarCodigoBusqueda(getCodigoFabrica(item));
+                var b = normalizarCodigoBusqueda(getCodigoBarras(item));
+                if (f) { item.CodigoFabrica = f; item.codigo_fabrica = f; }
+                if (b) { item.CodigoBarras = b; item.codigo_barras = b; }
+                if (c) { item.Codigo = c; }
+                item._sb = [c, f, b, getDescripcion(item), getUnidadRef(item), getLinea(item), getMarca(item)].join('\u0001').toUpperCase();
+                try { marcarFlagsProducto(item); } catch (e) {}
+                indexKey(window._mapCodigo, c, item);
+                indexKey(window._mapCodigo, f, item);
+                indexKey(window._mapFabrica, f, item);
+                indexKey(window._mapBarras, b, item);
+            });
+        }
+
         function performSearch() {
             const term = searchInput.value.trim();
             if (!term) {
@@ -1196,6 +1248,27 @@
                 filteredData = [hitExact];
                 renderResults(filteredData);
                 return;
+            }
+
+            // Barrido lineal por código de fábrica (8 dígitos) — no depende del índice
+            if (termDigits && termDigits.length >= 6 && termDigits.length <= 14) {
+                var hitsFab = [];
+                for (var hi = 0; hi < (currentData || []).length; hi++) {
+                    var itH = currentData[hi];
+                    if (!itH) continue;
+                    if (!enPedido && !esProductoBuscableInventario(itH)) continue;
+                    if (filtroTipoLaive) {
+                        var tipH = getTipoAlmacen(itH);
+                        if (tipH !== filtroTipoLaive) continue;
+                    }
+                    var fdH = soloDigitos(getCodigoFabrica(itH));
+                    if (fdH && fdH === termDigits) hitsFab.push(itH);
+                }
+                if (hitsFab.length) {
+                    filteredData = hitsFab;
+                    renderResults(filteredData);
+                    return;
+                }
             }
 
             const palabras = term.split(/\s+/).filter(p => p.length > 0);

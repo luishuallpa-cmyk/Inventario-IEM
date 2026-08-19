@@ -941,9 +941,12 @@
         .login-overlay {
             position: fixed;
             inset: 0;
-            /* Transparente: mismo fondo/malla que el resto de inventario */
-            background: transparent !important;
-            background-image: none !important;
+            /* Misma malla geométrica que el resto de la app / ventas */
+            background-color: #0f1419;
+            background-image: var(--mesh-svg);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -3232,14 +3235,14 @@ tr.row-sube { background: rgba(10,120,76,0.06); }
   }
 
   .result-item .ri-title {
-    font-size: 0.92rem;
+    font-size: 0.95rem;
     font-weight: 700;
     color: var(--heading-color);
-    line-height: 1.3;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    line-height: 1.35;
+    display: block;
+    white-space: normal;
+    overflow: visible;
+    word-break: break-word;
   }
 
   .result-item .ri-meta {
@@ -3507,22 +3510,86 @@ html[data-theme="light"] body {
 
 
 /* ============================================================
-   LOGIN = mismo fondo que la app (body + malla geométrica)
+   PC: nombre de producto completo (sin ellipsis agresivo)
    ============================================================ */
-.login-overlay,
-body.light-theme .login-overlay,
-body:not(.light-theme) .login-overlay,
-html.light-theme .login-overlay {
-  background: transparent !important;
-  background-color: transparent !important;
-  background-image: none !important;
-  box-shadow: none !important;
+@media (min-width: 960px) {
+  .result-item .ri-title {
+    display: block !important;
+    -webkit-line-clamp: unset !important;
+    -webkit-box-orient: unset !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+    white-space: normal !important;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    max-height: none !important;
+    font-size: 0.95rem !important;
+    line-height: 1.35 !important;
+    color: var(--heading-color);
+  }
+  .result-item .result-body {
+    min-width: 0;
+    width: 100%;
+    overflow: visible !important;
+  }
+  .result-item {
+    align-items: center !important;
+    min-height: auto !important;
+    height: auto !important;
+    /* content-visibility puede recortar altura percibida */
+    content-visibility: visible !important;
+    contain: none !important;
+  }
+  .result-item > .descripcion {
+    /* por si el layout antiguo reaparece */
+    white-space: normal !important;
+    text-overflow: unset !important;
+    overflow: visible !important;
+    -webkit-line-clamp: unset !important;
+  }
 }
-/* Mientras el login está visible, la malla del body se ve (z-index -1 bajo el overlay transparente) */
-body:has(.login-overlay:not(.hidden))::before {
-  z-index: 0;
-  opacity: var(--mesh-opacity, 0.55);
+
+/* Móvil: hasta 3 líneas del nombre (antes 2) */
+@media (max-width: 959px) {
+  .result-item .ri-title {
+    -webkit-line-clamp: 3 !important;
+    white-space: normal !important;
+  }
 }
-body:has(.login-overlay:not(.hidden)) {
-  /* asegura variables de tema en el fondo */
+
+
+/* Nombre completo en resultados — forzar sin truncar (PC y móvil) */
+.result-item .ri-title,
+.result-item .descripcion,
+.result-list .ri-title {
+  display: block !important;
+  -webkit-line-clamp: unset !important;
+  line-clamp: unset !important;
+  -webkit-box-orient: unset !important;
+  max-height: none !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  word-break: break-word !important;
+  overflow-wrap: anywhere !important;
+  font-weight: 700 !important;
+  color: var(--heading-color) !important;
+  line-height: 1.35 !important;
+}
+@media (min-width: 960px) {
+  .result-item .ri-title {
+    font-size: 0.95rem !important;
+  }
+  .result-item .result-body {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
+  .result-item {
+    height: auto !important;
+    min-height: 88px !important;
+    align-items: flex-start !important;
+    content-visibility: visible !important;
+    contain: none !important;
+  }
 }
