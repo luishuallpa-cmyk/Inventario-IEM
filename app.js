@@ -513,6 +513,7 @@
 
                 await descargarZipMes(fp.mesKey, true);
                 showToast('📦 Respaldo ' + nombre + ' · ZIP mes ' + fp.mesKey + '. Súbelo a Drive (carpeta del mes).', 'success');
+                try { localStorage.setItem(iemBackupFlagKey(fp.mesKey), '1'); actualizarEstadoRespaldoUI(); } catch (eF) {}
             } catch (err) {
                 console.warn('Respaldo mensual', err);
             }
@@ -3295,6 +3296,287 @@
             showToast('El inventario compartido ya está en la nube (Supabase). Use Excel para descargar una copia.', 'info');
         }
 
+
+
+        /** Productos mal cargados: codigo = SAP (7+ dígitos). No son Uniflex. */
+        function esCodigoErroneoTipoSap(c) {
+            c = String(c || '').trim();
+            return /^\d{7,}$/.test(c);
+        }
+
+        async function limpiarCodigosSapComoProducto() {
+            if (!esAdmin()) {
+                showToast('Solo administrador.', 'error');
+                return;
+            }
+            if (!supabaseClient) {
+                showToast('Sin Supabase.', 'error');
+                return;
+            }
+            const ok = await confirmarAccion(
+                'Se desactivarán (activo=false) productos cuyo CÓDIGO es en realidad un SAP de 7+ dígitos (ej. 50001363).\n\nLos Uniflex 0589/0591 no se tocan; solo entradas erróneas.\n¿Continuar?',
+                'Limpiar códigos SAP',
+                'danger'
+            );
+            if (!ok) return;
+            try {
+                let from = 0;
+                const PAGE = 1000;
+                const malos = [];
+                for (;;) {
+                    const { data, error } = await supabaseClient
+                        .from('productos')
+                        .select('codigo,codigo_fabrica,descripcion,activo')
+                        .order('codigo')
+                        .range(from, from + PAGE - 1);
+                    if (error) throw error;
+                    if (!data || !data.length) break;
+                    data.forEach(function (p) {
+                        if (esCodigoErroneoTipoSap(p.codigo)) malos.push(String(p.codigo));
+                    });
+                    if (data.length < PAGE) break;
+                    from += PAGE;
+                }
+                if (!malos.length) {
+                    showToast('No hay códigos tipo SAP como producto.', 'success');
+                    return;
+                }
+                let n = 0;
+                for (let i = 0; i < malos.length; i += 50) {
+                    const chunk = malos.slice(i, i + 50);
+                    const { error } = await supabaseClient
+                        .from('productos')
+                        .update({ activo: false, actualizado_en: new Date().toISOString() })
+                        .in('codigo', chunk);
+                    if (error) console.warn(error);
+                    else n += chunk.length;
+                }
+                // Quitar de memoria
+                if (Array.isArray(currentData)) {
+                    currentData = currentData.filter(function (it) {
+                        return !esCodigoErroneoTipoSap(getCodigo(it));
+                    });
+                    if (typeof actualizarEstadoCatalogo === 'function') actualizarEstadoCatalogo();
+                }
+                showToast('Desactivados ' + n + ' productos con código tipo SAP (erróneos).', 'success');
+            } catch (e) {
+                showToast('Error: ' + (e.message || e), 'error');
+            }
+        }
+
+
+        function iemMesActualKey() {
+            var d = new Date();
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+        }
+
+        function iemBackupFlagKey(mes) {
+            return 'iem_zip_descargado_' + (mes || iemMesActualKey());
+        }
+
+        function actualizarEstadoRespaldoUI() {
+            var el = document.getElementById('iemBackupStatus');
+            if (!el) return;
+            var mes = iemMesActualKey();
+            var ok = false;
+            try { ok = localStorage.getItem(iemBackupFlagKey(mes)) === '1'; } catch (e) {}
+            el.textContent = ok
+                ? ('✓ Respaldo de ' + mes + ' descargado. Conteos de meses anteriores ya pueden haberse limpiado en Supabase.')
+                : ('Pendiente: descarga Excel sistema (último del día) + conteo. Luego la nube se limpia sola al usar «Ambos + limpiar».');
+        }
+
+        /** Descarga ZIP filtrado. tipos: null=todos, 'excel_subido', 'conteo_fisico' */
+        async function descargarZipMesFiltrado(mesKey, tipos, nombreZip) {
+            var lista = await iemIdbGetByMes(mesKey);
+            if (!lista.length) return { ok: false, motivo: 'sin_local' };
+            var byDayExcel = {};
+            var otros = [];
+            lista.forEach(function (r) {
+                if (tipos && tipos.indexOf(r.tipo) === -1) return;
+                if (r.tipo === 'excel_subido') {
+                    var prev = byDayExcel[r.dia];
+                    if (!prev || (r.ts || 0) > (prev.ts || 0)) byDayExcel[r.dia] = r;
+                } else {
+                    otros.push(r);
+                }
+            });
+            var finalList = otros.concat(Object.keys(byDayExcel).map(function (k) { return byDayExcel[k]; }));
+            if (!finalList.length) return { ok: false, motivo: 'sin_tipo' };
+            if (typeof JSZip === 'undefined') {
+                // fallback: último archivo suelto
+                var last = finalList[finalList.length - 1];
+                var url0 = URL.createObjectURL(last.blob);
+                var a0 = document.createElement('a');
+                a0.href = url0;
+                a0.download = last.nombre || 'respaldo.xlsx';
+                a0.click();
+                setTimeout(function () { URL.revokeObjectURL(url0); }, 2000);
+                return { ok: true, n: 1 };
+            }
+            var zip = new JSZip();
+            var folderExcel = zip.folder('excel_sistema');
+            var folderConteo = zip.folder('conteo_fisico');
+            finalList.forEach(function (r) {
+                var folder = (r.tipo === 'excel_subido') ? folderExcel : folderConteo;
+                folder.file(r.nombre || (r.id + '.xlsx'), r.blob);
+            });
+            var out = await zip.generateAsync({ type: 'blob' });
+            var url = URL.createObjectURL(out);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = nombreZip || ('IEM_respaldos_' + mesKey + '.zip');
+            a.click();
+            setTimeout(function () { URL.revokeObjectURL(url); }, 2500);
+            return { ok: true, n: finalList.length };
+        }
+
+        /** Exporta conteo actual desde memoria/nube a un Excel y lo guarda en respaldo. */
+        async function generarExcelConteoActual() {
+            if (typeof inventarioFisico === 'undefined' || !inventarioFisico || !inventarioFisico.length) {
+                // intentar desde lotes en nube
+                if (supabaseClient) {
+                    try {
+                        var { data } = await supabaseClient.from('lotes_conteo').select('*').limit(5000);
+                        if (data && data.length && typeof exportarInventario === 'function') {
+                            // no re-enter full export; build minimal sheet
+                        }
+                    } catch (e) {}
+                }
+                return null;
+            }
+            // Reutilizar estructura simple
+            var filas = [['Código', 'Descripción', 'Stock físico', 'Fecha']];
+            inventarioFisico.forEach(function (d) {
+                filas.push([
+                    d.codigo || '',
+                    d.descripcion || '',
+                    d.stockFisico != null ? d.stockFisico : (d.cantidad || ''),
+                    d.fecha || ''
+                ]);
+            });
+            if (typeof XLSX === 'undefined') return null;
+            var wb = XLSX.utils.book_new();
+            var ws = XLSX.utils.aoa_to_sheet(filas);
+            XLSX.utils.book_append_sheet(wb, ws, 'Conteo');
+            var wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            await guardarRespaldoMensual('conteo_fisico', wbout, 'conteo_fisico');
+            return true;
+        }
+
+        async function descargarExcelSistemaUI() {
+            if (!esAdmin()) { showToast('Solo administrador.', 'error'); return; }
+            var mes = iemMesActualKey();
+            var r = await descargarZipMesFiltrado(mes, ['excel_subido'], 'IEM_excel_sistema_' + mes + '.zip');
+            if (!r.ok) {
+                showToast('No hay Excel de sistema respaldado este mes. Sube el Excel de existencias/valorado primero.', 'info');
+                return;
+            }
+            try { localStorage.setItem(iemBackupFlagKey(mes), '1'); } catch (e) {}
+            actualizarEstadoRespaldoUI();
+            showToast('Excel del sistema descargado (solo último de cada día).', 'success');
+        }
+
+        async function descargarConteoMesUI() {
+            if (!esAdmin()) { showToast('Solo administrador.', 'error'); return; }
+            var mes = iemMesActualKey();
+            var r = await descargarZipMesFiltrado(mes, ['conteo_fisico'], 'IEM_conteo_' + mes + '.zip');
+            if (!r.ok) {
+                // intentar generar desde conteo en pantalla
+                try {
+                    if (typeof exportarInventario === 'function') {
+                        showToast('Generando conteo desde datos actuales…', 'info');
+                        await exportarInventario();
+                        r = await descargarZipMesFiltrado(mes, ['conteo_fisico'], 'IEM_conteo_' + mes + '.zip');
+                    }
+                } catch (e) {}
+            }
+            if (!r.ok) {
+                showToast('No hay conteo respaldado. Exporta el inventario físico o envía conteo a la nube y vuelve a intentar.', 'info');
+                return;
+            }
+            try { localStorage.setItem(iemBackupFlagKey(mes), '1'); } catch (e) {}
+            actualizarEstadoRespaldoUI();
+            showToast('Conteo del mes descargado.', 'success');
+        }
+
+        /** Borra lotes_conteo anteriores al mes actual (sin preguntar). */
+        async function limpiarConteosMesesAnterioresAuto() {
+            if (!supabaseClient) return { ok: false };
+            var mes = iemMesActualKey();
+            var parts = mes.split('-');
+            var inicioMes = new Date(Number(parts[0]), Number(parts[1]) - 1, 1);
+            var corteISO = inicioMes.toISOString();
+            try {
+                var { data, error } = await supabaseClient
+                    .from('lotes_conteo')
+                    .delete()
+                    .lt('created_at', corteISO)
+                    .select('id');
+                if (error) {
+                    var { data: all, error: e2 } = await supabaseClient
+                        .from('lotes_conteo')
+                        .select('id,created_at,fechaISO')
+                        .limit(5000);
+                    if (e2) throw e2;
+                    var ids = (all || []).filter(function (r) {
+                        var t = r.created_at || r.fechaISO;
+                        return t && new Date(t).getTime() < inicioMes.getTime();
+                    }).map(function (r) { return r.id; });
+                    var n = 0;
+                    for (var i = 0; i < ids.length; i += 50) {
+                        var chunk = ids.slice(i, i + 50);
+                        var { error: e3 } = await supabaseClient.from('lotes_conteo').delete().in('id', chunk);
+                        if (!e3) n += chunk.length;
+                    }
+                    return { ok: true, n: n };
+                }
+                return { ok: true, n: Array.isArray(data) ? data.length : 0 };
+            } catch (e) {
+                console.warn('auto clean', e);
+                return { ok: false, error: e };
+            }
+        }
+
+        async function descargarAmbosYLimpiarUI() {
+            if (!esAdmin()) { showToast('Solo administrador.', 'error'); return; }
+            var mes = iemMesActualKey();
+            showToast('Descargando Excel sistema + conteo…', 'info');
+            var r1 = await descargarZipMesFiltrado(mes, ['excel_subido'], 'IEM_excel_sistema_' + mes + '.zip');
+            await new Promise(function (res) { setTimeout(res, 600); });
+            var r2 = await descargarZipMesFiltrado(mes, ['conteo_fisico'], 'IEM_conteo_' + mes + '.zip');
+            if (!r1.ok && !r2.ok) {
+                showToast('No hay respaldos locales este mes. Sube Excel del sistema y/o exporta el conteo primero.', 'error');
+                return;
+            }
+            try { localStorage.setItem(iemBackupFlagKey(mes), '1'); } catch (e) {}
+            var clean = await limpiarConteosMesesAnterioresAuto();
+            actualizarEstadoRespaldoUI();
+            var msg = 'Descarga lista.';
+            if (r1.ok) msg += ' Excel sistema ✓';
+            if (r2.ok) msg += ' Conteo ✓';
+            if (clean.ok) msg += ' Nube: conteos de meses anteriores eliminados (' + (clean.n || 0) + ').
+            else msg += ' (no se pudo limpiar nube automáticamente)';
+            showToast(msg, 'success');
+        }
+
+        async function descargarZipMesActualDesdeUI() {
+            return descargarAmbosYLimpiarUI();
+        }
+
+        function marcarZipMesDescargado() {
+            var mes = iemMesActualKey();
+            try { localStorage.setItem(iemBackupFlagKey(mes), '1'); } catch (e) {}
+            showToast('Marcado: respaldo de ' + mes + ' guardado.', 'success');
+            actualizarEstadoRespaldoUI();
+        }
+
+        async function limpiarConteosMesesAnteriores() {
+            if (!esAdmin()) { showToast('Solo administrador.', 'error'); return; }
+            var clean = await limpiarConteosMesesAnterioresAuto();
+            if (clean.ok) showToast('Conteos de meses anteriores eliminados: ' + (clean.n || 0), 'success');
+            else showToast('No se pudo limpiar la nube.', 'error');
+        }
+
         // ============================================================
         // LIMPIAR INVENTARIO
         // ============================================================
@@ -3648,10 +3930,25 @@
         }
 
         function filaExcelAProducto(row) {
-            const codigo = String(valorColumna(row, [
+            let codigo = String(valorColumna(row, [
                 'InventarioProductoCodigo', 'Codigo', 'codigo', 'CÓDIGO', 'Código'
             ])).trim();
             if (!codigo) return null;
+            // Normalizar Uniflex cortos (835 → 0835)
+            if (typeof normalizarCodigoUniflex === 'function') {
+                codigo = normalizarCodigoUniflex(codigo);
+            }
+            // NUNCA usar CÓDIGO SAP / fábrica (7–10 dígitos tipo 50001363) como código interno.
+            // El código de producto es Uniflex 4–5 dígitos (0589, 0591, etc.).
+            if (/^\d{7,}$/.test(codigo)) {
+                console.warn('Excel: se omitió fila con código tipo SAP (no Uniflex):', codigo);
+                return null;
+            }
+            // Si parece SAP y no es Uniflex 4–5, rechazar
+            if (typeof esCodigoProductoUniflex === 'function' && !esCodigoProductoUniflex(codigo) && /^\d+$/.test(codigo) && codigo.length >= 6) {
+                console.warn('Excel: código no Uniflex omitido:', codigo);
+                return null;
+            }
 
             let descripcion = String(valorColumna(row, [
                 'InventarioProductoDescripcion', 'Producto', 'descripcion', 'Descripcion',
@@ -3781,11 +4078,12 @@
                 const codigosVistos = new Set();
 
                 if (esLaive) {
-                    showToast('📋 Excel base: guía por CÓDIGO SAP (fábrica). Sin tocar stock...', 'info');
-                    // Cargar TODO el catálogo desde la nube (activos e inactivos) para cruzar SAP
+                    showToast('📋 Excel base Laive: solo habilita por CÓDIGO SAP (= fábrica). No toca Fríos/Secos ni códigos cortos...', 'info');
+                    // Catálogo nube: cruzar solo por codigo_fabrica === SAP
                     const codigosExistentes = new Set();
                     const byCodigo = Object.create(null);
                     const byFabrica = Object.create(null);
+                    const sapsEnExcel = new Set();
                     try {
                         const PAGE = 1000;
                         let from = 0;
@@ -3793,35 +4091,18 @@
                         for (;;) {
                             let { data: batch, error: errCat } = await supabaseClient
                                 .from('productos')
-                                .select('codigo,codigo_fabrica,descripcion,linea,tipo_almacen,activo')
+                                .select('codigo,codigo_fabrica,activo')
                                 .order('codigo', { ascending: true })
                                 .range(from, from + PAGE - 1);
-                            if (errCat && /tipo_almacen/i.test(errCat.message || '')) {
-                                const r0 = await supabaseClient
-                                    .from('productos')
-                                    .select('codigo,codigo_fabrica,descripcion,linea,activo')
-                                    .order('codigo', { ascending: true })
-                                    .range(from, from + PAGE - 1);
-                                batch = r0.data; errCat = r0.error;
-                            }
                             if (errCat) throw errCat;
                             if (!batch || !batch.length) break;
                             batch.forEach(function (p) {
                                 const c = String(p.codigo || '').trim();
                                 if (!c) return;
+                                // Ignorar basura tipo SAP como código interno
+                                if (/^\d{7,}$/.test(c)) return;
                                 codigosExistentes.add(c);
-                                const it = {
-                                    Codigo: c,
-                                    codigo: c,
-                                    CodigoFabrica: p.codigo_fabrica || '',
-                                    codigo_fabrica: p.codigo_fabrica || '',
-                                    descripcion: p.descripcion || c,
-                                    Producto: p.descripcion || c,
-                                    linea: p.linea || '',
-                                    tipo_almacen: p.tipo_almacen || '',
-                                    activo: p.activo
-                                };
-                                byCodigo[c] = it;
+                                byCodigo[c] = p;
                                 const f = String(p.codigo_fabrica || '').trim();
                                 if (f) {
                                     if (!byFabrica[f]) byFabrica[f] = [];
@@ -3833,13 +4114,12 @@
                             from += PAGE;
                             if (from >= 100000) break;
                         }
-                        showToast('Catálogo en nube: ' + totalLoad + ' productos para cruzar SAP...', 'info');
+                        showToast('Catálogo en nube: ' + totalLoad + ' · cruzando solo por SAP/fábrica...', 'info');
                     } catch (eLoad) {
                         console.warn(eLoad);
-                        // Fallback: memoria
                         (currentData || []).forEach(function (item) {
                             const c = String(getCodigo(item) || '').trim();
-                            if (!c) return;
+                            if (!c || /^\d{7,}$/.test(c)) return;
                             codigosExistentes.add(c);
                             byCodigo[c] = item;
                             const f = String(getCodigoFabrica(item) || '').trim();
@@ -3850,7 +4130,7 @@
                         });
                     }
                     if (!codigosExistentes.size) {
-                        showToast('No hay catálogo en Supabase. Sube primero existencias y luego el Excel Laive.', 'error');
+                        showToast('No hay catálogo en Supabase. Primero carga el catálogo base (productos).', 'error');
                         return;
                     }
 
@@ -3858,47 +4138,21 @@
                     let bloqueados = 0;
                     let filasSap = 0;
                     let sinMatch = 0;
-                    let tiposAsignados = 0;
 
-                    function pushUpdate(codigo, meta) {
+                    function pushHabilitarPorSap(codigo, meta) {
                         if (!codigo || !codigosExistentes.has(codigo)) return false;
-                        let tipoYa = '';
-                        const itemPrev = byCodigo[codigo];
-                        if (itemPrev) {
-                            tipoYa = normalizarTipoAlmacen(
-                                itemPrev.tipo_almacen || itemPrev.TipoAlmacen || ''
-                            ) || (leerMapaTipoAlmacen()[codigo] || '');
-                        }
-                        // Fríos/Secos: SOLO asignar si aún no tiene (no se pisa al subir otra base)
-                        const tipoNuevo = (!tipoYa && meta.tipo_almacen)
-                            ? normalizarTipoAlmacen(meta.tipo_almacen)
-                            : '';
-                        if (tipoNuevo) {
-                            guardarTipoAlmacenCodigo(codigo, tipoNuevo);
-                            tiposAsignados++;
-                        }
-                        // Base Laive: SOLO guía de habilitación.
-                        // NO toca descripcion, marca, linea, unidad_ref, factor ni stock.
-                        // (Antes reescribía nombres/marca y desordenaba el catálogo.)
+                        // Solo activo + confirmar fábrica. NADA de tipo_almacen, nombres, uniflex.
                         const rowUp = {
                             codigo: codigo,
                             codigo_fabrica: meta.sap || null,
                             activo: meta.activo !== false,
                             actualizado_en: new Date().toISOString()
                         };
-                        if (tipoNuevo) rowUp.tipo_almacen = tipoNuevo;
-                        else if (tipoYa) rowUp.tipo_almacen = tipoYa;
                         if (!rowUp.activo) bloqueados++;
                         habilitados.add(codigo);
                         if (codigosVistos.has(codigo)) {
                             const idx = productos.findIndex(function (x) { return x.codigo === codigo; });
-                            if (idx >= 0) {
-                                const prev = productos[idx];
-                                productos[idx] = Object.assign({}, prev, rowUp);
-                                if (!rowUp.tipo_almacen && prev.tipo_almacen) {
-                                    productos[idx].tipo_almacen = prev.tipo_almacen;
-                                }
-                            }
+                            if (idx >= 0) productos[idx] = Object.assign({}, productos[idx], rowUp);
                         } else {
                             codigosVistos.add(codigo);
                             productos.push(rowUp);
@@ -3910,36 +4164,36 @@
                         const meta = typeof filaLaiveMeta === 'function' ? filaLaiveMeta(row) : null;
                         if (!meta || !meta.sap) return;
                         filasSap++;
-                        let matched = false;
-                        // A) Por SAP ya guardado como codigo_fabrica
+                        sapsEnExcel.add(String(meta.sap).trim());
+                        // ÚNICO cruce: codigo_fabrica del producto === SAP del Excel
+                        // NO usar códigos Uniflex/cortos del Excel (pueden ser de otras distribuidoras)
                         const porSap = byFabrica[meta.sap] || [];
+                        let matched = false;
                         porSap.forEach(function (c) {
-                            if (pushUpdate(c, meta)) matched = true;
-                        });
-                        // B) Por Uniflex que YA existen en tu catálogo (cualquiera de la lista, sin elegir “el correcto”)
-                        (meta.uniflexLista || []).forEach(function (u) {
-                            if (codigosExistentes.has(u)) {
-                                if (pushUpdate(u, meta)) matched = true;
-                            }
+                            if (pushHabilitarPorSap(c, meta)) matched = true;
                         });
                         if (!matched) sinMatch++;
                     });
 
                     if (sinMatch > 0) {
-                        showToast('SAP sin match en catálogo: ' + sinMatch + ' filas (no se crean códigos nuevos).', 'info');
+                        showToast('SAP sin match en cód. fábrica del catálogo: ' + sinMatch + ' filas (no se crean productos).', 'info');
                     }
 
-                    // Solo desactivar Uniflex 4–5 dígitos fuera de lista si hubo matches suficientes
+                    // Desactivar solo productos que YA tienen codigo_fabrica y ese SAP no vino en el Excel.
+                    // No se tocan productos sin fábrica ni se usan listas Uniflex de otras dist.
                     const desactivarOtros = [];
-                    if (habilitados.size >= 10) {
+                    if (sapsEnExcel.size >= 10) {
                         codigosExistentes.forEach(function (c) {
                             if (habilitados.has(c)) return;
-                            if (typeof esCodigoProductoUniflex === 'function' && !esCodigoProductoUniflex(c)) return;
+                            const prev = byCodigo[c];
+                            const fab = String((prev && (prev.codigo_fabrica || prev.CodigoFabrica)) || '').trim();
+                            if (!fab) return; // sin SAP asignado: no desactivar
+                            if (sapsEnExcel.has(fab)) return; // su SAP está en el Excel pero match falló raro
                             desactivarOtros.push(c);
                         });
                     }
                     if (desactivarOtros.length) {
-                        showToast('Deshabilitando ' + desactivarOtros.length + ' Uniflex fuera del Excel Laive...', 'info');
+                        showToast('Deshabilitando ' + desactivarOtros.length + ' con fábrica fuera del Excel Laive...', 'info');
                         const TAM = 200;
                         for (let i = 0; i < desactivarOtros.length; i += TAM) {
                             const lote = desactivarOtros.slice(i, i + TAM);
@@ -3956,7 +4210,7 @@
                         omitidos: sinMatch,
                         desactivados: desactivarOtros.length,
                         bloqueados: bloqueados,
-                        tipos: tiposAsignados
+                        tipos: 0
                     };
                 } else {
                     filas.forEach(function (row) {
@@ -3991,16 +4245,50 @@
                             }
                             return;
                         }
-                        // Existencias (modo 1): NUNCA toca stock.
-                        // Solo catálogo: nombre, código, cód. fábrica, unidad, factor, línea, marca, activo.
-                        // El stock lo actualiza únicamente el inventario valorado (modo 2).
-                        delete p.stock_teorico;
-                        if (codigosVistos.has(p.codigo)) {
-                            const idx = productos.findIndex(function (x) { return x.codigo === p.codigo; });
-                            if (idx >= 0) productos[idx] = p;
+                        // Existencias (modo 1): SOLO corrige códigos cortos (ya normalizados en
+                        // filaExcelAProducto) y código de fábrica. NO toca nombre, línea, marca,
+                        // unidad, factor, activo, tipo ni stock (el stock es del valorado).
+                        // No crea productos nuevos: la base ya está armada.
+                        let existeEnCat = false;
+                        try {
+                            existeEnCat = !!(currentData || []).some(function (it) {
+                                return String(getCodigo(it) || '').trim() === String(p.codigo);
+                            });
+                        } catch (eEx) {}
+                        // También si ya está en el set de esta importación
+                        if (!existeEnCat && codigosVistos.has(p.codigo)) existeEnCat = true;
+                        // Cargar set de códigos de nube si se preparó en otro flujo
+                        if (!existeEnCat && window.__codigosExistentesImport instanceof Set) {
+                            existeEnCat = window.__codigosExistentesImport.has(String(p.codigo));
+                        }
+                        if (!existeEnCat) {
+                            // No insertar códigos nuevos desde existencias
+                            return;
+                        }
+                        let descExist = '';
+                        try {
+                            const prev = (currentData || []).find(function (it) {
+                                return String(getCodigo(it) || '').trim() === String(p.codigo);
+                            });
+                            if (prev) descExist = String(getDescripcion(prev) || prev.descripcion || '').trim();
+                        } catch (e) {}
+                        const soloFab = {
+                            codigo: p.codigo,
+                            // descripcion solo para no romper NOT NULL en upsert; no cambia el nombre real si usamos UPDATE
+                            descripcion: descExist || p.descripcion || p.codigo,
+                            actualizado_en: p.actualizado_en || new Date().toISOString()
+                        };
+                        if (p.codigo_fabrica) soloFab.codigo_fabrica = p.codigo_fabrica;
+                        // Sin descripcion/linea/marca/unidad/factor/stock/activo del Excel
+                        if (codigosVistos.has(soloFab.codigo)) {
+                            const idx = productos.findIndex(function (x) { return x.codigo === soloFab.codigo; });
+                            if (idx >= 0) {
+                                // merge fábrica si viene
+                                if (soloFab.codigo_fabrica) productos[idx].codigo_fabrica = soloFab.codigo_fabrica;
+                            }
                         } else {
-                            codigosVistos.add(p.codigo);
-                            productos.push(p);
+                            codigosVistos.add(soloFab.codigo);
+                            productos.push(soloFab);
                         }
                     });
                 }
@@ -4053,12 +4341,12 @@
                         for (let j = 0; j < lote.length; j += CONCURRENCY) {
                             const chunk = lote.slice(j, j + CONCURRENCY);
                             const results = await Promise.all(chunk.map(function (r) {
+                                // Base Laive: únicamente activo + codigo_fabrica (SAP). Sin tipo_almacen.
                                 const patch = {
                                     activo: r.activo !== false,
                                     actualizado_en: r.actualizado_en || new Date().toISOString()
                                 };
                                 if (r.codigo_fabrica) patch.codigo_fabrica = r.codigo_fabrica;
-                                if (r.tipo_almacen) patch.tipo_almacen = r.tipo_almacen;
                                 return supabaseClient
                                     .from('productos')
                                     .update(patch)
@@ -4096,54 +4384,39 @@
                             }
                         }
                     } else {
-                        let res = await supabaseClient.from('productos').upsert(lote, { onConflict: 'codigo' });
-                        error = res.error;
-                        // Si falta columna tipo_almacen en Supabase, reintentar sin ella
-                        if (error && /tipo_almacen/i.test(error.message || '')) {
-                            const lote2 = lote.map(function (r) {
-                                const x = Object.assign({}, r);
-                                delete x.tipo_almacen;
-                                return x;
-                            });
-                            const r2 = await supabaseClient.from('productos').upsert(lote2, { onConflict: 'codigo' });
-                            error = r2.error;
-                            if (!error) {
-                                showToast('Aviso: crea la columna tipo_almacen en productos (SQL) para guardar Fríos/Secos en la nube.', 'info');
+                        // Existencias: SOLO código de fábrica (códigos cortos ya normalizados).
+                        // UPDATE, nunca upsert: no crea filas ni pisa nombre/línea/marca/stock.
+                        const CONCURRENCY = 30;
+                        for (let j = 0; j < lote.length; j += CONCURRENCY) {
+                            const chunk = lote.slice(j, j + CONCURRENCY);
+                            const results = await Promise.all(chunk.map(function (r) {
+                                const patch = {
+                                    actualizado_en: r.actualizado_en || new Date().toISOString()
+                                };
+                                if (r.codigo_fabrica) patch.codigo_fabrica = r.codigo_fabrica;
+                                // Si no hay fábrica que actualizar, solo toca actualizado_en (mínimo)
+                                return supabaseClient
+                                    .from('productos')
+                                    .update(patch)
+                                    .eq('codigo', r.codigo);
+                            }));
+                            const failed = results.find(function (x) { return x && x.error; });
+                            if (failed) {
+                                error = failed.error;
+                                break;
                             }
+                            subidos += chunk.length;
                         }
-                        // Si falla por descripcion null, rellenar desde catálogo y reintentar
-                        if (error && /descripcion/i.test(error.message || '')) {
-                            const lote3 = lote.map(function (r) {
-                                const x = Object.assign({}, r);
-                                if (!x.descripcion) {
-                                    try {
-                                        const prev = (currentData || []).find(function (it) {
-                                            return String(getCodigo(it) || '').trim() === String(r.codigo);
-                                        });
-                                        x.descripcion = prev
-                                            ? String(getDescripcion(prev) || prev.descripcion || r.codigo).trim()
-                                            : String(r.codigo);
-                                    } catch (e) {
-                                        x.descripcion = String(r.codigo);
-                                    }
-                                }
-                                return x;
-                            });
-                            const r3 = await supabaseClient.from('productos').upsert(lote3, { onConflict: 'codigo' });
-                            error = r3.error;
-                        }
-                        if (!error) subidos += lote.length;
                     }
                     if (error) throw error;
                 }
                 let extra = '';
-                if (!esLaive && !esValorado) extra = ' (existencias: catálogo, sin tocar stock)';
+                if (!esLaive && !esValorado) extra = ' (existencias: solo cód. fábrica / códigos cortos; sin tocar nombres ni stock)';
                 if (esValorado) extra = ' (valorado: solo stock del sistema)';
                 if (esLaive) {
                     const st = window.__laiveImportStats || {};
-                    extra = ' (Base Laive: ' + (st.habilitados || subidos) + ' habilitados'
-                        + (st.tipos ? ', ' + st.tipos + ' Fríos/Secos nuevos' : '')
-                        + (st.desactivados ? ', ' + st.desactivados + ' fuera de lista' : '')
+                    extra = ' (Base Laive: solo SAP/fábrica · ' + (st.habilitados || subidos) + ' habilitados'
+                        + (st.desactivados ? ', ' + st.desactivados + ' desactivados sin SAP en Excel' : '')
                         + (st.omitidos ? ', ' + st.omitidos + ' sin match SAP' : '')
                         + ', sin tocar stock)';
                 }
@@ -4874,6 +5147,24 @@
                     if (file) seleccionarArchivoAdmin(file);
                 });
             }
+
+            const btnLimpiarSap = document.getElementById('btnLimpiarCodigosSap');
+            if (btnLimpiarSap) btnLimpiarSap.addEventListener('click', function () { limpiarCodigosSapComoProducto(); });
+            const btnExcelSis = document.getElementById('btnDescargarExcelSistema');
+            if (btnExcelSis) btnExcelSis.addEventListener('click', function () { descargarExcelSistemaUI(); });
+            const btnConteoMes = document.getElementById('btnDescargarConteoMes');
+            if (btnConteoMes) btnConteoMes.addEventListener('click', function () { descargarConteoMesUI(); });
+            const btnAmbos = document.getElementById('btnDescargarAmbosYLimpiar');
+            if (btnAmbos) btnAmbos.addEventListener('click', function () { descargarAmbosYLimpiarUI(); });
+            // compat ids viejos
+            const btnZipMes = document.getElementById('btnDescargarZipMes');
+            if (btnZipMes) btnZipMes.addEventListener('click', function () { descargarAmbosYLimpiarUI(); });
+            const btnZipOk = document.getElementById('btnMarcarZipDescargado');
+            if (btnZipOk) btnZipOk.addEventListener('click', function () { marcarZipMesDescargado(); });
+            const btnLimpiarOld = document.getElementById('btnLimpiarConteosViejos');
+            if (btnLimpiarOld) btnLimpiarOld.addEventListener('click', function () { limpiarConteosMesesAnteriores(); });
+            try { actualizarEstadoRespaldoUI(); } catch (e) {}
+
             const adminImportBtn = document.getElementById('adminImportBtn');
             if (adminImportBtn) {
                 adminImportBtn.addEventListener('click', async function () {
