@@ -627,7 +627,21 @@
             return '';
         }
         function getCodigo(item) { return getField(item, 'Codigo', 'Código', 'Cod. Producto', 'InventarioProductoCodigo', 'Cod'); }
-        function getCodigoFabrica(item) { return getField(item, 'CodigoFabrica', 'CódigoFábrica', 'Cod. Fabrica', 'CodigoFabrica', 'CodFabrica'); }
+        function getCodigoFabrica(item) {
+            return getField(item, 'CodigoFabrica', 'codigo_fabrica', 'CódigoFábrica', 'Cod. Fabrica', 'CodFabrica', 'Cod.Fábrica', 'Codigo Fabrica', 'SKU', 'sku');
+        }
+        function normalizarCodigoBusqueda(v) {
+            if (v == null || v === '') return '';
+            var s = String(v).trim();
+            if (/^\d+\.0+$/.test(s)) s = s.replace(/\.0+$/, '');
+            if (/e/i.test(s) && !isNaN(Number(s))) {
+                try { s = String(Math.round(Number(s))); } catch (e) {}
+            }
+            return s.trim();
+        }
+        function soloDigitos(v) {
+            return String(v || '').replace(/\D/g, '');
+        }
         function getCodigoBarras(item) { return getField(item, 'CodigoBarras', 'codigo_barras', 'EAN', 'Barcode', 'CodBarras', 'CódigoBarras'); }
         function getDescripcion(item) { return getField(item, 'Producto', 'Descripción', 'InventarioProductoDescripcion', 'Descripcion', 'Nombre'); }
         function getImagenUrl(item) { return getField(item, 'imagen_url', 'ImagenUrl', 'Imagen', 'image_url', 'foto', 'Foto'); }
@@ -828,11 +842,34 @@
                     // Índices + sincronizar Fríos/Secos desde nube a localStorage
                     window._mapCodigo = Object.create(null);
                     window._mapBarras = Object.create(null);
+                    window._mapFabrica = Object.create(null);
                     var mapTipoSync = {};
+                    function indexKey(map, key, item) {
+                        if (!key || !item) return;
+                        var s = normalizarCodigoBusqueda(key);
+                        if (!s) return;
+                        map[s] = item;
+                        map[s.toUpperCase()] = item;
+                        var dig = soloDigitos(s);
+                        if (dig) {
+                            map[dig] = item;
+                            var noz = dig.replace(/^0+/, '') || '0';
+                            if (noz !== dig) map[noz] = item;
+                        }
+                    }
                     currentData.forEach(function (item) {
-                        var c = String(getCodigo(item) || '').trim();
-                        var f = String(getCodigoFabrica(item) || '').trim();
-                        var b = String(getCodigoBarras(item) || '').trim();
+                        var c = normalizarCodigoBusqueda(getCodigo(item));
+                        var f = normalizarCodigoBusqueda(getCodigoFabrica(item));
+                        var b = normalizarCodigoBusqueda(getCodigoBarras(item));
+                        // guardar normalizado en el item para búsquedas
+                        if (f) {
+                            item.CodigoFabrica = f;
+                            item.codigo_fabrica = f;
+                        }
+                        if (b) {
+                            item.CodigoBarras = b;
+                            item.codigo_barras = b;
+                        }
                         var tip = normalizarTipoAlmacen(item.tipo_almacen || item.TipoAlmacen || '');
                         if (c && tip) {
                             mapTipoSync[c] = tip;
@@ -841,9 +878,10 @@
                         }
                         item._sb = [c, f, b, getDescripcion(item), getUnidadRef(item), getLinea(item), getMarca(item)].join('\u0001').toUpperCase();
                         marcarFlagsProducto(item);
-                        if (c) window._mapCodigo[c.toUpperCase()] = item;
-                        if (f) window._mapCodigo[f.toUpperCase()] = item;
-                        if (b) window._mapBarras[b] = item;
+                        indexKey(window._mapCodigo, c, item);
+                        indexKey(window._mapCodigo, f, item);
+                        indexKey(window._mapFabrica, f, item);
+                        indexKey(window._mapBarras, b, item);
                     });
                     try {
                         var prevMap = leerMapaTipoAlmacen();
@@ -1132,13 +1170,23 @@
             }
             const termCompact = term.replace(/\s/g, '');
             const termUpper = term.toUpperCase();
+            const termDigits = soloDigitos(termCompact);
             const enPedido = (typeof modoPedido !== 'undefined' && modoPedido);
+            // 8+ dígitos pueden ser fábrica (Laive ~8) o EAN/barras
             const pareceBarras = /^[0-9]{8,}$/.test(termCompact);
+            const pareceFab = /^[0-9]{6,10}$/.test(termDigits);
 
-            // Atajo O(1): código o barras exactos (también respeta filtro PROM/CBM stock 0)
+            // Atajo O(1): fábrica / código SAP / barras (también respeta filtro PROM/CBM stock 0)
             var hitExact = null;
-            if (window._mapBarras && window._mapBarras[termCompact]) hitExact = window._mapBarras[termCompact];
-            else if (window._mapCodigo && window._mapCodigo[termUpper]) hitExact = window._mapCodigo[termUpper];
+            if (window._mapFabrica && (window._mapFabrica[termCompact] || window._mapFabrica[termDigits] || window._mapFabrica[termUpper])) {
+                hitExact = window._mapFabrica[termCompact] || window._mapFabrica[termDigits] || window._mapFabrica[termUpper];
+            }
+            if (!hitExact && window._mapCodigo && (window._mapCodigo[termUpper] || window._mapCodigo[termCompact] || window._mapCodigo[termDigits])) {
+                hitExact = window._mapCodigo[termUpper] || window._mapCodigo[termCompact] || window._mapCodigo[termDigits];
+            }
+            if (!hitExact && window._mapBarras && (window._mapBarras[termCompact] || window._mapBarras[termDigits])) {
+                hitExact = window._mapBarras[termCompact] || window._mapBarras[termDigits];
+            }
             if (hitExact) {
                 if (!enPedido && !esProductoBuscableInventario(hitExact)) {
                     filteredData = [];
@@ -1177,6 +1225,14 @@
                     if (tipo !== filtroTipoLaive) return false;
                 }
 
+                // Match directo por dígitos de fábrica / barras / código (ej. 50001121)
+                if (termDigits && termDigits.length >= 6) {
+                    var fd = soloDigitos(fab);
+                    var bd = soloDigitos(bar);
+                    var cd = soloDigitos(cod);
+                    if (fd === termDigits || bd === termDigits || cd === termDigits) return true;
+                    if (fd && (fd.indexOf(termDigits) !== -1 || termDigits.indexOf(fd) !== -1) && Math.min(fd.length, termDigits.length) >= 6) return true;
+                }
                 const blob = item._sb || [
                     cod, fab, bar,
                     getDescripcion(item).toUpperCase(),
@@ -1187,12 +1243,19 @@
                 return palabrasUpper.every(function (pal) { return blob.indexOf(pal) !== -1; });
             });
 
-            // Si buscaste un EAN y hay varios, priorizar coincidencia exacta de barras
-            if (pareceBarras && filteredData.length > 1) {
-                const exactos = filteredData.filter(function (item) {
-                    return String(getCodigoBarras(item) || '').trim() === term.replace(/\s/g, '');
+            // Si hay varios hits con código numérico largo, priorizar exacto fábrica → barras → código
+            if ((pareceBarras || pareceFab) && filteredData.length > 1) {
+                var td = termDigits || termCompact;
+                var exactFab = filteredData.filter(function (item) {
+                    return soloDigitos(getCodigoFabrica(item)) === td || String(getCodigoFabrica(item) || '').trim() === termCompact;
                 });
-                if (exactos.length) filteredData = exactos;
+                if (exactFab.length) filteredData = exactFab;
+                else {
+                    var exactBar = filteredData.filter(function (item) {
+                        return soloDigitos(getCodigoBarras(item)) === td || String(getCodigoBarras(item) || '').trim() === termCompact;
+                    });
+                    if (exactBar.length) filteredData = exactBar;
+                }
             }
 
             renderResults(filteredData);
