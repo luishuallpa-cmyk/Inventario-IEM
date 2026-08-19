@@ -1507,23 +1507,9 @@
                 margin-left: 0.2rem;
                 font-weight: 700;
             }
+            /* pa-scan-btn: estilos globales más abajo (no forzar blanco) */
             body.modo-seleccion .pa-scan-btn {
-                background: transparent;
-                border: 1px solid rgba(148, 163, 184, 0.35);
-                color: var(--text-secondary);
-                border-radius: 10px;
-            }
-            body.modo-seleccion .pa-scan-btn:hover {
-                border-color: rgba(10, 120, 76, 0.5);
-                color: #34d399;
-            }
-            body.light-theme.modo-seleccion .pa-scan-btn {
-                border-color: #d1d9e0;
-                color: #475569;
-            }
-            body.light-theme.modo-seleccion .pa-scan-btn:hover {
-                border-color: rgba(10, 120, 76, 0.45);
-                color: #0A784C;
+                border-radius: 12px;
             }
 
             /* Cajas / Unidades como cajas grandes tipo calculadora */
@@ -2040,9 +2026,9 @@ body.modo-seleccion .pa-meta {
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    border: 1px solid rgba(255,255,255,0.45);
-    background: rgba(37, 99, 235, 0.55);
-    color: #fff;
+    border: 1.5px solid rgba(10, 120, 76, 0.45);
+    background: rgba(10, 120, 76, 0.2);
+    color: #6ee7b7;
     font-size: 1.25rem;
     cursor: pointer;
     align-items: center;
@@ -2050,12 +2036,36 @@ body.modo-seleccion .pa-meta {
     line-height: 1;
     padding: 0;
     -webkit-tap-highlight-color: transparent;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
-.pa-scan-btn .ico-scan { color: #fff; }
-.pa-scan-btn:active { transform: scale(0.94); background: rgba(37, 99, 235, 0.75); }
+.pa-scan-btn .ico-scan,
+.pa-scan-btn .ico-scan svg {
+    color: inherit !important;
+    fill: currentColor;
+}
+.pa-scan-btn:hover {
+    background: rgba(10, 120, 76, 0.35);
+    border-color: rgba(10, 120, 76, 0.65);
+    color: #a7f3d0;
+}
+.pa-scan-btn:active { transform: scale(0.94); }
 body.es-admin.modo-seleccion .pa-scan-btn {
     display: inline-flex !important;
+}
+/* Tema claro: icono oscuro/verde sobre fondo claro (no blanco invisible) */
+body.light-theme .pa-scan-btn {
+    background: #ffffff !important;
+    border: 1.5px solid #0A784C !important;
+    color: #0A784C !important;
+    box-shadow: 0 1px 4px rgba(10, 60, 35, 0.12);
+}
+body.light-theme .pa-scan-btn .ico-scan,
+body.light-theme .pa-scan-btn .ico-scan svg {
+    color: #0A784C !important;
+}
+body.light-theme .pa-scan-btn:hover {
+    background: rgba(10, 120, 76, 0.1) !important;
+    color: #08663f !important;
 }
 .scan-panel-header h2 {
     display: flex;
@@ -2488,68 +2498,349 @@ body:not(.light-theme) .filtro-tipo-btn.active {
 }
 
 
-/* —— Contraste empresarial botones + temas v4.1.6 —— */
-.btn:disabled,
-.btn[disabled] {
-  opacity: 0.55;
+/* —— Contraste botones v4.1.8 (WCAG / empresarial) —— */
+
+/* Base: más contraste en secundarios */
+.btn {
+  font-weight: 600;
+  border-width: 1.5px;
+  border-style: solid;
+}
+body:not(.light-theme) .btn {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(148, 163, 184, 0.35);
+  color: #e2e8f0;
+}
+body:not(.light-theme) .btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(148, 163, 184, 0.5);
+  color: #f8fafc;
+}
+body.light-theme .btn {
+  background: #f1f5f9 !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+body.light-theme .btn:hover {
+  background: #e2e8f0 !important;
+  border-color: #64748b !important;
+}
+
+/* Primary = acción principal (verde marca) */
+.btn-primary,
+body.light-theme .btn-primary,
+body.light-theme .btn.btn-primary,
+body.light-theme #enviarInventarioBtn.btn-primary {
+  background: #0A784C !important;
+  color: #ffffff !important;
+  border-color: #08663f !important;
+  box-shadow: 0 2px 8px rgba(10, 120, 76, 0.25);
+}
+.btn-primary:hover,
+body.light-theme .btn-primary:hover {
+  background: #08663f !important;
+  color: #ffffff !important;
+  filter: none !important;
+}
+
+/* Success = guardar / OK */
+.btn-success,
+body.light-theme .btn-success,
+body:not(.light-theme) .btn-success {
+  background: #0A784C !important;
+  color: #ffffff !important;
+  border-color: #08663f !important;
+  box-shadow: 0 2px 10px rgba(10, 120, 76, 0.3);
+}
+.btn-success:hover,
+body.light-theme .btn-success:hover,
+body:not(.light-theme) .btn-success:hover {
+  background: #08663f !important;
+  color: #ffffff !important;
+}
+
+/* GUARDAR CONTEO — máximo contraste */
+.btn-guardar-grande,
+body.light-theme .btn-guardar-grande {
+  background: #0A784C !important;
+  color: #ffffff !important;
+  border: 2px solid #064e32 !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 0 4px 14px rgba(10, 120, 76, 0.35) !important;
+  min-height: 52px !important;
+}
+.btn-guardar-grande:hover,
+body.light-theme .btn-guardar-grande:hover {
+  background: #08663f !important;
+  box-shadow: 0 5px 18px rgba(10, 120, 76, 0.42) !important;
+}
+.btn-guardar-grande:disabled,
+.btn-guardar-grande[disabled] {
+  background: #64748b !important;
+  border-color: #475569 !important;
+  color: #f1f5f9 !important;
+  box-shadow: none !important;
+  opacity: 0.85;
   cursor: not-allowed;
-  filter: grayscale(0.15);
+}
+
+/* Danger */
+.btn-danger,
+body.light-theme .btn-danger {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border-color: #b91c1c !important;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
+}
+.btn-danger:hover,
+body.light-theme .btn-danger:hover {
+  background: #b91c1c !important;
+}
+
+/* Warning */
+.btn-warning,
+body.light-theme .btn-warning {
+  background: #d97706 !important;
+  color: #ffffff !important;
+  border-color: #b45309 !important;
+}
+.btn-warning:hover {
+  background: #b45309 !important;
+}
+
+/* Outline: borde visible */
+.btn-outline,
+body.light-theme .btn-outline {
+  background: transparent !important;
+  border: 2px solid #64748b !important;
+  color: #e2e8f0 !important;
 }
 body.light-theme .btn-outline {
-  background: #fff !important;
-  border: 1.5px solid #94a3b8 !important;
-  color: #1e293b !important;
+  background: #ffffff !important;
+  border: 2px solid #475569 !important;
+  color: #0f172a !important;
 }
+.btn-outline:hover,
 body.light-theme .btn-outline:hover {
   border-color: #0A784C !important;
   color: #0A784C !important;
-  background: rgba(10, 120, 76, 0.06) !important;
+  background: rgba(10, 120, 76, 0.08) !important;
 }
-/* Oscuro: success más legible */
-body:not(.light-theme) .btn-success {
-  background: #0A784C;
-  color: #fff;
+
+/* Login Entrar */
+.login-btn.btn-primary {
+  min-height: 48px;
+  font-size: 1rem;
+  font-weight: 700;
 }
-body:not(.light-theme) .btn-success:hover {
-  background: #0d8f5a;
+
+/* Disabled genérico (no bajar tanto el contraste) */
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.7;
+  cursor: not-allowed;
+  filter: grayscale(0.2);
 }
+
 /* Year tabs */
 body.light-theme .year-tab {
   background: #f1f5f9;
-  border-color: #cbd5e1;
-  color: #334155;
+  border: 1.5px solid #94a3b8;
+  color: #1e293b;
+  font-weight: 600;
 }
 body.light-theme .year-tab.active {
   background: #0A784C !important;
-  border-color: #0A784C !important;
-  color: #fff !important;
+  border-color: #064e32 !important;
+  color: #ffffff !important;
+}
+body:not(.light-theme) .year-tab {
+  color: #cbd5e1;
+  border-color: rgba(148, 163, 184, 0.35);
 }
 body:not(.light-theme) .year-tab.active {
-  background: #0A784C;
-  border-color: #0A784C;
-  color: #fff;
-}
-/* Enviar inventario / acciones del listado */
-body.light-theme #enviarInventarioBtn.btn-primary,
-body.light-theme .btn.btn-primary {
   background: #0A784C !important;
+  border-color: #064e32 !important;
+  color: #ffffff !important;
+}
+
+/* Filtros Frios/Secos */
+body.light-theme .filtro-tipo-btn {
+  border: 1.5px solid #94a3b8;
+  color: #1e293b;
+  background: #fff;
+}
+body.light-theme .filtro-tipo-btn.active {
+  background: #0A784C !important;
+  border-color: #064e32 !important;
   color: #fff !important;
 }
-/* Inputs de cantidad más definidos en claro */
+
+/* Cambiar producto */
+body.modo-seleccion .pa-cambiar-btn {
+  font-weight: 700;
+}
+body.light-theme.modo-seleccion .pa-cambiar-btn {
+  border: 1.5px solid #0A784C !important;
+  color: #0A784C !important;
+  background: rgba(10, 120, 76, 0.08) !important;
+}
+
+/* Inputs cantidad legibles */
 body.light-theme.modo-seleccion .cantidad-row .group {
   background: #fff;
-  border-color: #e2e8f0;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  border: 1.5px solid #cbd5e1;
 }
 body.light-theme.modo-seleccion .cantidad-row .group input {
   color: #0f172a;
   background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #cbd5e1;
+  font-weight: 700;
 }
-/* Vencimiento: labels más legibles */
-body.light-theme .venc-label {
-  color: #0A784C;
-}
+body.light-theme .venc-label,
 body.light-theme .venc-history-title {
   color: #0A784C;
+  font-weight: 700;
+}
+
+
+/* —— Accesibilidad WCAG 2.1 AA v4.1.8 —— */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+.skip-link {
+  position: absolute;
+  left: 0.75rem;
+  top: -100px;
+  z-index: 10000;
+  padding: 0.6rem 1rem;
+  background: #0A784C;
+  color: #fff;
+  font-weight: 700;
+  border-radius: 8px;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+}
+.skip-link:focus {
+  top: 0.75rem;
+  outline: 3px solid #fbbf24;
+  outline-offset: 2px;
+}
+/* Focus visible global (teclado) */
+:focus {
+  outline: none;
+}
+:focus-visible {
+  outline: 3px solid #0A784C !important;
+  outline-offset: 2px !important;
+}
+body:not(.light-theme) :focus-visible {
+  outline-color: #34d399 !important;
+}
+.btn:focus-visible,
+.filtro-tipo-btn:focus-visible,
+.year-tab:focus-visible,
+.theme-toggle:focus-visible,
+.btn-logout:focus-visible,
+.header-menu-btn:focus-visible,
+.pa-cambiar-btn:focus-visible,
+input:focus-visible,
+select:focus-visible,
+button:focus-visible {
+  outline: 3px solid #0A784C !important;
+  outline-offset: 2px !important;
+}
+/* Texto muted un poco más contrastado (AA aprox.) */
+body:not(.light-theme) {
+  --text-muted: #a8b4c4;
+  --text-secondary: #d1d9e4;
+}
+body.light-theme {
+  --text-muted: #4a5c54;
+  --text-secondary: #2a3d34;
+}
+/* Preferencia de menos movimiento */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+/* Targets táctiles mínimos ~44px en controles clave */
+.header .theme-toggle,
+.btn-logout,
+.header-menu-btn {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+
+/* —— Iconos legibles en claro y oscuro v4.1.9 —— */
+.ico-scan {
+  color: inherit;
+}
+.ico-scan svg,
+.ico-scan svg path {
+  fill: currentColor;
+}
+/* Header: iconos sobre fondo verde (claro) o card (oscuro) */
+body.light-theme .header .theme-toggle,
+body.light-theme .btn-logout,
+body.light-theme .header-menu-btn {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(255,255,255,0.7) !important;
+  color: #0A784C !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+body.light-theme .header .theme-toggle:hover,
+body.light-theme .btn-logout:hover,
+body.light-theme .header-menu-btn:hover {
+  background: #f0fdf4 !important;
+  color: #08663f !important;
+}
+body:not(.light-theme) .header .theme-toggle,
+body:not(.light-theme) .btn-logout,
+body:not(.light-theme) .header-menu-btn {
+  color: #e2e8f0 !important;
+  border-color: rgba(148, 163, 184, 0.35);
+}
+/* Menú admin: iconos SVG heredan color del ítem */
+.header-menu-item .ico-scan,
+.admin-nav-btn .ico-scan,
+.header-menu-item .hmi-icon {
+  color: inherit !important;
+}
+body.light-theme .header-menu-item {
+  color: #1e293b;
+}
+body.light-theme .header-menu-item .ico-scan {
+  color: #0A784C !important;
+}
+/* Botón escanear en barra de búsqueda */
+body.light-theme #scanBarcodeBtn.btn-outline {
+  color: #0A784C !important;
+  border-color: #0A784C !important;
+}
+body.light-theme #scanBarcodeBtn .ico-scan {
+  color: #0A784C !important;
+}
+body:not(.light-theme) #scanBarcodeBtn .ico-scan {
+  color: inherit;
+}
+/* Placeholder de imagen vacío: no se vea “caja blanca muerta” */
+.pa-img[src=""],
+.pa-img:not([src]) {
+  display: none !important;
 }
