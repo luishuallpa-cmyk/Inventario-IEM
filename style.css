@@ -3596,137 +3596,97 @@ html[data-theme="light"] body {
 
 
 /* ============================================================
-   Login: tarjeta alineada al fondo malla (mismo tono, sin “cuadro flotante” raro)
+   Resultados PC: UN solo nombre (ri-title), sin duplicar .descripcion
    ============================================================ */
-body:not(.light-theme) .login-card {
-  background: rgba(15, 20, 28, 0.78) !important;
-  border: 1px solid rgba(45, 212, 191, 0.22) !important;
-  box-shadow:
-    0 0 0 1px rgba(15, 20, 28, 0.5),
-    0 24px 48px rgba(0, 0, 0, 0.45) !important;
-  backdrop-filter: blur(20px) saturate(1.15) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(1.15) !important;
+.result-item > .descripcion {
+  display: none !important;
 }
-body:not(.light-theme) .login-card h2 {
-  color: #e2e8f0 !important;
+@media (min-width: 960px) {
+  .result-item {
+    display: grid !important;
+    grid-template-columns: 76px minmax(0, 1fr) !important;
+    grid-template-rows: auto !important;
+    gap: 0.75rem 1rem !important;
+    align-items: center !important;
+    padding: 0.75rem 1rem !important;
+    height: auto !important;
+    min-height: 88px !important;
+    content-visibility: visible !important;
+    contain: none !important;
+  }
+  .result-item > .codigo,
+  .result-item > .fabrica,
+  .result-item > .descripcion,
+  .result-item > .unidad,
+  .result-item > .stock-cajas,
+  .result-item > .stock-unidades {
+    display: none !important;
+  }
+  .result-item > .prod-img,
+  .result-item > .prod-img-placeholder {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    width: 72px !important;
+    height: 72px !important;
+    object-fit: contain !important;
+    border-radius: 12px !important;
+    background: #fff !important;
+  }
+  .result-item .result-body {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.3rem !important;
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    overflow: visible !important;
+  }
+  .result-item .ri-title {
+    display: block !important;
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    line-height: 1.35 !important;
+    color: var(--heading-color, #0f172a) !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    word-break: normal !important;
+    overflow-wrap: break-word !important;
+    -webkit-line-clamp: unset !important;
+    line-clamp: unset !important;
+    max-height: none !important;
+  }
+  .result-item .ri-meta {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.35rem 0.65rem !important;
+    font-size: 0.78rem !important;
+    color: var(--text-muted, #64748b) !important;
+  }
+  .result-item .ri-meta .codigo,
+  .result-item .ri-meta .fabrica,
+  .result-item .ri-meta .unidad {
+    display: inline !important;
+  }
+  .result-item .ri-stock {
+    display: flex !important;
+    gap: 0.75rem !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+  }
 }
-body:not(.light-theme) .login-subtitle {
-  color: #94a3b8 !important;
-}
-body:not(.light-theme) .login-field label {
-  color: #94a3b8 !important;
-}
-body:not(.light-theme) .login-field input {
-  background: rgba(12, 18, 26, 0.85) !important;
-  border: 1px solid rgba(45, 212, 191, 0.18) !important;
-  color: #f1f5f9 !important;
-}
-body:not(.light-theme) .login-field input::placeholder {
-  color: #64748b !important;
-}
-body:not(.light-theme) .login-field input:focus {
-  border-color: rgba(45, 212, 191, 0.55) !important;
-  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.15) !important;
-}
-body:not(.light-theme) .login-btn,
-body:not(.light-theme) #loginBtn {
-  background: #0A784C !important;
-  border: none !important;
-  color: #fff !important;
-  box-shadow: 0 4px 16px rgba(10, 120, 76, 0.35) !important;
-}
-
-/* Tema claro: card blanca limpia sobre verde malla */
-body.light-theme .login-card {
-  background: rgba(255, 255, 255, 0.96) !important;
-  border: 1px solid rgba(255, 255, 255, 0.9) !important;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-}
-body.light-theme .login-card h2 {
-  color: #0f172a !important;
-}
-body.light-theme .login-field input {
-  background: #f8fafc !important;
-  border: 1px solid #e2e8f0 !important;
-  color: #0f172a !important;
-}
-body.light-theme .login-btn,
-body.light-theme #loginBtn {
-  background: #0A784C !important;
-  color: #fff !important;
-}
-
-
-/* ========== LOGIN TEMA CLARO: card blanca 3D · botón ROJO · fondo verde ========== */
-body.light-theme .login-card {
-  background: #ffffff !important;
-  border: 1px solid #e8eaed !important;
-  border-radius: 24px !important;
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.04),
-    0 4px 12px rgba(0, 0, 0, 0.06),
-    0 16px 40px rgba(0, 0, 0, 0.10),
-    0 28px 56px rgba(0, 0, 0, 0.08) !important;
-}
-body.light-theme .login-card h2 {
-  color: #1a1a1a !important;
-}
-body.light-theme .login-subtitle {
-  color: #6b7280 !important;
-}
-body.light-theme .login-field label {
-  color: #4b5563 !important;
-}
-body.light-theme .login-field input {
-  background: #f9fafb !important;
-  border: 1px solid #e5e7eb !important;
-  color: #111827 !important;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04) !important;
-}
-body.light-theme .login-field input:focus {
-  background: #ffffff !important;
-  border-color: #c8102e !important;
-  box-shadow: 0 0 0 3px rgba(200, 16, 46, 0.12) !important;
-}
-body.light-theme .login-logo img {
-  background: #ffffff !important;
-  border: 1px solid #eee !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
-}
-/* SOLO tema claro: Entrar ROJO logo */
-body.light-theme #loginBtn,
-body.light-theme .login-btn,
-body.light-theme .login-btn.btn-primary,
-body.light-theme .login-card .btn-primary,
-body.light-theme .login-card button[type="submit"] {
-  background: #C8102E !important;
-  background-image: none !important;
-  color: #ffffff !important;
-  border: none !important;
-  box-shadow: 0 4px 14px rgba(200, 16, 46, 0.35) !important;
-}
-body.light-theme #loginBtn:hover,
-body.light-theme .login-btn:hover,
-body.light-theme .login-card .btn-primary:hover {
-  background: #a50d24 !important;
-  background-image: none !important;
-}
-
-/* ========== LOGIN TEMA OSCURO: botón VERDE (como pediste) ========== */
-body:not(.light-theme) #loginBtn,
-body:not(.light-theme) .login-btn,
-body:not(.light-theme) .login-btn.btn-primary,
-body:not(.light-theme) .login-card .btn-primary,
-body:not(.light-theme) .login-card button[type="submit"] {
-  background: #0A784C !important;
-  background-image: none !important;
-  color: #ffffff !important;
-  border: none !important;
-  box-shadow: 0 4px 14px rgba(10, 120, 76, 0.35) !important;
-}
-body:not(.light-theme) #loginBtn:hover,
-body:not(.light-theme) .login-btn:hover {
-  background: #08663f !important;
+@media (max-width: 959px) {
+  .result-item > .descripcion {
+    display: none !important;
+  }
+  .result-item .ri-title {
+    display: block !important;
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: break-word !important;
+    -webkit-line-clamp: 3 !important;
+    line-clamp: 3 !important;
+    overflow: hidden !important;
+  }
 }
