@@ -397,6 +397,165 @@
             } catch (e) {}
         }
 
+        function setGlobalLoading(on, texto) {
+            var el = document.getElementById('globalLoading');
+            if (!el) return;
+            if (texto) {
+                var t = el.querySelector('.gl-text');
+                if (t) t.textContent = texto;
+            }
+            if (on) el.classList.remove('gl-hide');
+            else el.classList.add('gl-hide');
+        }
+
+        // RESPALDOS MENSUALES: IndexedDB + ZIP (último Excel del día)
+        var IEM_BACKUP_DB = 'iem_respaldos_v1';
+        var IEM_BACKUP_STORE = 'archivos';
+
+        function iemFechaParts(d) {
+            d = d || new Date();
+            var y = d.getFullYear();
+            var m = String(d.getMonth() + 1).padStart(2, '0');
+            var day = String(d.getDate()).padStart(2, '0');
+            var hh = String(d.getHours()).padStart(2, '0');
+            var mm = String(d.getMinutes()).padStart(2, '0');
+            return { y: y, m: m, day: day, hh: hh, mm: mm, mesKey: y + '-' + m, diaKey: y + '-' + m + '-' + day };
+        }
+
+        function iemOpenBackupDb() {
+            return new Promise(function (resolve, reject) {
+                if (!window.indexedDB) { reject(new Error('Sin IndexedDB')); return; }
+                var req = indexedDB.open(IEM_BACKUP_DB, 1);
+                req.onupgradeneeded = function () {
+                    var db = req.result;
+                    if (!db.objectStoreNames.contains(IEM_BACKUP_STORE)) {
+                        var st = db.createObjectStore(IEM_BACKUP_STORE, { keyPath: 'id' });
+                        st.createIndex('mes', 'mes', { unique: false });
+                        st.createIndex('tipo', 'tipo', { unique: false });
+                        st.createIndex('dia', 'dia', { unique: false });
+                    }
+                };
+                req.onsuccess = function () { resolve(req.result); };
+                req.onerror = function () { reject(req.error || new Error('IDB')); };
+            });
+        }
+
+        function iemIdbPut(rec) {
+            return iemOpenBackupDb().then(function (db) {
+                return new Promise(function (resolve, reject) {
+                    var tx = db.transaction(IEM_BACKUP_STORE, 'readwrite');
+                    tx.objectStore(IEM_BACKUP_STORE).put(rec);
+                    tx.oncomplete = function () { resolve(); };
+                    tx.onerror = function () { reject(tx.error); };
+                });
+            });
+        }
+
+        function iemIdbGetByMes(mesKey) {
+            return iemOpenBackupDb().then(function (db) {
+                return new Promise(function (resolve, reject) {
+                    var tx = db.transaction(IEM_BACKUP_STORE, 'readonly');
+                    var idx = tx.objectStore(IEM_BACKUP_STORE).index('mes');
+                    var req = idx.getAll(mesKey);
+                    req.onsuccess = function () { resolve(req.result || []); };
+                    req.onerror = function () { reject(req.error); };
+                });
+            });
+        }
+
+        function iemIdbDelete(id) {
+            return iemOpenBackupDb().then(function (db) {
+                return new Promise(function (resolve, reject) {
+                    var tx = db.transaction(IEM_BACKUP_STORE, 'readwrite');
+                    tx.objectStore(IEM_BACKUP_STORE).delete(id);
+                    tx.oncomplete = function () { resolve(); };
+                    tx.onerror = function () { reject(tx.error); };
+                });
+            });
+        }
+
+        async function guardarRespaldoMensual(tipo, blobOrArrayBuffer, nombreBase) {
+            try {
+                var fp = iemFechaParts();
+                var blob = blobOrArrayBuffer instanceof Blob
+                    ? blobOrArrayBuffer
+                    : new Blob([blobOrArrayBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                var safeTipo = String(tipo || 'archivo').replace(/[^\w\-]+/g, '_');
+                var nombre = (nombreBase || safeTipo) + '_' + fp.diaKey + '_' + fp.hh + fp.mm + '.xlsx';
+
+                if (safeTipo === 'excel_subido') {
+                    var existentes = await iemIdbGetByMes(fp.mesKey);
+                    for (var i = 0; i < existentes.length; i++) {
+                        var e = existentes[i];
+                        if (e.tipo === 'excel_subido' && e.dia === fp.diaKey) {
+                            await iemIdbDelete(e.id);
+                        }
+                    }
+                }
+
+                var rec = {
+                    id: safeTipo + '_' + fp.diaKey + '_' + Date.now(),
+                    tipo: safeTipo,
+                    mes: fp.mesKey,
+                    dia: fp.diaKey,
+                    nombre: nombre,
+                    blob: blob,
+                    ts: Date.now()
+                };
+                await iemIdbPut(rec);
+
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = nombre;
+                a.click();
+                setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+
+                await descargarZipMes(fp.mesKey, true);
+                showToast('📦 Respaldo ' + nombre + ' · ZIP mes ' + fp.mesKey + '. Súbelo a Drive (carpeta del mes).', 'success');
+            } catch (err) {
+                console.warn('Respaldo mensual', err);
+            }
+        }
+
+        async function descargarZipMes(mesKey, silencioso) {
+            var lista = await iemIdbGetByMes(mesKey);
+            if (!lista.length) {
+                if (!silencioso) showToast('No hay respaldos de ' + mesKey, 'info');
+                return;
+            }
+            var byDayExcel = {};
+            var otros = [];
+            lista.forEach(function (r) {
+                if (r.tipo === 'excel_subido') {
+                    var prev = byDayExcel[r.dia];
+                    if (!prev || (r.ts || 0) > (prev.ts || 0)) byDayExcel[r.dia] = r;
+                } else {
+                    otros.push(r);
+                }
+            });
+            var finalList = otros.concat(Object.keys(byDayExcel).map(function (k) { return byDayExcel[k]; }));
+
+            if (typeof JSZip === 'undefined') {
+                if (!silencioso) showToast('JSZip no cargó; usa los Excel sueltos descargados.', 'info');
+                return;
+            }
+            var zip = new JSZip();
+            var folderExcel = zip.folder('excel_actualizacion');
+            var folderConteo = zip.folder('conteo_fisico');
+            finalList.forEach(function (r) {
+                var folder = (r.tipo === 'excel_subido') ? folderExcel : folderConteo;
+                folder.file(r.nombre || (r.id + '.xlsx'), r.blob);
+            });
+            var out = await zip.generateAsync({ type: 'blob' });
+            var url = URL.createObjectURL(out);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'IEM_respaldos_' + mesKey + '.zip';
+            a.click();
+            setTimeout(function () { URL.revokeObjectURL(url); }, 2500);
+        }
+
         // ============================================================
         // CONFIRMACIÓN PROPIA (reemplaza confirm() nativo, que en
         // algunos WebViews/apps embebidas no se llega a mostrar)
@@ -2231,7 +2390,7 @@
             }
         }
 
-        function exportarInventario() {
+        async function exportarInventario() {
             if (!esAdmin()) {
                 showToast('Solo el administrador puede descargar el inventario.', 'error');
                 return;
@@ -2286,6 +2445,11 @@
             link.click();
             URL.revokeObjectURL(link.href);
             showToast('📥 Excel plano exportado (sin agrupar por línea).', 'success');
+            try {
+                if (typeof guardarRespaldoMensual === 'function') {
+                    await guardarRespaldoMensual('conteo_fisico', wbout, 'conteo_fisico');
+                }
+            } catch (eB) { console.warn(eB); }
         }
 
         // Vista previa agrupada por línea + PDF elegante (print)
@@ -3984,6 +4148,14 @@
                         + ', sin tocar stock)';
                 }
                 showToast('✅ ' + subidos + ' productos actualizados en Supabase' + extra + '.', 'success');
+                try {
+                    if (typeof window.__iemLastExcelFile === 'object' && window.__iemLastExcelFile) {
+                        var f = window.__iemLastExcelFile;
+                        var buf = await f.arrayBuffer();
+                        await guardarRespaldoMensual('excel_subido', buf, 'excel_actualizacion');
+                        window.__iemLastExcelFile = null;
+                    }
+                } catch (eBackup) { console.warn(eBackup); }
                 await loadFromGoogleSheets();
             } catch (err) {
                 console.error(err);
@@ -4721,6 +4893,7 @@
                         const modoValEl = document.getElementById('adminModoValorado');
                         const modoBase = !!(modoBaseEl && modoBaseEl.checked);
                         const modoValorado = !!(modoValEl && modoValEl.checked);
+                        window.__iemLastExcelFile = adminSelectedFile;
                         await importarExcelASupabase(adminSelectedFile, {
                             soloCatalogo: !!(solo && solo.checked),
                             modoBase: modoBase,
@@ -5757,6 +5930,94 @@
             }
         }
 
+
+        function consolidarItemsPorCodigo(items) {
+            var map = {};
+            (items || []).forEach(function (it) {
+                var cod = String(it.codigo || '').trim();
+                if (!cod) return;
+                var k = cod.toUpperCase();
+                if (!map[k]) {
+                    map[k] = {
+                        codigo: cod,
+                        descripcion: it.descripcion || '',
+                        linea: it.linea || '',
+                        imagen_url: it.imagen_url || '',
+                        codigo_fabrica: it.codigo_fabrica || '',
+                        cajas: 0,
+                        unidades: 0,
+                        vendedores: []
+                    };
+                }
+                map[k].cajas += Number(it.cajas) || 0;
+                map[k].unidades += Number(it.unidades) || 0;
+                if (it.descripcion && !map[k].descripcion) map[k].descripcion = it.descripcion;
+                if (it.imagen_url && !map[k].imagen_url) map[k].imagen_url = it.imagen_url;
+                if (it._vendedor) {
+                    var v = String(it._vendedor);
+                    if (map[k].vendedores.indexOf(v) === -1) map[k].vendedores.push(v);
+                }
+            });
+            return Object.keys(map).sort().map(function (k) { return map[k]; });
+        }
+
+        function renderPedidosConsolidados() {
+            const det = document.getElementById('adminPedidoDetalle');
+            if (!det) return;
+            const estadoSel = (document.getElementById('adminPedidosEstado') || {}).value || 'pendiente';
+            let rows = (_pedidosCache || []).slice();
+            if (estadoSel) {
+                rows = rows.filter(function (r) { return String(r.estado || '') === estadoSel; });
+            }
+            // Si no hay filtro de estado, por defecto consolidar pendientes
+            if (!estadoSel) {
+                rows = rows.filter(function (r) { return String(r.estado || '') === 'pendiente'; });
+            }
+            var all = [];
+            rows.forEach(function (r) {
+                var vend = (r.vendedor_codigo || '') + (r.vendedor_nombre ? ' ' + r.vendedor_nombre : '');
+                (Array.isArray(r.items) ? r.items : []).forEach(function (it) {
+                    var copy = Object.assign({}, it, { _vendedor: vend.trim() });
+                    all.push(copy);
+                });
+            });
+            var merged = consolidarItemsPorCodigo(all);
+            var tc = 0, tu = 0;
+            merged.forEach(function (it) { tc += it.cajas; tu += it.unidades; });
+            var filas = merged.map(function (it, i) {
+                var img = it.imagen_url
+                    ? '<img class="apd-thumb" src="' + escHtmlPed(it.imagen_url) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">'
+                    : '<span class="apd-thumb-ph">📦</span>';
+                return '<tr>' +
+                    '<td>' + (i + 1) + '</td>' +
+                    '<td class="apd-img-cell">' + img + '</td>' +
+                    '<td class="mono">' + escHtmlPed(it.codigo) + '</td>' +
+                    '<td>' + escHtmlPed(it.descripcion) +
+                    (it.vendedores && it.vendedores.length
+                        ? '<div class="apd-vend-mini">' + escHtmlPed(it.vendedores.join(' · ')) + '</div>'
+                        : '') +
+                    '</td>' +
+                    '<td class="num">' + it.cajas + '</td>' +
+                    '<td class="num">' + it.unidades + '</td>' +
+                    '<td>' + escHtmlPed(it.linea || '') + '</td>' +
+                    '</tr>';
+            }).join('');
+            if (!filas) filas = '<tr><td colspan="7" class="empty-message">No hay ítems para consolidar</td></tr>';
+            det.hidden = false;
+            det.innerHTML =
+                '<div class="apd-head">' +
+                '<h4>Lista consolidada · mismos códigos sumados</h4>' +
+                '<button type="button" class="btn btn-outline btn-sm" id="apdCerrar">Cerrar</button>' +
+                '</div>' +
+                '<p class="apd-meta">' + rows.length + ' pedido(s) · ' + merged.length + ' productos · ' +
+                tc + ' cajas · ' + tu + ' unidades' +
+                (estadoSel ? ' · filtro: ' + escHtmlPed(estadoSel) : ' · pendientes') + '</p>' +
+                '<div class="table-wrap"><table class="diff-table apd-table"><thead><tr>' +
+                '<th>#</th><th></th><th>Código</th><th>Descripción / vendedores</th><th>Cajas</th><th>Unid.</th><th>Línea</th>' +
+                '</tr></thead><tbody>' + filas + '</tbody></table></div>';
+            det.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
         function renderListaPedidosSugeridos() {
             const list = document.getElementById('adminPedidosList');
             if (!list) return;
@@ -5811,7 +6072,7 @@
             const det = document.getElementById('adminPedidoDetalle');
             if (!det || !r) return;
             _pedidoDetalleId = r.id;
-            const items = Array.isArray(r.items) ? r.items : [];
+            const items = consolidarItemsPorCodigo(Array.isArray(r.items) ? r.items : []);
             let filas = items.map(function (it, i) {
                 var img = it.imagen_url
                     ? '<img class="apd-thumb" src="' + escHtmlPed(it.imagen_url) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">'
@@ -5892,6 +6153,10 @@
         document.addEventListener('DOMContentLoaded', function () {
             const btn = document.getElementById('adminRefreshPedidosBtn');
             if (btn) btn.addEventListener('click', cargarPedidosSugeridos);
+            const btnCons = document.getElementById('btnPedidosConsolidado');
+            if (btnCons) btnCons.addEventListener('click', function () {
+                if (typeof renderPedidosConsolidados === 'function') renderPedidosConsolidados();
+            });
             const sel = document.getElementById('adminPedidosEstado');
             if (sel) sel.addEventListener('change', renderListaPedidosSugeridos);
             const fil = document.getElementById('adminPedidosFiltro');
@@ -5929,3 +6194,15 @@
             }
         }, 60000);
     })();
+
+
+        // Ocultar pantalla de carga cuando la app ya pintó
+        document.addEventListener('DOMContentLoaded', function () {
+            setTimeout(function () {
+                if (typeof setGlobalLoading === 'function') setGlobalLoading(false);
+                else {
+                    var el = document.getElementById('globalLoading');
+                    if (el) el.classList.add('gl-hide');
+                }
+            }, 400);
+        });

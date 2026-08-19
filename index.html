@@ -25,12 +25,17 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=4.2.0-mesh">
+    <link rel="stylesheet" href="style.css?v=4.2.1-load">
     <link rel="stylesheet" href="admin.css?v=3.100">
 </head>
 <body>
+<div id="globalLoading" class="global-loading" aria-live="polite" aria-busy="true">
+  <div class="gl-spinner" aria-hidden="true"></div>
+  <p class="gl-text">Cargando…</p>
+</div>
     <a class="skip-link" href="#mainContent">Saltar al contenido</a>
 <div class="login-overlay" id="loginOverlay">
     <div class="login-card">
@@ -506,6 +511,9 @@
                             </select>
                             <input type="search" id="adminPedidosFiltro" placeholder="Vendedor, código, nota..." style="flex:1;min-width:160px;" autocomplete="off">
                         </div>
+                        <div style="margin:0.5rem 0 0.75rem;">
+                            <button type="button" class="btn btn-primary btn-sm" id="btnPedidosConsolidado">📋 Lista consolidada (sumar mismos códigos)</button>
+                        </div>
                         <div id="adminPedidosList" class="admin-pedidos-list">
                             <p class="admin-sesiones-empty">Cargando…</p>
                         </div>
@@ -574,7 +582,7 @@
     </div>
 
 <script src="config.js?v=4.1.9"></script>
-<script src="app.js?v=4.1.9"></script>
+<script src="app.js?v=4.2.2-cons"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {

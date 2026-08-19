@@ -2869,3 +2869,48 @@ body:not(.light-theme) #scanBarcodeBtn .ico-scan {
 .pa-img:not([src]) {
   display: none !important;
 }
+
+
+/* —— Carga inicial (spinner tipo puntos en círculo) —— */
+.global-loading {
+  position: fixed; inset: 0; z-index: 99999;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1rem;
+  background: #0a0e14;
+  color: #e2e8f0;
+  transition: opacity 0.35s ease, visibility 0.35s;
+}
+.global-loading.gl-hide {
+  opacity: 0; visibility: hidden; pointer-events: none;
+}
+body.light-theme .global-loading { background: #0A784C; color: #fff; }
+.gl-text { margin: 0; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.02em; opacity: 0.9; }
+.gl-spinner {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0%, #fff 70%, transparent 100%);
+  mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5px));
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5px));
+  animation: gl-spin 0.85s linear infinite;
+}
+/* Fallback dots ring */
+.gl-spinner::after {
+  content: "";
+  position: absolute;
+}
+@keyframes gl-spin { to { transform: rotate(360deg); } }
+/* Three dots alternative when class gl-dots */
+.global-loading.gl-dots .gl-spinner {
+  width: auto; height: auto; background: none; mask: none; -webkit-mask: none;
+  display: flex; gap: 0.45rem; animation: none;
+}
+.global-loading.gl-dots .gl-spinner span {
+  width: 10px; height: 10px; border-radius: 50%; background: #fff;
+  animation: gl-bounce 1.2s ease-in-out infinite;
+}
+.global-loading.gl-dots .gl-spinner span:nth-child(2) { animation-delay: 0.15s; }
+.global-loading.gl-dots .gl-spinner span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes gl-bounce {
+  0%, 80%, 100% { opacity: 0.25; transform: scale(0.85); }
+  40% { opacity: 1; transform: scale(1.15); }
+}
