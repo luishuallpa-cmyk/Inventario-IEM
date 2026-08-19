@@ -28,8 +28,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=4.2.3-load">
-    <link rel="stylesheet" href="admin.css?v=4.2.3-respaldos">
+    <link rel="stylesheet" href="style.css?v=4.2.4-load">
+    <link rel="stylesheet" href="admin.css?v=4.2.4">
 </head>
 <body>
 <div id="globalLoading" class="global-loading" aria-live="polite" aria-busy="true" aria-label="Cargando">
@@ -126,7 +126,7 @@
                         <span class="hmi-icon">👥</span><span class="hmi-label">Sesiones</span>
                     </button>
                     <div class="header-menu-footer">
-                        <span class="version">v4.2.3 · Admin</span>
+                        <span class="version">v4.2.4 · Admin</span>
                     </div>
                 </div>
             </div>
@@ -487,14 +487,21 @@
                     
                     <div class="admin-tab" id="adminTabRespaldos" data-admin-panel="respaldos" hidden>
                         <h3 class="admin-subtitle">📦 Respaldos mensuales</h3>
-                        <p class="admin-lead">Al subir un Excel se guarda una copia aquí (sin descargar). Desde este menú sí descargas el Excel del sistema y el conteo. Así no saturas Supabase: al usar «Ambos + limpiar nube» se borran conteos de meses anteriores (el catálogo no se toca).</p>
+                        <p class="admin-lead">
+                            Esta sección es <strong>solo para descargar</strong>. No se suben archivos aquí.
+                            Los Excel se cargan en <strong>Subir Excel</strong>; aquí bajas el respaldo del mes (sistema + conteo)
+                            y, si quieres, limpias en Supabase los <em>conteos de meses anteriores</em> para no acumular basura.
+                            El catálogo y el stock actual <strong>no se borran</strong>.
+                        </p>
                         <div class="admin-warning-box" id="iemBackupReminder" role="note">
-                            <div class="admin-warning-title">📦 Respaldos diarios / mensuales</div>
+                            <div class="admin-warning-title">⬇️ Solo descarga (no hay subida en Respaldos)</div>
                             <p class="admin-warning-text">
-                                Descarga <strong>2 archivos</strong>:<br>
-                                • <strong>Excel del sistema</strong> (el que alimenta el stock) — si hubo varias subidas el mismo día, solo queda la <strong>última</strong>.<br>
-                                • <strong>Conteo físico</strong> del período.<br>
-                                Al descargar, se limpia en Supabase el conteo de <em>meses anteriores</em> (el catálogo y el stock actual no se borran).
+                                Descarga lo del período y archívalo en tu PC:<br>
+                                • <strong>Excel del sistema</strong> — última base subida (stock teórico).<br>
+                                • <strong>Conteo físico / lotes</strong> — lo contado en el mes (con fechas de vencimiento).<br>
+                                <br>
+                                <strong>Ambos + limpiar nube</strong>: descarga ambos y luego borra en Supabase los
+                                registros de <em>lotes_conteo</em> de <em>meses anteriores</em> (deja el mes actual limpio de histórico viejo).
                             </p>
                             <div style="display:flex;flex-wrap:wrap;gap:0.45rem;margin-top:0.5rem;">
                                 <button type="button" class="btn btn-primary btn-sm" id="btnDescargarExcelSistema">⬇️ Excel sistema (último del día)</button>
@@ -668,7 +675,7 @@
     </div>
 
 <script src="config.js?v=4.2.3"></script>
-<script src="app.js?v=4.2.3-nodl"></script>
+<script src="app.js?v=4.2.4-nodl"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {
