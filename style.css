@@ -3690,3 +3690,36 @@ html[data-theme="light"] body {
     overflow: hidden !important;
   }
 }
+
+
+/* Tema oscuro: tarjeta mismo tono teal del fondo (no azul) */
+body:not(.light-theme) .login-card {
+  background: rgba(12, 22, 28, 0.88) !important;
+  border: 1px solid rgba(45, 180, 160, 0.22) !important;
+  box-shadow:
+    0 0 0 1px rgba(8, 16, 20, 0.6),
+    0 24px 48px rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(18px) saturate(1.1) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.1) !important;
+}
+body:not(.light-theme) .login-card h2 {
+  color: #e8f0ee !important;
+}
+body:not(.light-theme) .login-subtitle {
+  color: #8aa8a0 !important;
+}
+body:not(.light-theme) .login-field label {
+  color: #8aa8a0 !important;
+}
+body:not(.light-theme) .login-field input {
+  background: rgba(8, 16, 20, 0.75) !important;
+  border: 1px solid rgba(45, 180, 160, 0.18) !important;
+  color: #e8f0ee !important;
+}
+body:not(.light-theme) .login-field input::placeholder {
+  color: #5a7a72 !important;
+}
+body:not(.light-theme) .login-field input:focus {
+  border-color: rgba(45, 180, 160, 0.5) !important;
+  box-shadow: 0 0 0 3px rgba(45, 180, 160, 0.12) !important;
+}
