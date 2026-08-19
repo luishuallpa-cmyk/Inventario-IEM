@@ -489,7 +489,9 @@
             });
         }
 
-        async function guardarRespaldoMensual(tipo, blobOrArrayBuffer, nombreBase) {
+        async function guardarRespaldoMensual(tipo, blobOrArrayBuffer, nombreBase, opts) {
+            opts = opts || {};
+            var autoDescargar = opts.descargar === true; // por defecto NO descarga al subir
             try {
                 var fp = iemFechaParts();
                 var blob = blobOrArrayBuffer instanceof Blob
@@ -519,16 +521,17 @@
                 };
                 await iemIdbPut(rec);
 
-                var url = URL.createObjectURL(blob);
-                var a = document.createElement('a');
-                a.href = url;
-                a.download = nombre;
-                a.click();
-                setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
-
-                await descargarZipMes(fp.mesKey, true);
-                showToast('📦 Respaldo ' + nombre + ' · ZIP mes ' + fp.mesKey + '. Súbelo a Drive (carpeta del mes).', 'success');
-                try { localStorage.setItem(iemBackupFlagKey(fp.mesKey), '1'); actualizarEstadoRespaldoUI(); } catch (eF) {}
+                // Solo descarga si se pide explícitamente (menú Respaldos), no al terminar de subir
+                if (autoDescargar) {
+                    var url = URL.createObjectURL(blob);
+                    var a = document.createElement('a');
+                    a.href = url;
+                    a.download = nombre;
+                    a.click();
+                    setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+                    await descargarZipMes(fp.mesKey, true);
+                    showToast('📦 Respaldo ' + nombre + ' descargado.', 'success');
+                }
             } catch (err) {
                 console.warn('Respaldo mensual', err);
             }
