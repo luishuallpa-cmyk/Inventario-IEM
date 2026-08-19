@@ -627,20 +627,13 @@
             return '';
         }
         function getCodigo(item) { return getField(item, 'Codigo', 'Código', 'Cod. Producto', 'InventarioProductoCodigo', 'Cod'); }
-        function getCodigoFabrica(item) {
-            return getField(item, 'CodigoFabrica', 'codigo_fabrica', 'CódigoFábrica', 'Cod. Fabrica', 'CodFabrica', 'Cod.Fábrica', 'Codigo Fabrica', 'SKU', 'sku');
-        }
+        function getCodigoFabrica(item) { return getField(item, 'CodigoFabrica', 'codigo_fabrica', 'CódigoFábrica', 'Cod. Fabrica', 'CodFabrica', 'SKU'); }
+        function soloDigitos(v) { return String(v || '').replace(/\D/g, ''); }
         function normalizarCodigoBusqueda(v) {
             if (v == null || v === '') return '';
             var s = String(v).trim();
             if (/^\d+\.0+$/.test(s)) s = s.replace(/\.0+$/, '');
-            if (/e/i.test(s) && !isNaN(Number(s))) {
-                try { s = String(Math.round(Number(s))); } catch (e) {}
-            }
-            return s.trim();
-        }
-        function soloDigitos(v) {
-            return String(v || '').replace(/\D/g, '');
+            return s;
         }
         function getCodigoBarras(item) { return getField(item, 'CodigoBarras', 'codigo_barras', 'EAN', 'Barcode', 'CodBarras', 'CódigoBarras'); }
         function getDescripcion(item) { return getField(item, 'Producto', 'Descripción', 'InventarioProductoDescripcion', 'Descripcion', 'Nombre'); }
@@ -840,57 +833,39 @@
                     });
                     try { localStorage.setItem(TIPO_ALMACEN_KEY, JSON.stringify(mapTipo)); } catch (e) {}
                     // Índices + sincronizar Fríos/Secos desde nube a localStorage
-                    window._mapCodigo = Object.create(null);
-                    window._mapBarras = Object.create(null);
-                    window._mapFabrica = Object.create(null);
                     var mapTipoSync = {};
-                    function indexKey(map, key, item) {
-                        if (!key || !item) return;
-                        var s = normalizarCodigoBusqueda(key);
-                        if (!s) return;
-                        map[s] = item;
-                        map[s.toUpperCase()] = item;
-                        var dig = soloDigitos(s);
-                        if (dig) {
-                            map[dig] = item;
-                            var noz = dig.replace(/^0+/, '') || '0';
-                            if (noz !== dig) map[noz] = item;
-                        }
-                    }
                     currentData.forEach(function (item) {
-                        var c = normalizarCodigoBusqueda(getCodigo(item));
-                        var f = normalizarCodigoBusqueda(getCodigoFabrica(item));
-                        var b = normalizarCodigoBusqueda(getCodigoBarras(item));
-                        // guardar normalizado en el item para búsquedas
-                        if (f) {
-                            item.CodigoFabrica = f;
-                            item.codigo_fabrica = f;
-                        }
-                        if (b) {
-                            item.CodigoBarras = b;
-                            item.codigo_barras = b;
-                        }
+                        var c = String(getCodigo(item) || '').trim();
                         var tip = normalizarTipoAlmacen(item.tipo_almacen || item.TipoAlmacen || '');
                         if (c && tip) {
                             mapTipoSync[c] = tip;
                             item.tipo_almacen = tip;
                             item.TipoAlmacen = tip;
                         }
-                        item._sb = [c, f, b, getDescripcion(item), getUnidadRef(item), getLinea(item), getMarca(item)].join('\u0001').toUpperCase();
-                        marcarFlagsProducto(item);
-                        indexKey(window._mapCodigo, c, item);
-                        indexKey(window._mapCodigo, f, item);
-                        indexKey(window._mapFabrica, f, item);
-                        indexKey(window._mapBarras, b, item);
                     });
+                    try { if (typeof reindexarCatalogo === 'function') reindexarCatalogo(); } catch (eIdx) {
+                        window._mapCodigo = Object.create(null);
+                        window._mapBarras = Object.create(null);
+                        window._mapFabrica = Object.create(null);
+                        currentData.forEach(function (item) {
+                            var c = String(getCodigo(item) || '').trim();
+                            var f = String(getCodigoFabrica(item) || '').trim();
+                            var b = String(getCodigoBarras(item) || '').trim();
+                            item._sb = [c, f, b, getDescripcion(item)].join('\u0001').toUpperCase();
+                            marcarFlagsProducto(item);
+                            if (c) window._mapCodigo[c.toUpperCase()] = item;
+                            if (f) { window._mapCodigo[f.toUpperCase()] = item; window._mapFabrica[f] = item; window._mapFabrica[f.replace(/\D/g,'')] = item; }
+                            if (b && !(window._mapFabrica && window._mapFabrica[b])) window._mapBarras[b] = item;
+                        });
+                    }
                     try {
                         var prevMap = leerMapaTipoAlmacen();
                         Object.keys(mapTipoSync).forEach(function (k) { prevMap[k] = mapTipoSync[k]; });
                         localStorage.setItem(TIPO_ALMACEN_KEY, JSON.stringify(prevMap));
                     } catch (eMap) {}
-                    try { reindexarCatalogo(); } catch (eR) {}
                     guardarRespaldo(currentData);
                     aplicarBarrasLocalADatos();
+                    try { if (typeof reindexarCatalogo === 'function') reindexarCatalogo(); } catch (e) {}
                     actualizarEstadoCatalogo();
                     if (!searchInput.value.trim() && selectedIndex === -1) {
                         filteredData = [];
@@ -915,7 +890,6 @@
             const respaldo = cargarRespaldo();
             if (respaldo) {
                 currentData = respaldo.data;
-                try { reindexarCatalogo(); } catch (e) { console.warn(e); }
                 const fechaTexto = formatearFechaRespaldo(respaldo.fechaISO);
                 actualizarEstadoCatalogo(); fileStatus.textContent = (fileStatus.textContent || '') + ' · respaldo ' + fechaTexto;
             } else {
@@ -931,7 +905,6 @@
 
         function useLocalData() {
             currentData = [...sampleData];
-            try { reindexarCatalogo(); } catch (e) {}
             fileStatus.textContent = `📋 ${currentData.length} registros de ejemplo`;
             // Bug #2: mismo cuidado que en loadFromGoogleSheets, para no interrumpir
             // una búsqueda o selección en curso si esto ocurre durante el auto-refresco.
@@ -1157,52 +1130,35 @@
             }
         }
 
-        /** Reconstruye índices de búsqueda (SAP, fábrica 8 dígitos, barras). */
         function reindexarCatalogo() {
             window._mapCodigo = Object.create(null);
             window._mapBarras = Object.create(null);
             window._mapFabrica = Object.create(null);
-            if (typeof normalizarCodigoBusqueda !== 'function') {
-                window.normalizarCodigoBusqueda = function (v) {
-                    if (v == null || v === '') return '';
-                    var s = String(v).trim();
-                    if (/^\d+\.0+$/.test(s)) s = s.replace(/\.0+$/, '');
-                    if (/e/i.test(s) && !isNaN(Number(s))) {
-                        try { s = String(Math.round(Number(s))); } catch (e) {}
-                    }
-                    return s.trim();
-                };
-            }
-            if (typeof soloDigitos !== 'function') {
-                window.soloDigitos = function (v) { return String(v || '').replace(/\D/g, ''); };
-            }
-            function indexKey(map, key, item) {
+            function idx(map, key, item) {
                 if (!key || !item) return;
-                var s = normalizarCodigoBusqueda(key);
+                var s = String(key).trim();
                 if (!s) return;
                 map[s] = item;
                 map[s.toUpperCase()] = item;
-                var dig = soloDigitos(s);
-                if (dig) {
-                    map[dig] = item;
-                    var noz = dig.replace(/^0+/, '') || '0';
-                    if (noz !== dig) map[noz] = item;
+                var d = s.replace(/\D/g, '');
+                if (d) {
+                    map[d] = item;
+                    var n = d.replace(/^0+/, '') || '0';
+                    if (n !== d) map[n] = item;
                 }
             }
             (currentData || []).forEach(function (item) {
                 if (!item) return;
-                var c = normalizarCodigoBusqueda(getCodigo(item));
-                var f = normalizarCodigoBusqueda(getCodigoFabrica(item));
-                var b = normalizarCodigoBusqueda(getCodigoBarras(item));
+                var c = String(getCodigo(item) || '').trim();
+                var f = String(getCodigoFabrica(item) || '').trim();
+                var b = String(getCodigoBarras(item) || '').trim();
                 if (f) { item.CodigoFabrica = f; item.codigo_fabrica = f; }
-                if (b) { item.CodigoBarras = b; item.codigo_barras = b; }
-                if (c) { item.Codigo = c; }
                 item._sb = [c, f, b, getDescripcion(item), getUnidadRef(item), getLinea(item), getMarca(item)].join('\u0001').toUpperCase();
                 try { marcarFlagsProducto(item); } catch (e) {}
-                indexKey(window._mapCodigo, c, item);
-                indexKey(window._mapCodigo, f, item);
-                indexKey(window._mapFabrica, f, item);
-                indexKey(window._mapBarras, b, item);
+                idx(window._mapCodigo, c, item);
+                idx(window._mapCodigo, f, item);
+                idx(window._mapFabrica, f, item);
+                if (b && !(window._mapFabrica[b] || window._mapFabrica[b.replace(/\D/g,'')])) idx(window._mapBarras, b, item);
             });
         }
 
@@ -1222,22 +1178,34 @@
             }
             const termCompact = term.replace(/\s/g, '');
             const termUpper = term.toUpperCase();
-            const termDigits = soloDigitos(termCompact);
             const enPedido = (typeof modoPedido !== 'undefined' && modoPedido);
-            // 8+ dígitos pueden ser fábrica (Laive ~8) o EAN/barras
             const pareceBarras = /^[0-9]{8,}$/.test(termCompact);
-            const pareceFab = /^[0-9]{6,10}$/.test(termDigits);
 
-            // Atajo O(1): fábrica / código SAP / barras (también respeta filtro PROM/CBM stock 0)
+            // Atajo O(1): código o barras exactos (también respeta filtro PROM/CBM stock 0)
             var hitExact = null;
-            if (window._mapFabrica && (window._mapFabrica[termCompact] || window._mapFabrica[termDigits] || window._mapFabrica[termUpper])) {
+            var termDigits = (typeof soloDigitos === 'function') ? soloDigitos(termCompact) : termCompact.replace(/\D/g, '');
+            // 1) Código de fábrica primero (evita conflicto con QR/barras guardados)
+            if (window._mapFabrica) {
                 hitExact = window._mapFabrica[termCompact] || window._mapFabrica[termDigits] || window._mapFabrica[termUpper];
             }
-            if (!hitExact && window._mapCodigo && (window._mapCodigo[termUpper] || window._mapCodigo[termCompact] || window._mapCodigo[termDigits])) {
+            // 2) Código SAP
+            if (!hitExact && window._mapCodigo) {
                 hitExact = window._mapCodigo[termUpper] || window._mapCodigo[termCompact] || window._mapCodigo[termDigits];
             }
-            if (!hitExact && window._mapBarras && (window._mapBarras[termCompact] || window._mapBarras[termDigits])) {
-                hitExact = window._mapBarras[termCompact] || window._mapBarras[termDigits];
+            // 3) Barras solo si ese número NO es fábrica de alguien
+            if (!hitExact && window._mapBarras) {
+                var fabBusy = window._mapFabrica && (window._mapFabrica[termCompact] || window._mapFabrica[termDigits]);
+                if (!fabBusy) hitExact = window._mapBarras[termCompact] || window._mapBarras[termDigits];
+            }
+            // 4) Barrido lineal por fábrica 6–14 dígitos
+            if (!hitExact && termDigits && termDigits.length >= 6 && termDigits.length <= 14) {
+                for (var hi = 0; hi < (currentData || []).length; hi++) {
+                    var itH = currentData[hi];
+                    if (!itH) continue;
+                    if (!enPedido && typeof esProductoBuscableInventario === 'function' && !esProductoBuscableInventario(itH)) continue;
+                    var fdH = (typeof soloDigitos === 'function' ? soloDigitos(getCodigoFabrica(itH)) : String(getCodigoFabrica(itH) || '').replace(/\D/g, ''));
+                    if (fdH && fdH === termDigits) { hitExact = itH; break; }
+                }
             }
             if (hitExact) {
                 if (!enPedido && !esProductoBuscableInventario(hitExact)) {
@@ -1248,27 +1216,6 @@
                 filteredData = [hitExact];
                 renderResults(filteredData);
                 return;
-            }
-
-            // Barrido lineal por código de fábrica (8 dígitos) — no depende del índice
-            if (termDigits && termDigits.length >= 6 && termDigits.length <= 14) {
-                var hitsFab = [];
-                for (var hi = 0; hi < (currentData || []).length; hi++) {
-                    var itH = currentData[hi];
-                    if (!itH) continue;
-                    if (!enPedido && !esProductoBuscableInventario(itH)) continue;
-                    if (filtroTipoLaive) {
-                        var tipH = getTipoAlmacen(itH);
-                        if (tipH !== filtroTipoLaive) continue;
-                    }
-                    var fdH = soloDigitos(getCodigoFabrica(itH));
-                    if (fdH && fdH === termDigits) hitsFab.push(itH);
-                }
-                if (hitsFab.length) {
-                    filteredData = hitsFab;
-                    renderResults(filteredData);
-                    return;
-                }
             }
 
             const palabras = term.split(/\s+/).filter(p => p.length > 0);
@@ -1298,14 +1245,6 @@
                     if (tipo !== filtroTipoLaive) return false;
                 }
 
-                // Match directo por dígitos de fábrica / barras / código (ej. 50001121)
-                if (termDigits && termDigits.length >= 6) {
-                    var fd = soloDigitos(fab);
-                    var bd = soloDigitos(bar);
-                    var cd = soloDigitos(cod);
-                    if (fd === termDigits || bd === termDigits || cd === termDigits) return true;
-                    if (fd && (fd.indexOf(termDigits) !== -1 || termDigits.indexOf(fd) !== -1) && Math.min(fd.length, termDigits.length) >= 6) return true;
-                }
                 const blob = item._sb || [
                     cod, fab, bar,
                     getDescripcion(item).toUpperCase(),
@@ -1316,18 +1255,19 @@
                 return palabrasUpper.every(function (pal) { return blob.indexOf(pal) !== -1; });
             });
 
-            // Si hay varios hits con código numérico largo, priorizar exacto fábrica → barras → código
-            if ((pareceBarras || pareceFab) && filteredData.length > 1) {
+            // Priorizar fábrica exacta sobre barras cuando hay varios hits
+            if (pareceBarras && filteredData.length > 1) {
                 var td = termDigits || termCompact;
                 var exactFab = filteredData.filter(function (item) {
-                    return soloDigitos(getCodigoFabrica(item)) === td || String(getCodigoFabrica(item) || '').trim() === termCompact;
+                    var fd = String(getCodigoFabrica(item) || '').replace(/\D/g, '');
+                    return fd === td || String(getCodigoFabrica(item) || '').trim() === termCompact;
                 });
                 if (exactFab.length) filteredData = exactFab;
                 else {
-                    var exactBar = filteredData.filter(function (item) {
-                        return soloDigitos(getCodigoBarras(item)) === td || String(getCodigoBarras(item) || '').trim() === termCompact;
+                    var exactos = filteredData.filter(function (item) {
+                        return String(getCodigoBarras(item) || '').trim() === term.replace(/\s/g, '');
                     });
-                    if (exactBar.length) filteredData = exactBar;
+                    if (exactos.length) filteredData = exactos;
                 }
             }
 
@@ -5028,6 +4968,7 @@
         let html5QrCode = null;
         let scanModo = 'buscar'; // 'buscar' | 'vincular'
         const BARRAS_LOCAL_KEY = 'iem_codigo_barras_local';
+        const BARRAS_LOCAL_PURGED_KEY = 'iem_codigo_barras_purged_v1';
 
         function cargarBarrasLocal() {
             try {
@@ -5035,14 +4976,54 @@
             } catch (e) { return {}; }
         }
         function guardarBarrasLocal(mapa) {
-            try { localStorage.setItem(BARRAS_LOCAL_KEY, JSON.stringify(mapa)); } catch (e) {}
+            try { localStorage.setItem(BARRAS_LOCAL_KEY, JSON.stringify(mapa || {})); } catch (e) {}
+        }
+        /** Borra QR/barras guardados en el dispositivo (evitan choque con cód. fábrica). */
+        function purgarBarrasLocalConflictivas() {
+            try {
+                // Una vez: limpiar todo el mapa local de vinculaciones QR
+                if (!localStorage.getItem(BARRAS_LOCAL_PURGED_KEY)) {
+                    localStorage.removeItem(BARRAS_LOCAL_KEY);
+                    localStorage.setItem(BARRAS_LOCAL_PURGED_KEY, '1');
+                    console.info('[IEM] Códigos QR/barras locales eliminados para no chocar con fábrica');
+                }
+            } catch (e) {}
+            // Además: si quedara algo, quitar entradas cuyo EAN = algún código de fábrica
+            try {
+                var mapa = cargarBarrasLocal();
+                if (!mapa || !Object.keys(mapa).length) return;
+                var fabs = Object.create(null);
+                (currentData || []).forEach(function (it) {
+                    var f = String(getCodigoFabrica(it) || '').replace(/\D/g, '');
+                    if (f) fabs[f] = true;
+                    var f2 = String(getCodigoFabrica(it) || '').trim();
+                    if (f2) fabs[f2] = true;
+                });
+                var changed = false;
+                Object.keys(mapa).forEach(function (cod) {
+                    var ean = String(mapa[cod] || '').trim();
+                    var eanD = ean.replace(/\D/g, '');
+                    if (fabs[ean] || fabs[eanD]) {
+                        delete mapa[cod];
+                        changed = true;
+                    }
+                });
+                if (changed) guardarBarrasLocal(mapa);
+            } catch (e2) {}
         }
         function aplicarBarrasLocalADatos() {
+            purgarBarrasLocalConflictivas();
             const mapa = cargarBarrasLocal();
-            if (!mapa) return;
+            if (!mapa || !Object.keys(mapa).length) return;
             (currentData || []).forEach(function (item) {
                 const cod = getCodigo(item);
-                if (mapa[cod]) item.CodigoBarras = mapa[cod];
+                if (!cod || !mapa[cod]) return;
+                var ean = String(mapa[cod] || '').trim();
+                var fab = String(getCodigoFabrica(item) || '').trim();
+                // No aplicar EAN si es igual al código de fábrica (conflicto)
+                if (ean && fab && (ean === fab || ean.replace(/\D/g, '') === fab.replace(/\D/g, ''))) return;
+                item.CodigoBarras = ean;
+                item.codigo_barras = ean;
             });
         }
 
@@ -5650,6 +5631,7 @@
         }
 
         function init() {
+            try { purgarBarrasLocalConflictivas(); } catch (e) {}
             cargarTema();
             if (typeof cablearBotonesTema === 'function') cablearBotonesTema();
             else {
