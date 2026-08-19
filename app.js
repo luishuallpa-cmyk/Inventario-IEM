@@ -4887,7 +4887,7 @@
 
 
         // ============================================================
-        // ESCÁNER CÓDIGO DE BARRAS / QR (solo admin por ahora)
+        // ESCÁNER CÓDIGO DE BARRAS / QR (admin + usuarios en SCAN_USUARIOS_PERMITIDOS)
         // ============================================================
         let html5QrCode = null;
         let scanModo = 'buscar'; // 'buscar' | 'vincular'
@@ -4927,8 +4927,13 @@
         }
 
         async function abrirEscaner(modo) {
-            if (!esAdmin()) {
-                showToast('El escáner está disponible solo para el administrador por ahora.', 'error');
+            modo = modo || 'buscar';
+            if (modo === 'vincular' && !puedeVincularBarras()) {
+                showToast('Vincular códigos solo está disponible para el administrador.', 'error');
+                return;
+            }
+            if (!puedeEscanear()) {
+                showToast('El escáner no está habilitado para este usuario.', 'error');
                 return;
             }
             if (typeof Html5Qrcode === 'undefined') {
@@ -5871,14 +5876,14 @@
             if (scanCancelBtn) scanCancelBtn.addEventListener('click', detenerEscaner);
             const btnVincularBarras = document.getElementById('btnVincularBarras');
             if (btnVincularBarras) btnVincularBarras.addEventListener('click', function () {
-                if (!esAdmin()) return;
+                if (!puedeVincularBarras()) return;
                 abrirEscaner('vincular');
             });
             // Cámara en la tarjeta del producto (zona marcada): vincular o buscar
             const btnScanProducto = document.getElementById('btnScanProducto');
             if (btnScanProducto) btnScanProducto.addEventListener('click', function () {
-                if (!esAdmin()) return;
-                if (selectedIndex >= 0 && selectedIndex < filteredData.length) {
+                if (!puedeEscanear()) return;
+                if (puedeVincularBarras() && selectedIndex >= 0 && selectedIndex < filteredData.length) {
                     abrirEscaner('vincular');
                 } else {
                     abrirEscaner('buscar');
@@ -6188,6 +6193,23 @@
             return String(rolUsuario || '').toLowerCase() === 'admin';
         }
 
+        /** Usuarios (login) que pueden escanear QR/barras para buscar. Admin siempre puede. */
+        var SCAN_USUARIOS_PERMITIDOS = ['adelante'];
+
+        function puedeEscanear() {
+            if (esAdmin()) return true;
+            var u = String(usuarioActual || '').toLowerCase().trim();
+            if (!u) return false;
+            return SCAN_USUARIOS_PERMITIDOS.some(function (x) {
+                return String(x).toLowerCase().trim() === u;
+            });
+        }
+
+        /** Solo admin vincula barras a productos; el resto (p.ej. adelante) solo busca. */
+        function puedeVincularBarras() {
+            return esAdmin();
+        }
+
         function esVendedor() {
             if (String(rolUsuario || '').toLowerCase() === 'vendedor') return true;
             try {
@@ -6206,12 +6228,14 @@
                 const el = document.getElementById(id);
                 if (el) el.style.display = es ? '' : 'none';
             });
+            const puedeScan = (typeof puedeEscanear === 'function') ? puedeEscanear() : es;
             const scanBtn = document.getElementById('scanBarcodeBtn');
-            if (scanBtn) scanBtn.style.setProperty('display', es ? 'inline-flex' : 'none', 'important');
+            if (scanBtn) scanBtn.style.setProperty('display', puedeScan ? 'inline-flex' : 'none', 'important');
             const vincRow = document.getElementById('vincularBarrasRow');
-            if (vincRow && !es) vincRow.style.display = 'none';
+            if (vincRow) vincRow.style.display = es ? '' : 'none';
             const scanProd = document.getElementById('btnScanProducto');
-            if (scanProd) scanProd.style.display = es ? '' : 'none';
+            // Cámara en tarjeta: admin (vincular) o usuario permitido (buscar)
+            if (scanProd) scanProd.style.display = puedeScan ? '' : 'none';
             if (typeof actualizarFilaVincular === 'function') actualizarFilaVincular();
 
             // Vendedor: solo sugerencia de pedido
