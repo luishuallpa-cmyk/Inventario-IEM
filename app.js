@@ -1866,6 +1866,111 @@
             return String(codigo).trim() + '__' + venc.replace(/\s+/g, '_');
         }
 
+        
+        /**
+         * Si el Excel Valorado BAJA el stock teórico, reduce lotes físicos
+         * por FEFO (vence antes primero). Los AUMENTOS no crean lotes:
+         * se registran solo con el conteo manual.
+         * @returns {{ bajados: number, productos: number, detalle: string[] }}
+         */
+        function aplicarBajasLotesPorTeorico(cambiosStock) {
+            // cambiosStock: [{ codigo, anterior, nuevo, descripcion? }]
+            const resumen = { bajados: 0, productos: 0, detalle: [] };
+            if (!Array.isArray(cambiosStock) || !cambiosStock.length) return resumen;
+            if (typeof inventarioFisico === 'undefined' || !Array.isArray(inventarioFisico)) return resumen;
+
+            cambiosStock.forEach(function (ch) {
+                const codigo = String(ch.codigo || '').trim();
+                const anterior = Number(ch.anterior);
+                const nuevo = Number(ch.nuevo);
+                if (!codigo || !isFinite(anterior) || !isFinite(nuevo)) return;
+                if (nuevo >= anterior) return; // solo disminuciones
+                let pendiente = anterior - nuevo;
+                if (pendiente <= 0) return;
+
+                const record = inventarioFisico.find(function (d) {
+                    return String(d.codigo || '').trim() === codigo;
+                });
+                if (!record || !Array.isArray(record.lotes) || !record.lotes.length) {
+                    // Sin conteo previo: no hay lotes que bajar
+                    return;
+                }
+
+                // FEFO: fecha de vencimiento más cercana primero
+                const ordenados = record.lotes.slice().sort(function (a, b) {
+                    const da = typeof diasHastaVencimiento === 'function' ? diasHastaVencimiento(a.vencimiento) : null;
+                    const db = typeof diasHastaVencimiento === 'function' ? diasHastaVencimiento(b.vencimiento) : null;
+                    if (da === null && db === null) return 0;
+                    if (da === null) return 1;
+                    if (db === null) return -1;
+                    return da - db;
+                });
+
+                const idsEliminar = [];
+                let reducidoEnProducto = 0;
+                ordenados.forEach(function (lote) {
+                    if (pendiente <= 0) return;
+                    const cant = Number(lote.cantidad) || 0;
+                    if (cant <= 0) return;
+                    const quita = Math.min(cant, pendiente);
+                    lote.cantidad = cant - quita;
+                    pendiente -= quita;
+                    reducidoEnProducto += quita;
+                    if (lote.cantidad <= 0) {
+                        idsEliminar.push(lote.id);
+                    }
+                });
+
+                if (reducidoEnProducto <= 0) return;
+
+                // Quitar lotes en cero
+                record.lotes = record.lotes.filter(function (l) {
+                    return (Number(l.cantidad) || 0) > 0;
+                });
+                idsEliminar.forEach(function (id) {
+                    if (typeof eliminarLoteDelServidor === 'function') eliminarLoteDelServidor(id);
+                });
+
+                record.stockTeorico = nuevo;
+                record.stockFisico = record.lotes.reduce(function (s, l) {
+                    return s + (Number(l.cantidad) || 0);
+                }, 0);
+                record.diferencia = record.stockFisico - record.stockTeorico;
+                record.fecha = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString();
+                try { record.fechaISO = new Date().toISOString(); } catch (e) {}
+
+                // Subir lotes restantes
+                (record.lotes || []).forEach(function (lote) {
+                    if (typeof sincronizarLoteAlServidor === 'function') {
+                        sincronizarLoteAlServidor(record, lote);
+                    }
+                });
+
+                // Si ya no quedan lotes, se puede dejar el registro en 0 o eliminarlo
+                if (!record.lotes.length) {
+                    record.stockFisico = 0;
+                    record.diferencia = 0 - record.stockTeorico;
+                }
+
+                resumen.bajados += reducidoEnProducto;
+                resumen.productos += 1;
+                if (resumen.detalle.length < 8) {
+                    resumen.detalle.push(
+                        codigo + ': −' + reducidoEnProducto + ' und en lotes (teórico ' + anterior + '→' + nuevo + ')'
+                    );
+                }
+            });
+
+            if (resumen.productos > 0) {
+                try { if (typeof saveInventario === 'function') saveInventario(); } catch (e) {}
+                try { if (typeof renderInventario === 'function') renderInventario(); } catch (e) {}
+                try { if (typeof actualizarPanelAlertaVenc === 'function') actualizarPanelAlertaVenc(); } catch (e) {}
+            }
+            return resumen;
+        }
+        window.aplicarBajasLotesPorTeorico = aplicarBajasLotesPorTeorico;
+
+
         function sincronizarLoteAlServidor(record, lote) {
             const factor = record.factor || 1;
             const cajasLote = factor > 1 ? Math.floor(lote.cantidad / factor) : 0;
@@ -4693,7 +4798,51 @@
                         + (st.omitidos ? ', ' + st.omitidos + ' sin match SAP' : '')
                         + ', sin tocar stock)';
                 }
-                showToast('✅ ' + subidos + ' productos actualizados en Supabase' + extra + '.', 'success');
+                // Valorado: si el teórico BAJÓ, reducir lotes físicos (FEFO). Aumentos = conteo manual.
+                let extraLotes = '';
+                if (esValorado && typeof aplicarBajasLotesPorTeorico === 'function' && productos && productos.length) {
+                    try {
+                        const cambios = [];
+                        productos.forEach(function (p) {
+                            const cod = String(p.codigo || '').trim();
+                            if (!cod) return;
+                            const nuevo = Number(p.stock_teorico);
+                            if (!isFinite(nuevo)) return;
+                            let anterior = null;
+                            const prev = (currentData || []).find(function (it) {
+                                return String((typeof getCodigo === 'function' ? getCodigo(it) : it.codigo) || '').trim() === cod;
+                            });
+                            if (prev) {
+                                anterior = typeof getCantidad === 'function' ? getCantidad(prev) : Number(prev.Cantidad || prev.stock_teorico || 0);
+                            }
+                            // También mirar conteo físico guardado
+                            const reg = (inventarioFisico || []).find(function (d) {
+                                return String(d.codigo || '').trim() === cod;
+                            });
+                            if (reg && (anterior === null || !isFinite(anterior))) {
+                                anterior = Number(reg.stockTeorico);
+                            }
+                            if (anterior === null || !isFinite(anterior)) return;
+                            if (nuevo < anterior) {
+                                cambios.push({ codigo: cod, anterior: anterior, nuevo: nuevo, descripcion: p.descripcion || '' });
+                            }
+                            // Actualizar teórico en registro de conteo si existe (también si subió)
+                            if (reg) {
+                                reg.stockTeorico = nuevo;
+                                reg.diferencia = (Number(reg.stockFisico) || 0) - nuevo;
+                            }
+                        });
+                        const rBaja = aplicarBajasLotesPorTeorico(cambios);
+                        if (rBaja && rBaja.productos > 0) {
+                            extraLotes = ' · Lotes −' + rBaja.bajados + ' und en ' + rBaja.productos + ' prod. (FEFO)';
+                            console.info('Baja automática lotes', rBaja);
+                        }
+                        try { if (typeof saveInventario === 'function') saveInventario(); } catch (e) {}
+                    } catch (eBaja) {
+                        console.warn('Baja lotes por valorado', eBaja);
+                    }
+                }
+                showToast('✅ ' + subidos + ' productos actualizados en Supabase' + extra + extraLotes + '.', 'success');
                 try {
                     if (typeof window.__iemLastExcelFile === 'object' && window.__iemLastExcelFile) {
                         var f = window.__iemLastExcelFile;
@@ -4703,6 +4852,7 @@
                     }
                 } catch (eBackup) { console.warn(eBackup); }
                 await loadFromGoogleSheets();
+                try { if (typeof renderInventario === 'function') renderInventario(); } catch (e) {}
             } catch (err) {
                 console.error(err);
                 showToast('❌ Error al importar: ' + (err.message || err), 'error');
