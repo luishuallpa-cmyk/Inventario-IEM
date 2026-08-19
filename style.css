@@ -3657,3 +3657,76 @@ body.light-theme #loginBtn {
   background: #0A784C !important;
   color: #fff !important;
 }
+
+
+/* ========== LOGIN TEMA CLARO: card blanca 3D · botón ROJO · fondo verde ========== */
+body.light-theme .login-card {
+  background: #ffffff !important;
+  border: 1px solid #e8eaed !important;
+  border-radius: 24px !important;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 4px 12px rgba(0, 0, 0, 0.06),
+    0 16px 40px rgba(0, 0, 0, 0.10),
+    0 28px 56px rgba(0, 0, 0, 0.08) !important;
+}
+body.light-theme .login-card h2 {
+  color: #1a1a1a !important;
+}
+body.light-theme .login-subtitle {
+  color: #6b7280 !important;
+}
+body.light-theme .login-field label {
+  color: #4b5563 !important;
+}
+body.light-theme .login-field input {
+  background: #f9fafb !important;
+  border: 1px solid #e5e7eb !important;
+  color: #111827 !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+}
+body.light-theme .login-field input:focus {
+  background: #ffffff !important;
+  border-color: #c8102e !important;
+  box-shadow: 0 0 0 3px rgba(200, 16, 46, 0.12) !important;
+}
+body.light-theme .login-logo img {
+  background: #ffffff !important;
+  border: 1px solid #eee !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+}
+/* SOLO tema claro: Entrar ROJO logo */
+body.light-theme #loginBtn,
+body.light-theme .login-btn,
+body.light-theme .login-btn.btn-primary,
+body.light-theme .login-card .btn-primary,
+body.light-theme .login-card button[type="submit"] {
+  background: #C8102E !important;
+  background-image: none !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(200, 16, 46, 0.35) !important;
+}
+body.light-theme #loginBtn:hover,
+body.light-theme .login-btn:hover,
+body.light-theme .login-card .btn-primary:hover {
+  background: #a50d24 !important;
+  background-image: none !important;
+}
+
+/* ========== LOGIN TEMA OSCURO: botón VERDE (como pediste) ========== */
+body:not(.light-theme) #loginBtn,
+body:not(.light-theme) .login-btn,
+body:not(.light-theme) .login-btn.btn-primary,
+body:not(.light-theme) .login-card .btn-primary,
+body:not(.light-theme) .login-card button[type="submit"] {
+  background: #0A784C !important;
+  background-image: none !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(10, 120, 76, 0.35) !important;
+}
+body:not(.light-theme) #loginBtn:hover,
+body:not(.light-theme) .login-btn:hover {
+  background: #08663f !important;
+}
