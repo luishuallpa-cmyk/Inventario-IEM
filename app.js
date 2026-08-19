@@ -3980,17 +3980,18 @@
         const themeToggleBtn = document.getElementById('themeToggleBtn');
 
         function aplicarTema(tema) {
-            if (tema === 'light') {
-                document.body.classList.add('light-theme');
-            } else {
-                document.body.classList.remove('light-theme');
-            }
-            if (themeToggleBtn) {
-                themeToggleBtn.textContent = tema === 'light' ? '☀️' : '🌙';
-            }
+            var esClaro = (tema === 'light');
+            document.body.classList.toggle('light-theme', esClaro);
+            try { document.documentElement.classList.toggle('light-theme', esClaro); } catch (e) {}
+            try { document.documentElement.setAttribute('data-theme', esClaro ? 'light' : 'dark'); } catch (e) {}
+            var icono = esClaro ? '☀️' : '🌙';
+            if (themeToggleBtn) themeToggleBtn.textContent = icono;
             var loginThemeBtn = document.getElementById('loginThemeToggleBtn');
-            if (loginThemeBtn) {
-                loginThemeBtn.textContent = tema === 'light' ? '☀️' : '🌙';
+            if (loginThemeBtn) loginThemeBtn.textContent = icono;
+            // Forzar repaint del overlay de login (fondo malla)
+            var ov = document.getElementById('loginOverlay');
+            if (ov) {
+                void ov.offsetWidth;
             }
         }
 
@@ -4005,6 +4006,29 @@
             const nuevo = esClaro ? 'dark' : 'light';
             aplicarTema(nuevo);
             try { localStorage.setItem(THEME_KEY, nuevo); } catch(e) {}
+        }
+
+        // Tema global desde el login (como ventas): no esperar a init/sesión
+        function cablearBotonesTema() {
+            var btnApp = document.getElementById('themeToggleBtn');
+            var btnLogin = document.getElementById('loginThemeToggleBtn');
+            if (btnApp && !btnApp._temaOk) {
+                btnApp.addEventListener('click', alternarTema);
+                btnApp._temaOk = true;
+            }
+            if (btnLogin && !btnLogin._temaOk) {
+                btnLogin.addEventListener('click', alternarTema);
+                btnLogin._temaOk = true;
+            }
+        }
+        try { cargarTema(); } catch (e) {}
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () {
+                try { cargarTema(); } catch (e) {}
+                cablearBotonesTema();
+            });
+        } else {
+            cablearBotonesTema();
         }
 
         // ============================================================
@@ -5486,13 +5510,11 @@
 
         function init() {
             cargarTema();
-            if (themeToggleBtn) {
-                themeToggleBtn.addEventListener('click', alternarTema);
-            const loginThemeToggleBtn = document.getElementById('loginThemeToggleBtn');
-            if (loginThemeToggleBtn) loginThemeToggleBtn.addEventListener('click', alternarTema);
-            }
-            if (document.getElementById("loginThemeToggleBtn")) {
-                document.getElementById("loginThemeToggleBtn").addEventListener('click', alternarTema);
+            if (typeof cablearBotonesTema === 'function') cablearBotonesTema();
+            else {
+                if (themeToggleBtn) themeToggleBtn.addEventListener('click', alternarTema);
+                var lt = document.getElementById('loginThemeToggleBtn');
+                if (lt) lt.addEventListener('click', alternarTema);
             }
             initCardsPlegables();
 

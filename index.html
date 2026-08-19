@@ -28,10 +28,24 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=4.2.9-load">
-    <link rel="stylesheet" href="admin.css?v=4.2.9">
+    <link rel="stylesheet" href="style.css?v=4.2.12">
+    <link rel="stylesheet" href="admin.css?v=4.2.12">
+<script>
+(function(){try{var t=localStorage.getItem('buscador_tema')||'dark';
+if(t==='light'){document.documentElement.classList.add('light-theme');document.documentElement.setAttribute('data-theme','light');}
+else{document.documentElement.setAttribute('data-theme','dark');}
+}catch(e){}})();
+</script>
 </head>
 <body>
+<script>
+(function(){try{if(document.documentElement.classList.contains('light-theme'))document.body.classList.add('light-theme');
+var t=localStorage.getItem('buscador_tema')||'dark';
+if(t==='light')document.body.classList.add('light-theme');
+else document.body.classList.remove('light-theme');
+}catch(e){}})();
+</script>
+
 <div id="globalLoading" class="global-loading" aria-live="polite" aria-busy="true" aria-label="Cargando">
   <div class="gl-dots" aria-hidden="true"><span></span><span></span><span></span></div>
 </div>
@@ -128,7 +142,7 @@
                         <span class="hmi-icon">👥</span><span class="hmi-label">Sesiones</span>
                     </button>
                     <div class="header-menu-footer">
-                        <span class="version">v4.2.9 · Admin</span>
+                        <span class="version">v4.2.12 · Admin</span>
                     </div>
                 </div>
             </div>
@@ -681,7 +695,7 @@
     </div>
 
 <script src="config.js?v=4.2.5"></script>
-<script src="app.js?v=4.2.9-nodl"></script>
+<script src="app.js?v=4.2.12"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {
