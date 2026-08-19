@@ -366,7 +366,8 @@
                             <li>No crea productos nuevos si el código no existe</li>
                             <li>Los códigos de barras / QR ya guardados no se borran</li>
                         </ul>
-                        
+
+                        <div class="admin-dropzone" id="adminDropzone">
                             <div class="admin-drop-text">Arrastra el archivo aquí<br>o haz clic para elegir</div>
                             <input type="file" id="importExcelInput" accept=".xlsx,.xls,.csv" class="admin-file-input">
                         </div>
@@ -374,7 +375,7 @@
                             <div style="font-weight:600;margin-bottom:0.5rem;font-size:0.9rem;">Tipo de Excel (se detecta solo; puedes forzar)</div>
                             <label class="admin-check" style="display:flex;align-items:flex-start;gap:0.5rem;margin-bottom:0.45rem;">
                                 <input type="radio" name="adminImportModo" id="adminModoExistencias" value="existencias" checked>
-                                <span><strong>1 · Existencias</strong> — catálogo (código, línea, marca, fábrica/SAP). Stock opcional.</span>
+                                <span><strong>1 · Existencias</strong> — solo códigos cortos + cód. de fábrica (no nombres ni stock).</span>
                             </label>
                             <label class="admin-check" style="display:flex;align-items:flex-start;gap:0.5rem;margin-bottom:0.45rem;">
                                 <input type="radio" name="adminImportModo" id="adminModoValorado" value="valorado">
@@ -382,7 +383,7 @@
                             </label>
                             <label class="admin-check" style="display:flex;align-items:flex-start;gap:0.5rem;margin-bottom:0.35rem;">
                                 <input type="radio" name="adminImportModo" id="adminModoBase" value="base">
-                                <span><strong>3 · Base Laive</strong> — habilita por <strong>CÓDIGO SAP</strong>; Fríos/Secos solo si aún no tiene tipo. <em>No toca stock</em>.</span>
+                                <span><strong>3 · Base Laive</strong> — solo habilita por <strong>CÓDIGO SAP</strong> (= fábrica). No toca Fríos/Secos ni códigos cortos.</span>
                             </label>
                         </div>
                         <label class="admin-check" title="Existencias no modifica stock; el stock solo lo actualiza Inventario valorado" id="adminSoloCatalogoWrap" style="opacity:.85">
@@ -608,7 +609,7 @@
     </div>
 
 <script src="config.js?v=4.1.9"></script>
-<script src="app.js?v=4.3.0-respaldos"></script>
+<script src="app.js?v=4.3.1-ui"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {

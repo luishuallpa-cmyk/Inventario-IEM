@@ -1116,6 +1116,7 @@
             color: var(--heading-color);
             margin-bottom: 0.35rem;
         }
+        .empty-message.empty-idle .empty-title { color: var(--text-muted, #64748b); font-weight: 600; }
         .empty-message .empty-hint {
             display: block;
             font-size: 0.82rem;

@@ -1196,7 +1196,13 @@
             const totalHit = items ? items.length : 0;
             if (items && items.length > MAX_SHOW) items = items.slice(0, MAX_SHOW);
             if (!items || items.length === 0) {
-                resultList.innerHTML = `<div class="empty-message"><span class="empty-title">Sin resultados</span>No hay productos con ese criterio.<span class="empty-hint">Revisa el código o prueba menos letras · PROM/CMB en cero no aparecen</span></div>`;
+                var termNow = '';
+                try { termNow = (searchInput && searchInput.value) ? searchInput.value.trim() : ''; } catch (e) {}
+                if (!termNow) {
+                    resultList.innerHTML = '<div class="empty-message empty-idle"><span class="empty-title">Busca un producto</span>Escribe código, nombre o código de barras para comenzar.<span class="empty-hint">Ej.: 0589 · mantequilla · EAN</span></div>';
+                } else {
+                    resultList.innerHTML = '<div class="empty-message"><span class="empty-title">Sin resultados</span>No hay productos con ese criterio.<span class="empty-hint">Revisa el código o prueba menos letras · PROM/CMB en cero no aparecen</span></div>';
+                }
                 resultCount.textContent = '0';
                 cajasCount.textContent = '0';
                 unidadesCount.textContent = '0';
