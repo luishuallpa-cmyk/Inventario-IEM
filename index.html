@@ -28,8 +28,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=4.2.8-load">
-    <link rel="stylesheet" href="admin.css?v=4.3.0-respaldos">
+    <link rel="stylesheet" href="style.css?v=4.2.2-load">
+    <link rel="stylesheet" href="admin.css?v=4.2.2-respaldos">
 </head>
 <body>
 <div id="globalLoading" class="global-loading" aria-live="polite" aria-busy="true" aria-label="Cargando">
@@ -67,6 +67,19 @@
         </div>
         <span class="badge badge-usuario" id="usuarioBadge" title="Usuario con sesión activa en este dispositivo"><span class="dot-activo"></span><span id="usuarioBadgeTexto">-</span></span>
         <div class="header-actions">
+            <button type="button" class="btn-alerta-venc" id="btnAlertaVenc" title="Productos por vencer (15 días o menos)" aria-label="Alertas de vencimiento" aria-expanded="false" aria-controls="panelAlertaVenc" hidden>
+                <span class="alerta-venc-ico" aria-hidden="true">⚠</span>
+                <span class="alerta-venc-dot" id="alertaVencDot" hidden></span>
+                <span class="alerta-venc-count" id="alertaVencCount">0</span>
+            </button>
+            <div class="panel-alerta-venc" id="panelAlertaVenc" hidden role="dialog" aria-label="Productos por vencer">
+                <div class="panel-alerta-venc-head">
+                    <strong>Por vencer ≤ 15 días</strong>
+                    <button type="button" class="panel-alerta-cerrar" id="btnCerrarAlertaVenc" aria-label="Cerrar">✕</button>
+                </div>
+                <p class="panel-alerta-hint">Lotes del conteo físico próximos a vencer.</p>
+                <ul class="panel-alerta-lista" id="listaAlertaVenc"></ul>
+            </div>
             <button class="theme-toggle" id="themeToggleBtn" type="button" title="Cambiar tema claro/oscuro" aria-label="Cambiar entre tema claro y oscuro">🌓</button>
             <button class="btn-logout" id="logoutBtn" type="button" title="Cerrar sesión" aria-label="Cerrar sesión">
                 <svg class="btn-logout-svg" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
@@ -106,11 +119,14 @@
                     <button type="button" class="header-menu-item" role="menuitem" data-admin-goto="pedidos">
                         <span class="hmi-icon">🛒</span><span class="hmi-label">Pedidos sugeridos</span>
                     </button>
+                    <button type="button" class="header-menu-item" role="menuitem" data-admin-goto="vencimientos">
+                        <span class="hmi-icon">⚠</span><span class="hmi-label">Por vencer</span>
+                    </button>
                     <button type="button" class="header-menu-item" role="menuitem" data-admin-goto="sesiones">
                         <span class="hmi-icon">👥</span><span class="hmi-label">Sesiones</span>
                     </button>
                     <div class="header-menu-footer">
-                        <span class="version">v4.1.9 · Admin</span>
+                        <span class="version">v4.2.2 · Admin</span>
                     </div>
                 </div>
             </div>
@@ -267,6 +283,14 @@
                 <button class="btn btn-outline btn-sm" id="guardarDriveBtn" title="Ya sincroniza en la nube"><span class="btn-icon">☁️</span><span class="btn-label"> Nube</span></button>
                 <button class="btn btn-danger btn-sm" id="clearDiffBtn" title="Limpiar conteo físico"><span class="btn-icon">🗑️</span><span class="btn-label"> Limpiar</span></button>
         </div>
+        <div class="diff-filtro-row" id="diffFiltroRow" role="group" aria-label="Filtrar por diferencia">
+            <button type="button" class="diff-filtro-btn active" data-diff-filtro="todos">Todos</button>
+            <button type="button" class="diff-filtro-btn" data-diff-filtro="diff">Con diferencia</button>
+            <button type="button" class="diff-filtro-btn diff-filtro-bajaron" data-diff-filtro="bajaron">↓ Disminuyeron</button>
+            <button type="button" class="diff-filtro-btn diff-filtro-subieron" data-diff-filtro="subieron">↑ Aumentaron</button>
+            <button type="button" class="diff-filtro-btn diff-filtro-vencer" data-diff-filtro="por_vencer">⚠ Por vencer</button>
+            <span class="diff-filtro-stats" id="diffFiltroStats"></span>
+        </div>
         <div class="table-wrap">
             <table class="diff-table" id="diffTable">
                 <thead><tr>
@@ -347,6 +371,9 @@
                     </button>
                     <button type="button" class="admin-nav-btn" role="tab" aria-selected="false" data-admin-tab="pedidos" id="tabBtn-pedidos">
                         <span class="tab-ico" aria-hidden="true">🛒</span><span class="tab-txt">Pedidos sugeridos</span>
+                    </button>
+                    <button type="button" class="admin-nav-btn" role="tab" aria-selected="false" data-admin-tab="vencimientos" id="tabBtn-vencimientos">
+                        <span class="tab-ico" aria-hidden="true">⚠</span><span class="tab-txt">Por vencer</span>
                     </button>
                     <button type="button" class="admin-nav-btn" role="tab" aria-selected="false" data-admin-tab="clientes" id="tabBtn-clientes">
                         <span class="tab-ico" aria-hidden="true">👤</span><span class="tab-txt">Clientes</span>
@@ -547,6 +574,38 @@
                         <div id="adminPedidoDetalle" class="admin-pedido-detalle" hidden></div>
                     </div>
                 </div>
+
+                    <div class="admin-tab" id="adminTabVencimientos" data-admin-panel="vencimientos" role="tabpanel" hidden>
+                        <h3 class="admin-section-title">⚠ Productos por vencer</h3>
+                        <p class="admin-lead">Lotes del conteo físico con fecha próxima. Útil tras ventas, compras, retiros y regularizaciones.</p>
+                        <div class="admin-actions-row admin-venc-toolbar" style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;margin-bottom:0.75rem;">
+                            <button type="button" class="btn btn-outline btn-sm" id="adminRefreshVencBtn">
+                                <span class="btn-icon">↻</span><span class="btn-label"> Actualizar</span>
+                            </button>
+                            <div class="admin-venc-filtros" role="group" aria-label="Rango de vencimiento">
+                                <button type="button" class="diff-filtro-btn" data-admin-venc-dias="7">≤ 7 días</button>
+                                <button type="button" class="diff-filtro-btn active" data-admin-venc-dias="15">≤ 15 días</button>
+                                <button type="button" class="diff-filtro-btn" data-admin-venc-dias="30">≤ 30 días</button>
+                                <button type="button" class="diff-filtro-btn diff-filtro-bajaron" data-admin-venc-dias="vencidos">Ya vencidos</button>
+                                <button type="button" class="diff-filtro-btn" data-admin-venc-dias="todos">Todos con fecha</button>
+                            </div>
+                            <input type="search" id="adminVencFiltro" placeholder="Código o descripción..." style="flex:1;min-width:140px;" autocomplete="off">
+                            <span class="admin-catalog-count" id="adminVencCount">0</span>
+                        </div>
+                        <p class="admin-status" id="adminVencStatus"></p>
+                        <div class="table-wrap admin-venc-table-wrap">
+                            <table class="diff-table admin-venc-table" id="adminVencTable">
+                                <thead><tr>
+                                    <th>#</th><th>Código</th><th>Descripción</th><th>Vencimiento</th>
+                                    <th>Días</th><th>Cantidad</th><th>Usuario</th><th>Registrado</th>
+                                </tr></thead>
+                                <tbody id="adminVencBody">
+                                    <tr><td colspan="8" class="empty-message">Cargando…</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="adminVencMobile" class="mobile-item-list admin-venc-mobile"></div>
+                    </div>
 <div class="admin-tab" id="adminTabClientes" data-admin-panel="clientes" hidden>
                         <h3 class="admin-subtitle">👤 Catálogo de clientes</h3>
                         <p class="admin-lead">Busca clientes del catálogo. No afecta el conteo de inventario.</p>
@@ -608,8 +667,8 @@
         </div>
     </div>
 
-<script src="config.js?v=4.1.9"></script>
-<script src="app.js?v=4.3.2-nodl"></script>
+<script src="config.js?v=4.2.2"></script>
+<script src="app.js?v=4.2.2-nodl"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {

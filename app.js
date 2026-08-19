@@ -12,6 +12,7 @@
                     vista: '👁️ Vista previa',
                     reporte: '📋 Reporte sistema',
                     pedidos: '🛒 Pedidos sugeridos',
+                    vencimientos: '⚠ Por vencer',
                     clientes: '👤 Clientes',
                     sesiones: '👥 Sesiones'
                 };
@@ -66,6 +67,9 @@
                 }
                 if (tabId === 'reporte' && typeof renderReporteSistema === 'function') {
                     renderReporteSistema();
+                }
+                if (tabId === 'vencimientos' && typeof cargarAdminVencimientos === 'function') {
+                    try { cargarAdminVencimientos(); } catch (e) { console.warn(e); }
                 }
                 if (tabId === 'pedidos' && typeof cargarPedidosSugeridos === 'function') {
                     cargarPedidosSugeridos();
@@ -2223,7 +2227,214 @@
         // ============================================================
         // RENDER INVENTARIO
         // ============================================================
+        
+        // ---- Vencimiento / diferencia (v4.2.2) — sin tocar estilos base ----
+        const DIAS_ALERTA_VENC = 15;
+        let filtroDiffModo = 'todos';
+        try {
+            const f = localStorage.getItem('iem_filtro_diff');
+            if (f && ['todos','diff','bajaron','subieron','por_vencer'].indexOf(f) >= 0) filtroDiffModo = f;
+        } catch (e) {}
+
+        function parseFechaVencimiento(v) {
+            if (v === null || v === undefined) return null;
+            const s = String(v).trim();
+            if (!s || /^s\/f$/i.test(s) || s.toLowerCase() === 'sin_vencimiento') return null;
+            let m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+            if (m) {
+                const d = +m[1], mo = +m[2] - 1, y = +m[3];
+                const dt = new Date(y, mo, d);
+                if (dt.getFullYear() === y && dt.getMonth() === mo && dt.getDate() === d) return dt;
+            }
+            m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+            if (m) {
+                const y = +m[1], mo = +m[2] - 1, d = +m[3];
+                const dt = new Date(y, mo, d);
+                if (dt.getFullYear() === y && dt.getMonth() === mo && dt.getDate() === d) return dt;
+            }
+            return null;
+        }
+        function diasHastaVencimiento(v) {
+            const dt = parseFechaVencimiento(v);
+            if (!dt) return null;
+            const hoy = new Date(); hoy.setHours(0,0,0,0); dt.setHours(0,0,0,0);
+            return Math.round((dt - hoy) / 86400000);
+        }
+        function lotePorVencer(lote, limite) {
+            const dias = diasHastaVencimiento(lote && lote.vencimiento);
+            return dias !== null && dias <= (limite == null ? DIAS_ALERTA_VENC : limite);
+        }
+        function productoTieneLotePorVencer(record, limite) {
+            return ((record && record.lotes) || []).some(l => lotePorVencer(l, limite));
+        }
+        function productoPasaFiltroDiff(d) {
+            const dif = Number(d.diferencia) || 0;
+            if (filtroDiffModo === 'diff') return dif !== 0;
+            if (filtroDiffModo === 'bajaron') return dif < 0;
+            if (filtroDiffModo === 'subieron') return dif > 0;
+            if (filtroDiffModo === 'por_vencer') return productoTieneLotePorVencer(d, DIAS_ALERTA_VENC);
+            return true;
+        }
+        function resumenFiltroDiff() {
+            let nDiff = 0, nBajo = 0, nSube = 0;
+            (inventarioFisico || []).forEach(d => {
+                const dif = Number(d.diferencia) || 0;
+                if (dif !== 0) nDiff++;
+                if (dif < 0) nBajo++;
+                if (dif > 0) nSube++;
+            });
+            return { total: (inventarioFisico || []).length, nDiff, nBajo, nSube };
+        }
+        function obtenerAlertasPorVencer(limite) {
+            const lim = limite == null ? DIAS_ALERTA_VENC : limite;
+            const out = [];
+            (inventarioFisico || []).forEach(rec => {
+                (rec.lotes || []).forEach(l => {
+                    const dias = diasHastaVencimiento(l.vencimiento);
+                    if (dias === null || dias > lim) return;
+                    out.push({
+                        codigo: rec.codigo, descripcion: rec.descripcion || '',
+                        vencimiento: l.vencimiento || '', cantidad: Number(l.cantidad) || 0,
+                        dias, vencido: dias < 0
+                    });
+                });
+            });
+            out.sort((a, b) => a.dias - b.dias);
+            return out;
+        }
+        function actualizarPanelAlertaVenc() {
+            const btn = document.getElementById('btnAlertaVenc');
+            const countEl = document.getElementById('alertaVencCount');
+            const dot = document.getElementById('alertaVencDot');
+            const lista = document.getElementById('listaAlertaVenc');
+            if (!btn || !lista) return;
+            const alertas = obtenerAlertasPorVencer(DIAS_ALERTA_VENC);
+            if (!alertas.length) {
+                btn.hidden = true;
+                btn.setAttribute('aria-expanded', 'false');
+                const panel = document.getElementById('panelAlertaVenc');
+                if (panel) panel.hidden = true;
+                return;
+            }
+            btn.hidden = false;
+            if (countEl) countEl.textContent = String(alertas.length);
+            if (dot) { dot.hidden = false; dot.classList.toggle('alerta-critica', alertas.some(a => a.vencido)); }
+            lista.innerHTML = alertas.map(a => {
+                const label = a.vencido ? ('Vencido hace ' + Math.abs(a.dias) + ' d') : (a.dias === 0 ? 'Vence hoy' : ('En ' + a.dias + ' d'));
+                const cls = (a.vencido || a.dias <= 7) ? 'alerta-item-critico' : 'alerta-item-warn';
+                const esc = (s) => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                return '<li class="alerta-item ' + cls + '"><div class="alerta-item-top"><span class="alerta-item-cod">' + esc(a.codigo) +
+                    '</span><span class="alerta-item-dias">' + label + '</span></div><div class="alerta-item-desc">' + esc(a.descripcion) +
+                    '</div><div class="alerta-item-meta">📅 ' + esc(a.vencimiento) + ' · ' + a.cantidad + ' und</div></li>';
+            }).join('');
+        }
+
+        let adminVencDiasModo = '15';
+        let adminVencCache = [];
+        function adminVencPasaFiltro(row) {
+            const q = ((document.getElementById('adminVencFiltro') || {}).value || '').trim().toLowerCase();
+            if (q) {
+                const blob = ((row.codigo || '') + ' ' + (row.descripcion || '')).toLowerCase();
+                if (blob.indexOf(q) < 0) return false;
+            }
+            if (row.dias == null) return false;
+            if (adminVencDiasModo === 'vencidos') return row.dias < 0;
+            if (adminVencDiasModo === 'todos') return true;
+            return row.dias <= (parseInt(adminVencDiasModo, 10) || 15);
+        }
+        function renderAdminVencimientos() {
+            const body = document.getElementById('adminVencBody');
+            const mobile = document.getElementById('adminVencMobile');
+            const countEl = document.getElementById('adminVencCount');
+            const statusEl = document.getElementById('adminVencStatus');
+            if (!body) return;
+            document.querySelectorAll('[data-admin-venc-dias]').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-admin-venc-dias') === adminVencDiasModo);
+            });
+            const rows = adminVencCache.filter(adminVencPasaFiltro);
+            if (countEl) countEl.textContent = String(rows.length);
+            if (!rows.length) {
+                body.innerHTML = '<tr><td colspan="8" class="empty-message">No hay lotes en este filtro.</td></tr>';
+                if (mobile) mobile.innerHTML = '<div class="empty-message">No hay lotes en este filtro.</div>';
+                if (statusEl) statusEl.textContent = adminVencCache.length ? 'Sin coincidencias.' : 'Sin lotes con fecha.';
+                return;
+            }
+            if (statusEl) {
+                const crit = rows.filter(r => r.dias < 0).length;
+                const pronto = rows.filter(r => r.dias >= 0 && r.dias <= 7).length;
+                statusEl.textContent = rows.length + ' lote(s)' + (crit ? ' · ' + crit + ' vencido(s)' : '') + (pronto ? ' · ' + pronto + ' ≤7d' : '');
+            }
+            const esc = (s) => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            let html = '', mob = '';
+            rows.forEach((r, i) => {
+                const label = r.dias < 0 ? ('Vencido ' + Math.abs(r.dias) + ' d') : (r.dias === 0 ? 'Hoy' : (r.dias + ' d'));
+                const cls = (r.dias < 0 || r.dias <= 7) ? 'diff-negativo' : '';
+                html += '<tr class="' + (r.dias <= 7 ? 'row-bajo' : '') + '"><td>' + (i+1) + '</td><td class="codigo-cell">' +
+                    (r.dias <= 15 ? '<span class="dot-venc' + (r.dias < 0 ? ' dot-venc-critico' : '') + '">●</span>' : '') + esc(r.codigo) +
+                    '</td><td style="color:var(--text-secondary)">' + esc(r.descripcion) + '</td><td>' + esc(r.vencimiento||'-') +
+                    '</td><td class="' + cls + '"><strong>' + label + '</strong></td><td>' + (r.cantidad != null ? r.cantidad : '-') +
+                    '</td><td style="color:var(--text-muted)">' + esc(r.usuario||'-') + '</td><td style="color:var(--text-muted);font-size:0.72rem">' + esc(r.fecha||'-') + '</td></tr>';
+                mob += '<div class="mi-card ' + (r.dias <= 7 ? 'mi-card-bajo' : '') + '"><div class="mi-card-head"><div class="mi-card-idcol"><div class="mi-card-idrow"><span class="mi-card-codigo">' +
+                    esc(r.codigo) + '</span><span class="diff-badge diff-badge-bajo">' + label + '</span></div><div class="mi-card-desc">' + esc(r.descripcion) +
+                    '</div></div></div><div class="mi-card-meta"><span>📅 ' + esc(r.vencimiento||'') + '</span><span>' + (r.cantidad!=null?r.cantidad+' und':'') +
+                    '</span><span>👤 ' + esc(r.usuario||'-') + '</span></div></div>';
+            });
+            body.innerHTML = html;
+            if (mobile) mobile.innerHTML = mob;
+        }
+        async function cargarAdminVencimientos() {
+            const statusEl = document.getElementById('adminVencStatus');
+            const body = document.getElementById('adminVencBody');
+            if (statusEl) statusEl.textContent = 'Cargando lotes…';
+            if (body) body.innerHTML = '<tr><td colspan="8" class="empty-message">Cargando…</td></tr>';
+            const map = new Map();
+            function addRow(r) {
+                const venc = r.vencimiento;
+                const dias = diasHastaVencimiento(venc);
+                if (dias === null) return;
+                const id = String(r.codigo||'') + '__' + (typeof normalizarVencimiento === 'function' ? normalizarVencimiento(venc) : String(venc||'').toLowerCase());
+                const prev = map.get(id);
+                const cant = Number(r.cantidad) || 0;
+                if (prev) {
+                    prev.cantidad += cant;
+                    if (r.fecha && (!prev.fecha || String(r.fecha) > String(prev.fecha))) prev.fecha = r.fecha;
+                    if (r.usuario) prev.usuario = r.usuario;
+                } else {
+                    map.set(id, { codigo: r.codigo||'', descripcion: r.descripcion||'', vencimiento: venc||'', cantidad: cant, usuario: r.usuario||'', fecha: r.fecha||'', dias, vencido: dias < 0 });
+                }
+            }
+            try {
+                (inventarioFisico||[]).forEach(rec => (rec.lotes||[]).forEach(l => addRow({ codigo: rec.codigo, descripcion: rec.descripcion, vencimiento: l.vencimiento, cantidad: l.cantidad, usuario: l.usuario, fecha: l.fecha })));
+            } catch(e) {}
+            try {
+                let from = 0;
+                for (;;) {
+                    const { data, error } = await supabaseClient.from('lotes_conteo').select('codigo,descripcion,cantidad,vencimiento,fecha,usuario').not('vencimiento','is',null).order('codigo',{ascending:true}).range(from, from+999);
+                    if (error) throw error;
+                    if (!data || !data.length) break;
+                    data.forEach(addRow);
+                    if (data.length < 1000) break;
+                    from += 1000;
+                    if (from >= 30000) break;
+                }
+            } catch (e) {
+                console.warn(e);
+                if (statusEl && !map.size) statusEl.textContent = 'No se pudo leer la nube: ' + (e.message||e);
+            }
+            adminVencCache = Array.from(map.values()).sort((a,b)=>a.dias-b.dias);
+            renderAdminVencimientos();
+        }
+        window.cargarAdminVencimientos = cargarAdminVencimientos;
+
+
         function renderInventario() {
+            document.querySelectorAll('.diff-filtro-btn[data-diff-filtro]').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-diff-filtro') === filtroDiffModo);
+            });
+            const stats = resumenFiltroDiff();
+            const statsEl = document.getElementById('diffFiltroStats');
+            if (statsEl) statsEl.textContent = stats.total ? (stats.nBajo + '↓  ' + stats.nSube + '↑  ' + stats.nDiff + '≠') : '';
+
             if (inventarioFisico.length === 0) {
                 diffBody.innerHTML = `<tr><td colspan="10" class="empty-message">No hay productos contados aún.</td></tr>`;
                 diffMobileList.innerHTML = `<div class="empty-message">No hay productos contados aún.</div>`;
@@ -2231,23 +2442,58 @@
                 diffResumen.style.display = 'none';
                 diffCount.textContent = '0 registros';
                 resContados.textContent = '0';
+                try { actualizarPanelAlertaVenc(); } catch (e) {}
                 collapseCardEnMovil('diff');
+                return;
+            }
+
+            const lista = inventarioFisico.map((d, idx) => ({ d, idx })).filter(x => productoPasaFiltroDiff(x.d));
+            if (lista.length === 0) {
+                const msg = filtroDiffModo === 'bajaron' ? 'Ningún producto disminuyó.'
+                    : filtroDiffModo === 'subieron' ? 'Ningún producto aumentó.'
+                    : filtroDiffModo === 'diff' ? 'Todos cuadran: sin diferencias.'
+                    : filtroDiffModo === 'por_vencer' ? 'No hay lotes por vencer en ≤ 15 días.'
+                    : 'No hay productos contados aún.';
+                diffBody.innerHTML = `<tr><td colspan="10" class="empty-message">${msg}</td></tr>`;
+                diffMobileList.innerHTML = `<div class="empty-message">${msg}</div>`;
+                diffFoot.style.display = 'none';
+                diffResumen.style.display = 'flex';
+                resContados.textContent = String(inventarioFisico.length);
+                diffCount.textContent = `0 / ${inventarioFisico.length}`;
+                try { actualizarPanelAlertaVenc(); } catch (e) {}
                 return;
             }
 
             let html = '';
             let mobileHtml = '';
             let totalTeorico = 0, totalFisico = 0, totalDiff = 0;
-            inventarioFisico.forEach((d, idx) => {
+            lista.forEach(({ d, idx }, n) => {
                 totalTeorico += d.stockTeorico;
                 totalFisico += d.stockFisico;
                 totalDiff += d.diferencia;
-                const claseDiff = d.diferencia >= 0 ? 'diff-positivo' : 'diff-negativo';
+                const claseDiff = d.diferencia > 0 ? 'diff-positivo' : (d.diferencia < 0 ? 'diff-negativo' : 'diff-cero');
                 const lotes = d.lotes || [];
-                const vencTexto = lotes.length > 1
-                    ? `${lotes.length} lotes`
-                    : (lotes[0] ? lotes[0].vencimiento : (d.vencimiento || '-'));
-                const vencTitulo = lotes.map(l => `${l.vencimiento || 'S/F'}: ${l.cantidad}`).join(' | ');
+                const vencTitulo = lotes.map(l => `${l.vencimiento || 'S/F'}: ${l.cantidad} und`).join(' | ') || '-';
+                const vencTexto = lotes.length === 0 ? (d.vencimiento || '-')
+                    : lotes.length === 1 ? `${lotes[0].vencimiento || 'S/F'} (${lotes[0].cantidad})`
+                    : lotes.map(l => `${l.vencimiento || 'S/F'}:${l.cantidad}`).join(' · ');
+                const badgeDiff = d.diferencia < 0
+                    ? `<span class="diff-badge diff-badge-bajo">↓ ${d.diferencia}</span>`
+                    : d.diferencia > 0
+                    ? `<span class="diff-badge diff-badge-sube">↑ +${d.diferencia}</span>`
+                    : `<span class="diff-badge diff-badge-ok">= 0</span>`;
+                const porVencer = productoTieneLotePorVencer(d, DIAS_ALERTA_VENC);
+                let minDiasVenc = null;
+                lotes.forEach(l => {
+                    const di = diasHastaVencimiento(l.vencimiento);
+                    if (di === null) return;
+                    if (minDiasVenc === null || di < minDiasVenc) minDiasVenc = di;
+                });
+                const badgeVenc = porVencer
+                    ? (minDiasVenc !== null && minDiasVenc < 0
+                        ? '<span class="dot-venc dot-venc-critico" title="Lote vencido">●</span>'
+                        : '<span class="dot-venc" title="Por vencer ≤ 15 días">●</span>')
+                    : '';
                 // Aunque el conteo se haya ingresado todo en el campo de
                 // unidades sueltas, aquí se agrupa en cajas + unidades
                 // sueltas según el factor de empaque del producto.
@@ -2266,12 +2512,12 @@
                 const usuarioColor = usuarioDuplicado ? 'var(--danger)' : 'var(--text-muted)';
                 const usuarioCelda = `${usuarioDuplicado ? '⚠️ ' : ''}${usuarioTexto}`;
                 html += `<tr>
-                    <td>${idx + 1}</td>
-                    <td class="codigo-cell">${d.codigo}</td>
+                    <td>${n + 1}</td>
+                    <td class="codigo-cell">${badgeVenc}${d.codigo}</td>
                     <td style="color:var(--text-secondary);">${d.descripcion}</td>
                     <td style="color:var(--heading-color);" title="${d.stockTeorico} und">${teoricoTexto}</td>
                     <td style="color:var(--heading-color);" title="${d.stockFisico} und">${fisicoTexto}</td>
-                    <td class="${claseDiff}">${d.diferencia}</td>
+                    <td class="${claseDiff}">${badgeDiff}</td>
                     <td style="color:var(--heading-color);" title="${vencTitulo}">${vencTexto}</td>
                     <td style="color:var(--text-muted);">${d.fecha}</td>
                     <td style="color:${usuarioColor}; font-weight:${usuarioDuplicado ? '700' : '400'};" title="${usuarioTitulo}">${usuarioCelda}</td>
@@ -2281,8 +2527,9 @@
                     <div class="mi-card-head">
                         <div class="mi-card-idcol">
                             <div class="mi-card-idrow">
-                                <span class="mi-card-num">#${idx + 1}</span>
-                                <span class="mi-card-codigo">${d.codigo}</span>
+                                <span class="mi-card-num">#${n + 1}</span>
+                                <span class="mi-card-codigo">${badgeVenc}${d.codigo}</span>
+                                ${badgeDiff}
                             </div>
                             <div class="mi-card-desc">${d.descripcion}</div>
                         </div>
@@ -2293,8 +2540,9 @@
                         <div><span class="mi-stat-label">Físico</span><span class="mi-stat-value">${fisicoTexto}</span></div>
                         <div><span class="mi-stat-label">Diferencia</span><span class="mi-stat-value ${claseDiff}">${d.diferencia}</span></div>
                     </div>
+                    ${(lotes.length ? `<div class="mi-lotes">${lotes.map(l => `<span class="mi-lote-chip">${l.vencimiento || 'S/F'} · ${l.cantidad}</span>`).join('')}</div>` : '')}
                     <div class="mi-card-meta">
-                        <span title="${vencTitulo}">📅 ${vencTexto}</span>
+                        <span title="${vencTitulo}">📅 ${lotes.length} lote(s)</span>
                         <span>🕒 ${d.fecha}</span>
                         <span style="color:${usuarioColor}; font-weight:${usuarioDuplicado ? '700' : '400'};" title="${usuarioTitulo}">👤 ${usuarioCelda}</span>
                     </div>
@@ -2314,7 +2562,8 @@
             resDiferencia.textContent = totalDiff;
             resContados.textContent = inventarioFisico.length;
 
-            diffCount.textContent = `${inventarioFisico.length} registros`;
+            diffCount.textContent = filtroDiffModo === 'todos' ? `${inventarioFisico.length} registros` : `${lista.length} / ${inventarioFisico.length}`;
+            try { actualizarPanelAlertaVenc(); } catch (e) {}
             expandCardSiHaceFalta('diff');
 
             document.querySelectorAll('.eliminar-diff, .eliminar-diff-movil').forEach(btn => {
@@ -5519,6 +5768,52 @@
 
             const enviarInventarioBtn = document.getElementById('enviarInventarioBtn');
             if (enviarInventarioBtn) enviarInventarioBtn.addEventListener('click', enviarInventarioCompleto);
+
+            document.querySelectorAll('.diff-filtro-btn[data-diff-filtro]').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    filtroDiffModo = this.getAttribute('data-diff-filtro') || 'todos';
+                    try { localStorage.setItem('iem_filtro_diff', filtroDiffModo); } catch (e) {}
+                    renderInventario();
+                });
+            });
+            (function initAlertaVencUI() {
+                const btn = document.getElementById('btnAlertaVenc');
+                const panel = document.getElementById('panelAlertaVenc');
+                const cerrar = document.getElementById('btnCerrarAlertaVenc');
+                if (!btn || !panel) return;
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    const open = panel.hidden;
+                    panel.hidden = !open;
+                    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+                    if (open) actualizarPanelAlertaVenc();
+                });
+                if (cerrar) cerrar.addEventListener('click', function () {
+                    panel.hidden = true; btn.setAttribute('aria-expanded', 'false');
+                });
+                document.addEventListener('click', function (e) {
+                    if (panel.hidden) return;
+                    if (panel.contains(e.target) || btn.contains(e.target)) return;
+                    panel.hidden = true; btn.setAttribute('aria-expanded', 'false');
+                });
+            })();
+            (function initAdminVencUI() {
+                document.querySelectorAll('[data-admin-venc-dias]').forEach(btn => {
+                    btn.addEventListener('click', function () {
+                        adminVencDiasModo = this.getAttribute('data-admin-venc-dias') || '15';
+                        renderAdminVencimientos();
+                    });
+                });
+                const ref = document.getElementById('adminRefreshVencBtn');
+                if (ref) ref.addEventListener('click', function () { cargarAdminVencimientos(); });
+                const filt = document.getElementById('adminVencFiltro');
+                if (filt) {
+                    let t; filt.addEventListener('input', function () {
+                        clearTimeout(t); t = setTimeout(renderAdminVencimientos, 180);
+                    });
+                }
+            })();
+
             exportDiffBtn.addEventListener('click', exportarInventario);
             clearDiffBtn.addEventListener('click', limpiarInventario);
             guardarDriveBtn.addEventListener('click', guardarInventarioDrive);
@@ -5554,7 +5849,7 @@
         //   #/admin/barras  → sección Barras / QR
         // El botón "atrás" del navegador también funciona.
         // ============================================================
-        const ADMIN_TABS = ['subir', 'catalogo', 'barras', 'descargas', 'vista', 'reporte', 'pedidos', 'clientes', 'sesiones'];
+        const ADMIN_TABS = ['subir', 'catalogo', 'barras', 'descargas', 'vista', 'reporte', 'pedidos', 'vencimientos', 'clientes', 'sesiones'];
         let _hashNavSilent = false;
 
         function parseHashRuta() {

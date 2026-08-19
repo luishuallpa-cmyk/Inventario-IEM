@@ -1221,3 +1221,13 @@ body:not(.light-theme) .apc-estado.bad { color: #f87171; }
     width: 64px; height: 64px; font-size: 1.35rem; border-radius: 10px;
   }
 }
+
+/* Admin por vencer — solo extra */
+.admin-venc-filtros { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
+@media (max-width: 640px) {
+  .admin-venc-table-wrap { display: none; }
+  .admin-venc-mobile { display: block; }
+}
+@media (min-width: 641px) {
+  .admin-venc-mobile { display: none; }
+}
