@@ -28,8 +28,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=4.2.8-load">
-    <link rel="stylesheet" href="admin.css?v=4.2.8">
+    <link rel="stylesheet" href="style.css?v=4.2.9-load">
+    <link rel="stylesheet" href="admin.css?v=4.2.9">
 </head>
 <body>
 <div id="globalLoading" class="global-loading" aria-live="polite" aria-busy="true" aria-label="Cargando">
@@ -37,11 +37,13 @@
 </div>
     <a class="skip-link" href="#mainContent">Saltar al contenido</a>
 <div class="login-overlay" id="loginOverlay">
+    <button type="button" class="login-theme-toggle" id="loginThemeToggleBtn" title="Cambiar tema claro/oscuro" aria-label="Cambiar entre tema claro y oscuro">☀️</button>
     <div class="login-card">
         <div class="login-logo">
             <img src="logo-iem.png" alt="IEM GROUP · LAIVE">
         </div>
         <h2>Iniciar sesión</h2>
+        <p class="login-subtitle">Inventario físico · IEM GROUP</p>
         <form id="loginForm" action="#" method="post" autocomplete="on">
             <div class="login-field">
                 <label for="loginUsuario">Usuario</label>
@@ -126,7 +128,7 @@
                         <span class="hmi-icon">👥</span><span class="hmi-label">Sesiones</span>
                     </button>
                     <div class="header-menu-footer">
-                        <span class="version">v4.2.8 · Admin</span>
+                        <span class="version">v4.2.9 · Admin</span>
                     </div>
                 </div>
             </div>
@@ -679,7 +681,7 @@
     </div>
 
 <script src="config.js?v=4.2.5"></script>
-<script src="app.js?v=4.2.8-nodl"></script>
+<script src="app.js?v=4.2.9-nodl"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {

@@ -941,7 +941,17 @@
         .login-overlay {
             position: fixed;
             inset: 0;
-            background: var(--bg-gradient);
+            /* Verde Laive + red geométrica (estilo ventas) */
+            background-color: #0A784C;
+            background-image:
+                radial-gradient(circle at 12% 18%, rgba(255,255,255,0.14) 0 2px, transparent 3px),
+                radial-gradient(circle at 78% 22%, rgba(255,255,255,0.12) 0 2px, transparent 3px),
+                radial-gradient(circle at 55% 70%, rgba(255,255,255,0.1) 0 2px, transparent 3px),
+                radial-gradient(circle at 30% 85%, rgba(255,255,255,0.1) 0 1.5px, transparent 2.5px),
+                linear-gradient(125deg, rgba(255,255,255,0.07) 1px, transparent 1px),
+                linear-gradient(35deg, rgba(255,255,255,0.05) 1px, transparent 1px),
+                linear-gradient(160deg, #0d8f5a 0%, #0A784C 40%, #086040 100%);
+            background-size: auto, auto, auto, auto, 72px 72px, 90px 90px, auto;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -949,17 +959,57 @@
             padding: 1rem;
         }
         .login-overlay.hidden { display: none; }
+        .login-theme-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 2001;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1.5px solid rgba(255,255,255,0.45);
+            background: rgba(255,255,255,0.95);
+            color: #0A784C;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-theme-toggle:hover {
+            transform: scale(1.05);
+            background: #fff;
+        }
+        body:not(.light-theme) .login-theme-toggle {
+            background: rgba(15, 23, 42, 0.85);
+            border-color: rgba(148, 163, 184, 0.4);
+            color: #f8fafc;
+        }
         .login-card {
-            background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--card-border);
+            background: #ffffff;
+            border: 1px solid rgba(255,255,255,0.7);
             border-radius: 24px;
-            padding: 2rem 1.5rem;
+            padding: 2rem 1.5rem 1.75rem;
             width: 100%;
-            max-width: 360px;
-            box-shadow: var(--card-shadow);
+            max-width: 380px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.22);
             text-align: center;
+        }
+        body:not(.light-theme) .login-card {
+            background: rgba(15, 23, 42, 0.92);
+            border-color: rgba(148, 163, 184, 0.25);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+        .login-subtitle {
+            margin: -0.65rem 0 1.15rem;
+            font-size: 0.78rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+        body:not(.light-theme) .login-subtitle {
+            color: #94a3b8;
         }
         .login-logo {
             margin-bottom: 1.2rem;
@@ -2335,7 +2385,8 @@ body.light-theme #loginBtn:hover {
 }
 /* Login: todo el fondo alrededor en verde */
 body.light-theme .login-overlay {
-    background: #0A784C !important;
+    /* patrón geométrico; no aplanar */
+    background-color: #0A784C !important;
 }
 body.light-theme .login-card {
     background: #ffffff !important;
@@ -3398,4 +3449,40 @@ tr.row-sube { background: rgba(10,120,76,0.06); }
     grid-template-columns: minmax(0, 1fr) minmax(380px, 460px);
     gap: 1.15rem 1.5rem;
   }
+}
+
+
+/* Login v4.2.9 — patrón + tema (no verde plano) */
+body.light-theme .login-overlay,
+body:not(.light-theme) .login-overlay {
+  background-color: #0A784C !important;
+  background-image:
+    radial-gradient(circle at 12% 18%, rgba(255,255,255,0.14) 0 2px, transparent 3px),
+    radial-gradient(circle at 78% 22%, rgba(255,255,255,0.12) 0 2px, transparent 3px),
+    radial-gradient(circle at 55% 70%, rgba(255,255,255,0.1) 0 2px, transparent 3px),
+    radial-gradient(circle at 30% 85%, rgba(255,255,255,0.1) 0 1.5px, transparent 2.5px),
+    linear-gradient(125deg, rgba(255,255,255,0.07) 1px, transparent 1px),
+    linear-gradient(35deg, rgba(255,255,255,0.05) 1px, transparent 1px),
+    linear-gradient(160deg, #0d8f5a 0%, #0A784C 40%, #086040 100%) !important;
+  background-size: auto, auto, auto, auto, 72px 72px, 90px 90px, auto !important;
+}
+body.light-theme .login-card {
+  background: #ffffff !important;
+  color: #0f172a;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.2) !important;
+}
+body.light-theme .login-card h2 {
+  color: #0f172a !important;
+}
+body.light-theme .login-field label {
+  color: #475569 !important;
+}
+body.light-theme .login-field input {
+  background: #fff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+body.light-theme .login-field input:focus {
+  border-color: #0A784C !important;
+  box-shadow: 0 0 0 3px rgba(10, 120, 76, 0.18) !important;
 }

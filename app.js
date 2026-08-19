@@ -3988,6 +3988,10 @@
             if (themeToggleBtn) {
                 themeToggleBtn.textContent = tema === 'light' ? '☀️' : '🌙';
             }
+            var loginThemeBtn = document.getElementById('loginThemeToggleBtn');
+            if (loginThemeBtn) {
+                loginThemeBtn.textContent = tema === 'light' ? '☀️' : '🌙';
+            }
         }
 
         function cargarTema() {
@@ -5484,6 +5488,11 @@
             cargarTema();
             if (themeToggleBtn) {
                 themeToggleBtn.addEventListener('click', alternarTema);
+            const loginThemeToggleBtn = document.getElementById('loginThemeToggleBtn');
+            if (loginThemeToggleBtn) loginThemeToggleBtn.addEventListener('click', alternarTema);
+            }
+            if (document.getElementById("loginThemeToggleBtn")) {
+                document.getElementById("loginThemeToggleBtn").addEventListener('click', alternarTema);
             }
             initCardsPlegables();
 
