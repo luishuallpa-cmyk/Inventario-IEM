@@ -397,16 +397,31 @@
             } catch (e) {}
         }
 
-        function setGlobalLoading(on, texto) {
+        function setGlobalLoading(on) {
             var el = document.getElementById('globalLoading');
             if (!el) return;
-            if (texto) {
-                var t = el.querySelector('.gl-text');
-                if (t) t.textContent = texto;
+            if (on) {
+                el.classList.remove('gl-hide');
+                el.setAttribute('aria-busy', 'true');
+            } else {
+                el.classList.add('gl-hide');
+                el.setAttribute('aria-busy', 'false');
             }
-            if (on) el.classList.remove('gl-hide');
-            else el.classList.add('gl-hide');
         }
+        // Fail-safe: nunca dejar la pantalla de carga bloqueada
+        (function () {
+            function hideLoad() { try { setGlobalLoading(false); } catch (e) {
+                var el = document.getElementById('globalLoading');
+                if (el) el.classList.add('gl-hide');
+            } }
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                setTimeout(hideLoad, 500);
+            } else {
+                document.addEventListener('DOMContentLoaded', function () { setTimeout(hideLoad, 500); });
+            }
+            window.addEventListener('load', function () { setTimeout(hideLoad, 200); });
+            setTimeout(hideLoad, 6000);
+        })();
 
         // RESPALDOS MENSUALES: IndexedDB + ZIP (último Excel del día)
         var IEM_BACKUP_DB = 'iem_respaldos_v1';
@@ -3554,7 +3569,7 @@
             var msg = 'Descarga lista.';
             if (r1.ok) msg += ' Excel sistema ✓';
             if (r2.ok) msg += ' Conteo ✓';
-            if (clean.ok) msg += ' Nube: conteos de meses anteriores eliminados (' + (clean.n || 0) + ').
+            if (clean.ok) msg += ' Nube: conteos de meses anteriores eliminados (' + (clean.n || 0) + ').';
             else msg += ' (no se pudo limpiar nube automáticamente)';
             showToast(msg, 'success');
         }
@@ -5869,6 +5884,7 @@
         }
 
         function mostrarApp() {
+            try { setGlobalLoading(false); } catch (e) {}
             loginOverlay.classList.add('hidden');
             appContainer.classList.remove('oculto');
             if (usuarioBadgeTexto) usuarioBadgeTexto.textContent = usuarioActual || '-';
