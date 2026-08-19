@@ -221,7 +221,29 @@
             color: #1e293b;
         }
         body.light-theme .btn-success {
+            background: #0A784C !important;
             color: #fff !important;
+            border-color: transparent !important;
+            box-shadow: 0 2px 8px rgba(10, 120, 76, 0.28);
+        }
+        body.light-theme .btn-success:hover {
+            background: #08663f !important;
+            filter: none;
+        }
+        body.light-theme .btn-primary {
+            background: #0A784C !important;
+            color: #fff !important;
+            border-color: transparent !important;
+        }
+        body.light-theme .btn-danger {
+            background: #dc2626 !important;
+            color: #fff !important;
+            border-color: transparent !important;
+        }
+        body.light-theme .btn-warning {
+            background: #d97706 !important;
+            color: #fff !important;
+            border-color: transparent !important;
         }
         .btn-primary:hover { background: #1d4ed8; filter: none; transform: none; }
         .btn-success {
@@ -854,10 +876,38 @@
         }
         .btn-guardar-grande {
             width: 100%;
-            padding: 0.65rem;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            min-height: 44px;
+            padding: 0.75rem 1rem;
+            border-radius: 14px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            min-height: 48px;
+            letter-spacing: 0.02em;
+            background: #0A784C !important;
+            color: #fff !important;
+            border: none !important;
+            box-shadow: 0 3px 12px rgba(10, 120, 76, 0.3);
+        }
+        .btn-guardar-grande:hover {
+            background: #08663f !important;
+            box-shadow: 0 4px 14px rgba(10, 120, 76, 0.38);
+        }
+        .btn-guardar-grande:active {
+            transform: scale(0.98);
+        }
+        .btn-guardar-grande:disabled,
+        .btn-guardar-grande.is-disabled {
+            background: #94a3b8 !important;
+            color: #f1f5f9 !important;
+            box-shadow: none;
+            cursor: not-allowed;
+            opacity: 0.75;
+        }
+        body.light-theme .btn-guardar-grande {
+            background: #0A784C !important;
+            color: #fff !important;
+        }
+        body.light-theme .btn-guardar-grande:hover {
+            background: #08663f !important;
         }
 
         /* ============================================================
@@ -2435,4 +2485,71 @@ body.light-theme .btn-primary:hover {
 /* Acento verde suave en oscuro (badges / focus) */
 body:not(.light-theme) .filtro-tipo-btn.active {
   box-shadow: 0 0 0 2px rgba(10, 120, 76, 0.25);
+}
+
+
+/* —— Contraste empresarial botones + temas v4.1.6 —— */
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: grayscale(0.15);
+}
+body.light-theme .btn-outline {
+  background: #fff !important;
+  border: 1.5px solid #94a3b8 !important;
+  color: #1e293b !important;
+}
+body.light-theme .btn-outline:hover {
+  border-color: #0A784C !important;
+  color: #0A784C !important;
+  background: rgba(10, 120, 76, 0.06) !important;
+}
+/* Oscuro: success más legible */
+body:not(.light-theme) .btn-success {
+  background: #0A784C;
+  color: #fff;
+}
+body:not(.light-theme) .btn-success:hover {
+  background: #0d8f5a;
+}
+/* Year tabs */
+body.light-theme .year-tab {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+body.light-theme .year-tab.active {
+  background: #0A784C !important;
+  border-color: #0A784C !important;
+  color: #fff !important;
+}
+body:not(.light-theme) .year-tab.active {
+  background: #0A784C;
+  border-color: #0A784C;
+  color: #fff;
+}
+/* Enviar inventario / acciones del listado */
+body.light-theme #enviarInventarioBtn.btn-primary,
+body.light-theme .btn.btn-primary {
+  background: #0A784C !important;
+  color: #fff !important;
+}
+/* Inputs de cantidad más definidos en claro */
+body.light-theme.modo-seleccion .cantidad-row .group {
+  background: #fff;
+  border-color: #e2e8f0;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+body.light-theme.modo-seleccion .cantidad-row .group input {
+  color: #0f172a;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+/* Vencimiento: labels más legibles */
+body.light-theme .venc-label {
+  color: #0A784C;
+}
+body.light-theme .venc-history-title {
+  color: #0A784C;
 }
