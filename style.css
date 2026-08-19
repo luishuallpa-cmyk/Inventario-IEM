@@ -3298,3 +3298,104 @@ tr.row-sube { background: rgba(10,120,76,0.06); }
     display: none !important;
   }
 }
+
+
+/* —— Paneles separados lista | conteo como vendedores (v4.2.8) —— */
+.pc-panel-lista {
+  display: contents;
+}
+
+@media (min-width: 960px) {
+  /* El section deja de verse como una sola tarjeta */
+  body.modo-seleccion #resultsSection.card,
+  body.modo-seleccion #resultsSection {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    padding: 0 !important;
+    margin-bottom: 0.85rem !important;
+  }
+
+  body.modo-seleccion #resultsSection {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
+    gap: 1rem 1.25rem;
+    align-items: start;
+  }
+
+  body.modo-seleccion #resultsSection > #searchStatus {
+    grid-column: 1 / -1;
+  }
+
+  /* Tarjeta izquierda: resultados */
+  body.modo-seleccion .pc-panel-lista {
+    display: flex !important;
+    flex-direction: column;
+    gap: 0.55rem;
+    grid-column: 1;
+    grid-row: 1 / span 6;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    box-shadow: var(--card-shadow, 0 8px 24px rgba(0,0,0,0.12));
+    padding: 0.85rem 0.95rem 1rem;
+    min-width: 0;
+    max-height: calc(100vh - 6.5rem);
+    overflow: hidden;
+  }
+
+  body.modo-seleccion .pc-panel-lista > .results-header {
+    display: flex !important;
+    flex-shrink: 0;
+    margin: 0 0 0.35rem !important;
+    padding: 0 !important;
+  }
+
+  body.modo-seleccion .pc-panel-lista > #resultList {
+    display: block !important;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none !important;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    margin: 0;
+    padding: 0.15rem 0.1rem;
+  }
+
+  /* Tarjeta derecha: producto + conteo */
+  body.modo-seleccion .pc-panel-conteo {
+    display: flex !important;
+    flex-direction: column;
+    gap: 0.55rem;
+    grid-column: 2;
+    grid-row: 1 / span 6;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    box-shadow: var(--card-shadow, 0 8px 24px rgba(0,0,0,0.12));
+    padding: 1rem 1.1rem 1.15rem !important;
+    position: sticky;
+    top: 0.65rem;
+    max-height: calc(100vh - 6.5rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    align-self: start;
+    min-width: 0;
+  }
+
+  body.light-theme.modo-seleccion .pc-panel-lista,
+  body.light-theme.modo-seleccion .pc-panel-conteo {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+  }
+}
+
+@media (min-width: 1280px) {
+  body.modo-seleccion #resultsSection {
+    grid-template-columns: minmax(0, 1fr) minmax(380px, 460px);
+    gap: 1.15rem 1.5rem;
+  }
+}

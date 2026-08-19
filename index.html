@@ -28,8 +28,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=4.2.7-load">
-    <link rel="stylesheet" href="admin.css?v=4.2.7">
+    <link rel="stylesheet" href="style.css?v=4.2.8-load">
+    <link rel="stylesheet" href="admin.css?v=4.2.8">
 </head>
 <body>
 <div id="globalLoading" class="global-loading" aria-live="polite" aria-busy="true" aria-label="Cargando">
@@ -126,7 +126,7 @@
                         <span class="hmi-icon">👥</span><span class="hmi-label">Sesiones</span>
                     </button>
                     <div class="header-menu-footer">
-                        <span class="version">v4.2.7 · Admin</span>
+                        <span class="version">v4.2.8 · Admin</span>
                     </div>
                 </div>
             </div>
@@ -175,6 +175,7 @@
     ============================================================ -->
     <section class="card" id="resultsSection" aria-live="polite" aria-relevant="additions text">
         <p id="searchStatus" class="sr-only" aria-live="polite"></p>
+        <div class="pc-panel-lista" id="pcPanelLista">
         <div class="results-header">
             <div class="count">📋 Resultados <span id="resultCount">0</span></div>
             <div class="stats">
@@ -185,6 +186,7 @@
         <div id="resultList" role="listbox" aria-label="Resultados de búsqueda" class="result-list">
             <div class="empty-message">🔎 Escribe algo para buscar.</div>
         </div>
+        </div><!-- /.pc-panel-lista -->
 
         <div class="pc-panel-conteo" id="pcPanelConteo">
         <!-- Tarjeta de producto seleccionado (visible solo en móvil) -->
@@ -677,7 +679,7 @@
     </div>
 
 <script src="config.js?v=4.2.5"></script>
-<script src="app.js?v=4.2.7-nodl"></script>
+<script src="app.js?v=4.2.8-nodl"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {
