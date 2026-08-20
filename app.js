@@ -26,12 +26,25 @@
                         toggle.setAttribute('aria-expanded', col ? 'false' : 'true');
                         try { localStorage.setItem('iem_admin_nav_collapsed', col ? '1' : '0'); } catch (e) {}
                     });
+                    // Móvil: pestañas ocultas por defecto (más espacio; solo swipe)
                     try {
-                        if (localStorage.getItem('iem_admin_nav_collapsed') === '1') {
+                        var isMobile = window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
+                        var pref = localStorage.getItem('iem_admin_nav_collapsed');
+                        if (isMobile && pref !== '0') {
+                            wrap.classList.add('nav-collapsed');
+                            toggle.setAttribute('aria-expanded', 'false');
+                        } else if (pref === '1') {
                             wrap.classList.add('nav-collapsed');
                             toggle.setAttribute('aria-expanded', 'false');
                         }
-                    } catch (e) {}
+                    } catch (e) {
+                        try {
+                            if (window.innerWidth <= 900) {
+                                wrap.classList.add('nav-collapsed');
+                                toggle.setAttribute('aria-expanded', 'false');
+                            }
+                        } catch (e2) {}
+                    }
                 }
                 var body = document.querySelector('.admin-panel-body');
                 if (body && !body._swipeBound) {
@@ -79,6 +92,11 @@
                 };
                 var titleEl = document.getElementById('adminPanelTitle');
                 if (titleEl) titleEl.textContent = titulos[tabId] || '⚙️ Administración';
+                var swipeTitle = document.getElementById('adminSwipeTitle');
+                if (swipeTitle) {
+                    var t = titulos[tabId] || tabId;
+                    swipeTitle.textContent = t.replace(/^[^\wÀ-ɏ]+/, '').trim() || t;
+                }
                 var activeBtn = null;
                 document.querySelectorAll('.admin-nav-btn').forEach(function (b) {
                     var on = b.getAttribute('data-admin-tab') === tabId;
@@ -2584,41 +2602,63 @@
             const countEl = document.getElementById('alertaVencCount');
             const dot = document.getElementById('alertaVencDot');
             const lista = document.getElementById('listaAlertaVenc');
-            if (!btn || !lista) return;
-            const alertas = obtenerAlertasPorVencer(DIAS_ALERTA_VENC);
+            const fab = document.getElementById('fabAlertaVenc');
+            const fabCount = document.getElementById('fabAlertaCount');
+            const alertas = (typeof obtenerAlertasPorVencer === 'function')
+                ? obtenerAlertasPorVencer(DIAS_ALERTA_VENC)
+                : [];
             const n = alertas.length;
             const hayCritico = alertas.some(function (a) { return a.vencido || a.dias <= 7; });
-            // Siempre visible: verde OK / rojo titilante si hay por vencer o vencidos
-            btn.hidden = false;
-            btn.classList.remove('btn-alerta-ok', 'btn-alerta-warn', 'btn-alerta-danger', 'btn-alerta-pulse');
-            if (!n) {
-                btn.classList.add('btn-alerta-ok');
-                btn.setAttribute('title', 'Sin lotes por vencer');
-                if (countEl) countEl.textContent = '0';
-                if (dot) dot.hidden = true;
-                lista.innerHTML = '<li class="alerta-item alerta-item-ok">Todo en orden · sin vencimientos ≤ ' + DIAS_ALERTA_VENC + ' días</li>';
-                return;
+            const esAdm = (typeof esAdmin === 'function') ? esAdmin() : false;
+
+            function syncFab() {
+                if (!fab) return;
+                if (!esAdm) { fab.hidden = true; return; }
+                if (n > 0) {
+                    fab.hidden = false;
+                    fab.classList.toggle('fab-ok', false);
+                    if (fabCount) fabCount.textContent = String(n);
+                } else {
+                    fab.hidden = true; // solo flotante si hay alertas
+                }
             }
-            if (hayCritico) {
-                btn.classList.add('btn-alerta-danger', 'btn-alerta-pulse');
-                btn.setAttribute('title', n + ' lote(s) por vencer o vencidos');
-            } else {
-                btn.classList.add('btn-alerta-warn', 'btn-alerta-pulse');
-                btn.setAttribute('title', n + ' lote(s) por vencer');
+
+            if (btn) {
+                btn.hidden = false;
+                btn.style.display = 'inline-flex';
+                btn.classList.remove('btn-alerta-ok', 'btn-alerta-warn', 'btn-alerta-danger', 'btn-alerta-pulse');
+                if (!n) {
+                    btn.classList.add('btn-alerta-ok');
+                    btn.setAttribute('title', 'Sin lotes por vencer');
+                    if (countEl) countEl.textContent = '0';
+                    if (dot) dot.hidden = true;
+                } else if (hayCritico) {
+                    btn.classList.add('btn-alerta-danger', 'btn-alerta-pulse');
+                    btn.setAttribute('title', n + ' lote(s) por vencer o vencidos');
+                    if (countEl) countEl.textContent = String(n);
+                    if (dot) { dot.hidden = false; dot.classList.add('alerta-critica'); }
+                } else {
+                    btn.classList.add('btn-alerta-warn', 'btn-alerta-pulse');
+                    btn.setAttribute('title', n + ' lote(s) por vencer');
+                    if (countEl) countEl.textContent = String(n);
+                    if (dot) { dot.hidden = false; dot.classList.remove('alerta-critica'); }
+                }
             }
-            if (countEl) countEl.textContent = String(n);
-            if (dot) {
-                dot.hidden = false;
-                dot.classList.toggle('alerta-critica', hayCritico);
+            if (lista) {
+                if (!n) {
+                    lista.innerHTML = '<li class="alerta-item alerta-item-ok">Todo en orden · sin vencimientos ≤ ' + DIAS_ALERTA_VENC + ' días</li>';
+                } else {
+                    lista.innerHTML = alertas.map(function (a) {
+                        const label = a.vencido ? ('Vencido hace ' + Math.abs(a.dias) + ' d') : (a.dias === 0 ? 'Vence hoy' : ('En ' + a.dias + ' d'));
+                        const cls = (a.vencido || a.dias <= 7) ? 'alerta-item-critico' : 'alerta-item-warn';
+                        const esc = function (s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+                        return '<li class="alerta-item ' + cls + '"><div class="alerta-item-top"><span class="alerta-item-cod">' + esc(a.codigo) +
+                            '</span><span class="alerta-item-dias">' + label + '</span></div><div class="alerta-item-desc">' + esc(a.descripcion) +
+                            '</div><div class="alerta-item-meta">📅 ' + esc(a.vencimiento) + ' · ' + a.cantidad + ' und</div></li>';
+                    }).join('');
+                }
             }
-            lista.innerHTML = alertas.map(function (a) {
-                const label = a.vencido ? ('Vencido hace ' + Math.abs(a.dias) + ' d') : (a.dias === 0 ? 'Vence hoy' : ('En ' + a.dias + ' d'));
-                const cls = (a.vencido || a.dias <= 7) ? 'alerta-item-critico' : 'alerta-item-warn';
-                const esc = function (s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
-                return '<li class="alerta-item ' + cls + '"><div class="alerta-item-top"><span class="alerta-item-cod">' + esc(a.codigo) +
-                    '</span><span class="alerta-item-dias">' + label + '</span></div><div class="alerta-item-desc">' + esc(a.descripcion) +
-                    '</div><div class="alerta-item-meta">📅 ' + esc(a.vencimiento) + ' · ' + a.cantidad + ' und</div></li>';
-            }).join('');
+            syncFab();
         }
 
         let adminVencDiasModo = '15';
@@ -7264,6 +7304,53 @@
         }, 60000);
     })();
 
+
+        
+        // FAB → listado por vencer (admin)
+        document.addEventListener('click', function (e) {
+            var fab = e.target.closest && e.target.closest('#fabAlertaVenc');
+            if (!fab) return;
+            e.preventDefault();
+            if (typeof abrirAdminEnSeccion === 'function') abrirAdminEnSeccion('vencimientos');
+            else if (typeof window.cambiarTabAdmin === 'function') {
+                var ov = document.getElementById('adminOverlay');
+                if (ov) { ov.classList.add('visible'); document.body.classList.add('admin-open'); }
+                window.cambiarTabAdmin('vencimientos');
+            }
+        });
+
+        // Pull-to-refresh en la zona superior (móvil): recarga limpia de caché
+        (function initPullToRefresh() {
+            var startY = 0, pulling = false;
+            document.addEventListener('touchstart', function (e) {
+                if (window.scrollY > 2 && (document.documentElement.scrollTop || 0) > 2) return;
+                if (document.body.classList.contains('admin-open')) return;
+                if (!e.touches || !e.touches[0]) return;
+                startY = e.touches[0].clientY;
+                pulling = true;
+            }, { passive: true });
+            document.addEventListener('touchend', function (e) {
+                if (!pulling) return;
+                pulling = false;
+                if (!e.changedTouches || !e.changedTouches[0]) return;
+                var dy = e.changedTouches[0].clientY - startY;
+                if (dy > 90 && (window.scrollY <= 2)) {
+                    try {
+                        if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+                            navigator.serviceWorker.getRegistrations().then(function (regs) {
+                                regs.forEach(function (r) { r.unregister(); });
+                            });
+                        }
+                        if (window.caches && caches.keys) {
+                            caches.keys().then(function (keys) {
+                                keys.forEach(function (k) { caches.delete(k); });
+                            });
+                        }
+                    } catch (err) {}
+                    setTimeout(function () { location.reload(); }, 200);
+                }
+            }, { passive: true });
+        })();
 
         // Ocultar pantalla de carga cuando la app ya pintó
         document.addEventListener('DOMContentLoaded', function () {

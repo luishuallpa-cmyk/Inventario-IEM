@@ -1277,6 +1277,51 @@ body.light-theme .admin-nav-wrap {
 }
 .admin-nav-wrap.nav-collapsed .admin-nav {
     display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    pointer-events: none !important;
+}
+/* Móvil: por defecto sin pestañas (más espacio); swipe cambia de sección */
+@media (max-width: 900px) {
+    .admin-nav-wrap.nav-collapsed .admin-nav-toggle {
+        display: none !important; /* solo swipe, sin barra de menús */
+    }
+    .admin-nav-wrap:not(.nav-collapsed) .admin-nav-toggle {
+        display: flex !important;
+    }
+    .admin-swipe-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.35rem 0.6rem;
+        font-size: 0.72rem;
+        color: var(--text-secondary, #64748b);
+        background: transparent;
+        border-bottom: 1px solid var(--divider, rgba(128,128,128,0.15));
+        flex-shrink: 0;
+        user-select: none;
+    }
+    .admin-swipe-bar strong {
+        color: var(--heading-color, inherit);
+        font-weight: 700;
+        font-size: 0.8rem;
+    }
+}
+@media (min-width: 901px) {
+    .admin-swipe-bar { display: none !important; }
+    .admin-nav-wrap.nav-collapsed .admin-nav {
+        display: flex !important; /* desktop: always show side/top nav */
+        height: auto !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        max-height: none !important;
+    }
 }
 .admin-panel-body {
     touch-action: pan-y;
