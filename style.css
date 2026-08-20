@@ -3723,3 +3723,52 @@ body:not(.light-theme) .login-field input:focus {
   border-color: rgba(45, 180, 160, 0.5) !important;
   box-shadow: 0 0 0 3px rgba(45, 180, 160, 0.12) !important;
 }
+
+
+/* Mobile admin: iconos de alerta/tema/salir van dentro del menú ☰ */
+.header-menu-divider {
+    height: 1px;
+    margin: 0.35rem 0.4rem;
+    background: var(--card-border);
+    border: none;
+}
+.hmi-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    padding: 0 0.35rem;
+    margin-left: 0.35rem;
+    border-radius: 999px;
+    background: #e11d48;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+.hmi-badge:empty,
+.hmi-badge[data-empty="1"] {
+    display: none;
+}
+.header-menu-item-mobile {
+    display: none;
+}
+@media (max-width: 720px) {
+    body.es-admin .header-actions > .btn-alerta-venc,
+    body.es-admin .header-actions > .theme-toggle,
+    body.es-admin .header-actions > .btn-logout {
+        display: none !important;
+    }
+    body.es-admin .header-menu-item-mobile {
+        display: flex;
+    }
+    body.es-admin .header-menu-divider {
+        display: block;
+    }
+}
+@media (min-width: 721px) {
+    .header-menu-item-mobile,
+    .header-menu-divider {
+        display: none !important;
+    }
+}

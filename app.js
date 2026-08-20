@@ -2525,15 +2525,22 @@
             const lista = document.getElementById('listaAlertaVenc');
             if (!btn || !lista) return;
             const alertas = obtenerAlertasPorVencer(DIAS_ALERTA_VENC);
+            const menuCount = document.getElementById('menuAlertaCount');
             if (!alertas.length) {
                 btn.hidden = true;
                 btn.setAttribute('aria-expanded', 'false');
                 const panel = document.getElementById('panelAlertaVenc');
                 if (panel) panel.hidden = true;
+                if (countEl) countEl.textContent = '0';
+                if (menuCount) { menuCount.textContent = '0'; menuCount.setAttribute('data-empty', '1'); }
                 return;
             }
             btn.hidden = false;
             if (countEl) countEl.textContent = String(alertas.length);
+            if (menuCount) {
+                menuCount.textContent = String(alertas.length);
+                menuCount.setAttribute('data-empty', '0');
+            }
             if (dot) { dot.hidden = false; dot.classList.toggle('alerta-critica', alertas.some(a => a.vencido)); }
             lista.innerHTML = alertas.map(a => {
                 const label = a.vencido ? ('Vencido hace ' + Math.abs(a.dias) + ' d') : (a.dias === 0 ? 'Vence hoy' : ('En ' + a.dias + ' d'));
@@ -5689,6 +5696,30 @@
             const headerMenuDropdown = document.getElementById('headerMenuDropdown');
             if (headerMenuDropdown) {
                 headerMenuDropdown.addEventListener('click', function (e) {
+                    const actionItem = e.target.closest('[data-header-action]');
+                    if (actionItem) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const act = actionItem.getAttribute('data-header-action');
+                        cerrarHeaderMenu();
+                        if (act === 'tema') {
+                            const t = document.getElementById('themeToggleBtn');
+                            if (t) t.click();
+                            else if (typeof alternarTema === 'function') alternarTema();
+                        } else if (act === 'logout') {
+                            const b = document.getElementById('logoutBtn');
+                            if (b) b.click();
+                        } else if (act === 'alerta') {
+                            const a = document.getElementById('btnAlertaVenc');
+                            if (a) {
+                                a.hidden = false;
+                                a.click();
+                            } else if (typeof abrirAdminEnSeccion === 'function') {
+                                abrirAdminEnSeccion('vencimientos');
+                            }
+                        }
+                        return;
+                    }
                     const item = e.target.closest('[data-admin-goto]');
                     if (!item) return;
                     e.preventDefault();
