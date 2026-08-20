@@ -3145,8 +3145,9 @@
         }
 
         async function exportarInventario() {
-            if (!esAdmin()) {
-                showToast('Solo el administrador puede descargar el inventario.', 'error');
+            // Disponible para admin y usuarios de conteo (guardar su conteo terminado)
+            if (typeof esVendedor === 'function' && esVendedor() && !esAdmin()) {
+                showToast('No disponible en modo vendedor.', 'error');
                 return;
             }
             if (inventarioFisico.length === 0) {
@@ -6694,7 +6695,11 @@
             document.body.classList.toggle('modo-vendedor', !!vend && !es);
             const menuWrap = document.getElementById('headerMenuWrap');
             if (menuWrap) menuWrap.style.display = es ? '' : 'none';
-            ['exportDiffBtn', 'clearDiffBtn', 'guardarDriveBtn', 'exportPedidoBtn'].forEach(id => {
+            // Excel: disponible para admin y usuarios de conteo (guardar su conteo terminado)
+            const exportBtn = document.getElementById('exportDiffBtn');
+            if (exportBtn) exportBtn.style.display = (es || !vend) ? '' : 'none';
+            // Limpiar, Nube y Pedido: solo admin
+            ['clearDiffBtn', 'guardarDriveBtn', 'exportPedidoBtn'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.style.display = es ? '' : 'none';
             });

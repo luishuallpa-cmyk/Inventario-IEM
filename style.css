@@ -3832,9 +3832,9 @@ body:not(.light-theme) .login-field input:focus {
 }
 
 
-/* —— Alerta por vencer: verde OK / rojo titila —— */
+/* —— Alerta por vencer (header): oculto; se usa solo el FAB flotante —— */
 .btn-alerta-venc {
-  display: inline-flex !important;
+  display: none !important;
   align-items: center;
   justify-content: center;
   gap: 0.2rem;
@@ -3940,8 +3940,11 @@ body:not(.light-theme) .login-field input:focus {
   line-height: 1;
   margin-top: 1px;
 }
-/* Header alerta siempre visible para admin */
-#btnAlertaVenc { display: inline-flex !important; }
+/* Header alerta desactivado: se usa solo el FAB flotante (#fabAlertaVenc) */
+#btnAlertaVenc,
+.btn-alerta-venc {
+  display: none !important;
+}
 
 /* Menú: Salir destacado en rojo */
 .header-menu-item-salir {
