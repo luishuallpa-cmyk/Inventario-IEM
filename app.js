@@ -6719,7 +6719,10 @@
             const ov = document.getElementById('adminOverlay');
             if (ov) {
                 ov.classList.remove('visible');
-                ov.style.display = '';
+                ov.style.display = 'none';
+                ov.style.visibility = '';
+                ov.style.opacity = '';
+                ov.style.zIndex = '';
                 ov.setAttribute('aria-hidden', 'true');
             }
             document.body.classList.remove('admin-open');
@@ -6727,20 +6730,20 @@
             adminSelectedFile = null;
             const input = document.getElementById('importExcelInput');
             if (input) input.value = '';
-            // Siempre limpiar hash admin para que no se reabra ni quede “atrapado”
+            // Limpiar hash admin para que no quede atrapado ni se reabra solo
             if (!_cerrandoDesdeHash) {
                 try {
                     if (/^#\/admin/i.test(location.hash || '')) {
-                        if (typeof navegarHash === 'function') {
-                            _cerrandoDesdeHash = true;
-                            navegarHash('#/', true);
-                            _cerrandoDesdeHash = false;
-                        } else {
-                            history.replaceState({ iemGuard: 1 }, '', location.pathname + location.search + '#/');
+                        _cerrandoDesdeHash = true;
+                        try {
+                            if (typeof navegarHash === 'function') navegarHash('#/', true);
+                            else history.replaceState({ iemGuard: 1 }, '', location.pathname + location.search + '#/');
+                        } catch (e) {
+                            try { location.hash = '#/'; } catch (e2) {}
                         }
+                        _cerrandoDesdeHash = false;
                     }
-                } catch (e) {
-                    try { location.hash = '#/'; } catch (e2) {}
+                } catch (e3) {
                     _cerrandoDesdeHash = false;
                 }
             }
@@ -6936,9 +6939,12 @@
             });
         }
 
-        // Gesto / botón Atrás (Android/iOS PWA): bloquear salida a 2.º plano sin cerrar sesión
+        // Gesto Atrás tipo app nativa:
+        // 1) Cierra capas (menú → alerta → admin)
+        // 2) Solo en la pantalla raíz pide Salir + cerrar sesión
         (function initGestoAtras() {
             var preguntandoAtras = false;
+            var procesandoAtras = false;
 
             function haySesionActiva() {
                 try {
@@ -6949,7 +6955,6 @@
                     if (meta && String(meta).length > 2) return true;
                 } catch (e2) {}
                 try {
-                    // App visible (no login): también contar como sesión
                     var app = document.getElementById('appContainer');
                     var login = document.getElementById('loginOverlay');
                     if (app && !app.classList.contains('oculto') && login && login.classList.contains('hidden')) return true;
@@ -6963,7 +6968,6 @@
                 } catch (e) {}
             }
 
-            /** Instala 2 niveles de historial para que Atrás no minimice la PWA */
             window.__iemPushBackGuard = function () {
                 try {
                     history.replaceState({ iemGuard: 1, base: 1 }, '', location.href);
@@ -6973,72 +6977,120 @@
                 }
             };
 
-            window.addEventListener('popstate', function () {
-                if (!haySesionActiva()) return;
+            /** Cierra la capa superior. true = había algo que cerrar. */
+            function cerrarCapaSuperior() {
+                // 1) Menú ☰
+                var menu = document.getElementById('headerMenuDropdown');
+                if (menu && !menu.hidden) {
+                    try {
+                        if (typeof cerrarHeaderMenu === 'function') cerrarHeaderMenu();
+                        else {
+                            menu.hidden = true;
+                            menu.classList.remove('open');
+                        }
+                    } catch (e) {}
+                    return true;
+                }
 
-                // 1) Admin abierto → solo cerrar panel (no sesión). Evitar que quede atrapado.
-                if (typeof adminEstaAbierto === 'function' ? adminEstaAbierto() : false) {
+                // 2) Panel alerta vencidos
+                var alerta = document.getElementById('panelAlertaVenc');
+                if (alerta && alerta.hidden === false) {
+                    alerta.hidden = true;
+                    var btnA = document.getElementById('btnAlertaVenc');
+                    if (btnA) btnA.setAttribute('aria-expanded', 'false');
+                    return true;
+                }
+
+                // 3) Admin abierto → solo cerrar admin (no sesión)
+                var adminAbierto = false;
+                try {
+                    if (typeof adminEstaAbierto === 'function') adminAbierto = adminEstaAbierto();
+                } catch (e) {}
+                if (!adminAbierto) {
+                    var ov0 = document.getElementById('adminOverlay');
+                    if (ov0 && (ov0.classList.contains('visible') || ov0.style.display === 'flex')) adminAbierto = true;
+                    if (document.body.classList.contains('admin-open')) adminAbierto = true;
+                    if (/^#\/admin/i.test(location.hash || '')) adminAbierto = true;
+                }
+                if (adminAbierto) {
                     try {
                         if (typeof cerrarPanelAdmin === 'function') cerrarPanelAdmin();
                     } catch (e) {}
-                    // Forzar UI por si el hash no cooperó
                     try {
                         var ov = document.getElementById('adminOverlay');
                         if (ov) {
                             ov.classList.remove('visible');
+                            ov.style.display = 'none';
+                            ov.style.visibility = '';
+                            ov.style.opacity = '';
                             ov.setAttribute('aria-hidden', 'true');
                         }
                         document.body.classList.remove('admin-open');
                         document.body.style.overflow = '';
+                    } catch (e2) {}
+                    try {
                         if (/^#\/admin/i.test(location.hash || '')) {
                             history.replaceState({ iemGuard: 1 }, '', location.pathname + location.search + '#/');
                         }
-                    } catch (e2) {}
+                    } catch (e3) {}
+                    return true;
+                }
+
+                return false;
+            }
+
+            window.addEventListener('popstate', function () {
+                if (!haySesionActiva()) return;
+                if (procesandoAtras) {
                     pushGuardia();
                     return;
                 }
+                procesandoAtras = true;
 
-                var panel = document.getElementById('panelAlertaVenc');
-                if (panel && panel.hidden === false) {
-                    panel.hidden = true;
-                    var btnA = document.getElementById('btnAlertaVenc');
-                    if (btnA) btnA.setAttribute('aria-expanded', 'false');
+                try {
+                    // Siempre reponer historial YA para que Android no minimice la PWA
                     pushGuardia();
-                    return;
-                }
-                var menu = document.getElementById('headerMenuDropdown');
-                if (menu && !menu.hidden) {
-                    if (typeof cerrarHeaderMenu === 'function') cerrarHeaderMenu();
-                    pushGuardia();
-                    return;
-                }
 
-                // 2) Sin overlays: confirmar cierre de sesión
-                // Reponer historial YA para no minimizar la PWA mientras se pregunta
-                pushGuardia();
-                if (preguntandoAtras) return;
-                preguntandoAtras = true;
-
-                var preguntar = (typeof confirmarAccion === 'function')
-                    ? confirmarAccion('¿Salir y cerrar sesión?\nLa app no debe quedar abierta sin cerrar sesión.', 'Salir', 'danger')
-                    : Promise.resolve(window.confirm('¿Salir y cerrar sesión?'));
-
-                preguntar.then(function (ok) {
-                    preguntandoAtras = false;
-                    if (ok) {
-                        ejecutarSalirSesion();
-                        try { history.replaceState({ iemGuard: 0 }, '', location.pathname + location.search + '#/'); } catch (e) {}
-                    } else {
-                        if (typeof window.__iemPushBackGuard === 'function') window.__iemPushBackGuard();
-                        else pushGuardia();
+                    // Retroceder una capa (menú / alerta / admin)
+                    if (cerrarCapaSuperior()) {
+                        procesandoAtras = false;
+                        return;
                     }
-                }).catch(function () {
-                    preguntandoAtras = false;
+
+                    // Pantalla raíz: pedir salir + cerrar sesión
+                    if (preguntandoAtras) {
+                        procesandoAtras = false;
+                        return;
+                    }
+                    preguntandoAtras = true;
+
+                    var preguntar = (typeof confirmarAccion === 'function')
+                        ? confirmarAccion('¿Salir y cerrar sesión?', 'Salir', 'danger')
+                        : Promise.resolve(window.confirm('¿Salir y cerrar sesión?'));
+
+                    preguntar.then(function (ok) {
+                        preguntandoAtras = false;
+                        procesandoAtras = false;
+                        if (ok) {
+                            try { ejecutarSalirSesion(); } catch (e) {}
+                            try {
+                                history.replaceState({ iemGuard: 0 }, '', location.pathname + location.search + '#/');
+                            } catch (e2) {}
+                        } else {
+                            if (typeof window.__iemPushBackGuard === 'function') window.__iemPushBackGuard();
+                            else pushGuardia();
+                        }
+                    }).catch(function () {
+                        preguntandoAtras = false;
+                        procesandoAtras = false;
+                        pushGuardia();
+                    });
+                } catch (err) {
+                    procesandoAtras = false;
                     pushGuardia();
-                });
+                }
             });
 
-            // Si el sistema oculta la app sin popstate, al volver a primer plano reponer guardia
             document.addEventListener('visibilitychange', function () {
                 if (document.visibilityState === 'visible' && haySesionActiva()) {
                     try {
