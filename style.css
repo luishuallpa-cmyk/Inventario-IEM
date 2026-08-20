@@ -2920,7 +2920,7 @@ body:not(.light-theme) #scanBarcodeBtn .ico-scan {
 }
 
 
-/* —— Carga inicial: 3 puntos animados —— */
+/* —— Carga: inicio (logo) vs post-login (3 puntos) —— */
 .global-loading {
   position: fixed;
   inset: 0;
@@ -2931,7 +2931,7 @@ body:not(.light-theme) #scanBarcodeBtn .ico-scan {
   justify-content: center;
   gap: 1rem;
   background: #0a0e14;
-  transition: opacity 0.45s ease, visibility 0.45s;
+  transition: opacity 0.5s ease, visibility 0.5s;
 }
 .global-loading.gl-hide {
   opacity: 0;
@@ -2941,11 +2941,50 @@ body:not(.light-theme) #scanBarcodeBtn .ico-scan {
 body.light-theme .global-loading {
   background: #0A784C;
 }
-.gl-dots {
+/* Por defecto ocultar ambos; el modo decide */
+.global-loading .gl-boot,
+.global-loading .gl-dots {
+  display: none;
+}
+.global-loading.gl-mode-boot .gl-boot {
+  display: flex;
+  position: relative;
+  width: 96px;
+  height: 96px;
+  align-items: center;
+  justify-content: center;
+}
+.global-loading.gl-mode-dots .gl-dots {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.65rem;
+}
+.gl-boot-logo {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  border-radius: 14px;
+  animation: gl-boot-logo 1.4s ease-in-out infinite;
+  position: relative;
+  z-index: 1;
+  background: rgba(255,255,255,0.06);
+}
+.gl-boot-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.15);
+  border-top-color: rgba(255,255,255,0.9);
+  border-right-color: rgba(16, 185, 129, 0.7);
+  animation: gl-boot-spin 0.9s linear infinite;
+}
+@keyframes gl-boot-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes gl-boot-logo {
+  0%, 100% { opacity: 0.85; transform: scale(0.96); }
+  50% { opacity: 1; transform: scale(1.04); }
 }
 .gl-dots span {
   width: 12px;

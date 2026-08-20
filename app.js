@@ -480,11 +480,15 @@
             } catch (e) {}
         }
 
-        function setGlobalLoading(on) {
+        function setGlobalLoading(on, mode) {
             var el = document.getElementById('globalLoading');
             if (!el) return;
             if (on) {
                 window.__iemLoadShownAt = Date.now();
+                // mode: 'boot' = logo al iniciar | 'dots' = puntos tras login
+                var m = mode || 'dots';
+                el.classList.remove('gl-mode-boot', 'gl-mode-dots');
+                el.classList.add(m === 'boot' ? 'gl-mode-boot' : 'gl-mode-dots');
                 el.classList.remove('gl-hide');
                 el.setAttribute('aria-busy', 'true');
             } else {
@@ -509,7 +513,8 @@
         try {
             var _gl0 = document.getElementById('globalLoading');
             if (_gl0) {
-                _gl0.classList.remove('gl-hide');
+                _gl0.classList.remove('gl-hide', 'gl-mode-dots');
+                _gl0.classList.add('gl-mode-boot');
                 _gl0.setAttribute('aria-busy', 'true');
             }
         } catch (e0) {}
@@ -6707,6 +6712,9 @@
             if (usuarioBadgeTexto) usuarioBadgeTexto.textContent = usuarioActual || '-';
             actualizarUIPorRol();
             registrarSesionActiva();
+            try {
+                if (typeof window.__iemPushBackGuard === 'function') window.__iemPushBackGuard();
+            } catch (eG) {}
             if (!appIniciado) {
                 appIniciado = true;
                 init();
@@ -6787,7 +6795,7 @@
                 usuarioActual = split_part_email(session.user.email);
                 rolUsuario = (usuarioActual === 'luis') ? 'admin' : 'usuario';
                 guardarMetaSesion(usuarioActual, rolUsuario);
-                try { setGlobalLoading(true); } catch (e) {}
+                try { setGlobalLoading(true, 'dots'); } catch (e) {}
                 mostrarApp();
                 return true;
             }
@@ -6807,22 +6815,126 @@
                 return false;
             }
             guardarMetaSesion(usuarioActual, rolUsuario);
-            try { setGlobalLoading(true); } catch (e) {}
+            try { setGlobalLoading(true, 'dots'); } catch (e) {}
             mostrarApp();
             return true;
         }
 
+        async function ejecutarSalirSesion() {
+            try { await borrarSesionActiva(); } catch (e) {}
+            try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+            try { if (supabaseClient) await supabaseClient.auth.signOut(); } catch (e) {}
+            usuarioActual = '';
+            rolUsuario = '';
+            try { setGlobalLoading(false); } catch (e) {}
+            mostrarLogin();
+        }
+
         function cerrarSesion() {
-            confirmarAccion('¿Salir de la sesión?', 'Salir', 'danger').then(async ok => {
+            confirmarAccion('¿Salir de la sesión?', 'Salir', 'danger').then(function (ok) {
                 if (!ok) return;
-                await borrarSesionActiva();
-                try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
-                try { await supabaseClient.auth.signOut(); } catch (e) {}
-                usuarioActual = '';
-                rolUsuario = '';
-                mostrarLogin();
+                ejecutarSalirSesion();
             });
         }
+
+        // Gesto / botón Atrás (Android/iOS PWA): bloquear salida a 2.º plano sin cerrar sesión
+        (function initGestoAtras() {
+            var preguntandoAtras = false;
+
+            function haySesionActiva() {
+                try {
+                    if (usuarioActual && String(usuarioActual).length) return true;
+                } catch (e) {}
+                try {
+                    var meta = localStorage.getItem(SESSION_KEY);
+                    if (meta && String(meta).length > 2) return true;
+                } catch (e2) {}
+                try {
+                    // App visible (no login): también contar como sesión
+                    var app = document.getElementById('appContainer');
+                    var login = document.getElementById('loginOverlay');
+                    if (app && !app.classList.contains('oculto') && login && login.classList.contains('hidden')) return true;
+                } catch (e3) {}
+                return false;
+            }
+
+            function pushGuardia() {
+                try {
+                    history.pushState({ iemGuard: 1, t: Date.now() }, '', location.href);
+                } catch (e) {}
+            }
+
+            /** Instala 2 niveles de historial para que Atrás no minimice la PWA */
+            window.__iemPushBackGuard = function () {
+                try {
+                    history.replaceState({ iemGuard: 1, base: 1 }, '', location.href);
+                    history.pushState({ iemGuard: 1, t: Date.now() }, '', location.href);
+                } catch (e) {
+                    try { pushGuardia(); } catch (e2) {}
+                }
+            };
+
+            window.addEventListener('popstate', function () {
+                // Siempre reponer guardia al instante (evita que Android mande la app a 2.º plano)
+                if (haySesionActiva()) {
+                    pushGuardia();
+                } else {
+                    return;
+                }
+
+                var ov = document.getElementById('adminOverlay');
+                if (ov && ov.classList.contains('visible')) {
+                    if (typeof cerrarPanelAdmin === 'function') cerrarPanelAdmin();
+                    return;
+                }
+                var panel = document.getElementById('panelAlertaVenc');
+                if (panel && panel.hidden === false) {
+                    panel.hidden = true;
+                    var btnA = document.getElementById('btnAlertaVenc');
+                    if (btnA) btnA.setAttribute('aria-expanded', 'false');
+                    return;
+                }
+                var menu = document.getElementById('headerMenuDropdown');
+                if (menu && !menu.hidden) {
+                    if (typeof cerrarHeaderMenu === 'function') cerrarHeaderMenu();
+                    return;
+                }
+
+                if (preguntandoAtras) return;
+                preguntandoAtras = true;
+
+                var preguntar = (typeof confirmarAccion === 'function')
+                    ? confirmarAccion('¿Salir y cerrar sesión?\nLa app no debe quedar abierta sin cerrar sesión.', 'Salir', 'danger')
+                    : Promise.resolve(window.confirm('¿Salir y cerrar sesión?'));
+
+                preguntar.then(function (ok) {
+                    preguntandoAtras = false;
+                    if (ok) {
+                        ejecutarSalirSesion();
+                        // Tras logout, un atrás más puede cerrar/minimizar con normalidad
+                        try {
+                            history.replaceState({ iemGuard: 0 }, '', location.href);
+                        } catch (e) {}
+                    } else {
+                        // Seguir dentro: reforzar historial
+                        if (typeof window.__iemPushBackGuard === 'function') window.__iemPushBackGuard();
+                        else pushGuardia();
+                    }
+                }).catch(function () {
+                    preguntandoAtras = false;
+                    pushGuardia();
+                });
+            });
+
+            // Si el sistema oculta la app sin popstate, al volver a primer plano reponer guardia
+            document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState === 'visible' && haySesionActiva()) {
+                    try {
+                        if (typeof window.__iemPushBackGuard === 'function') window.__iemPushBackGuard();
+                    } catch (e) {}
+                }
+            });
+        })();
 
         async function intentarLogin() {
             const ahora = Date.now();
@@ -6849,7 +6961,7 @@
             loginBtn.disabled = true;
             loginBtn.textContent = 'Verificando...';
             loginError.classList.add('hidden');
-            try { setGlobalLoading(true); } catch (eL) {}
+            try { setGlobalLoading(true, 'dots'); } catch (eL) {}
 
             try {
                 const email = usuarioAEmail(usuario);
