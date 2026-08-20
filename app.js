@@ -484,6 +484,7 @@
             var el = document.getElementById('globalLoading');
             if (!el) return;
             if (on) {
+                window.__iemLoadShownAt = Date.now();
                 el.classList.remove('gl-hide');
                 el.setAttribute('aria-busy', 'true');
             } else {
@@ -491,10 +492,9 @@
                 el.setAttribute('aria-busy', 'false');
             }
         }
-        // Carga inicial: puntos visibles al menos ~1.1s; luego al login/app
-        window.__iemLoadShownAt = Date.now();
+        // Puntos solo al pasar de login → menú búsqueda (mín. ~0.9s visibles)
         window.__iemHideLoading = function () {
-            var minMs = 1100;
+            var minMs = 900;
             var waited = Date.now() - (window.__iemLoadShownAt || Date.now());
             var delay = Math.max(0, minMs - waited);
             setTimeout(function () {
@@ -504,18 +504,10 @@
                 }
             }, delay);
         };
-        // Fail-safe máximo 8s
+        // Fail-safe: si algo quedó colgado, ocultar
         setTimeout(function () {
             try { setGlobalLoading(false); } catch (e) {}
-        }, 8000);
-        // Asegurar visible al arrancar (por si quedó gl-hide en caché)
-        try {
-            var _gl = document.getElementById('globalLoading');
-            if (_gl) {
-                _gl.classList.remove('gl-hide');
-                _gl.setAttribute('aria-busy', 'true');
-            }
-        } catch (e) {}
+        }, 12000);
 
         // RESPALDOS MENSUALES: IndexedDB + ZIP (último Excel del día)
         var IEM_BACKUP_DB = 'iem_respaldos_v1';
@@ -6717,10 +6709,7 @@
         }
 
         function mostrarLogin() {
-            try {
-                if (typeof window.__iemHideLoading === 'function') window.__iemHideLoading();
-                else setGlobalLoading(false);
-            } catch (e) {}
+            try { setGlobalLoading(false); } catch (e) {}
             appContainer.classList.add('oculto');
             loginOverlay.classList.remove('hidden');
             if (loginUsuario) loginUsuario.value = '';
@@ -6786,6 +6775,7 @@
                 usuarioActual = split_part_email(session.user.email);
                 rolUsuario = (usuarioActual === 'luis') ? 'admin' : 'usuario';
                 guardarMetaSesion(usuarioActual, rolUsuario);
+                try { setGlobalLoading(true); } catch (e) {}
                 mostrarApp();
                 return true;
             }
@@ -6805,6 +6795,7 @@
                 return false;
             }
             guardarMetaSesion(usuarioActual, rolUsuario);
+            try { setGlobalLoading(true); } catch (e) {}
             mostrarApp();
             return true;
         }
@@ -6846,6 +6837,7 @@
             loginBtn.disabled = true;
             loginBtn.textContent = 'Verificando...';
             loginError.classList.add('hidden');
+            try { setGlobalLoading(true); } catch (eL) {}
 
             try {
                 const email = usuarioAEmail(usuario);
@@ -6861,9 +6853,11 @@
                 loginIntentos = 0;
                 const ok = await aplicarSesionAuth(data.session);
                 if (!ok) {
+                    try { setGlobalLoading(false); } catch (eH) {}
                     loginClave.focus();
                 }
             } catch (e) {
+                try { setGlobalLoading(false); } catch (eH2) {}
                 try { loginClave.value = ''; } catch (eClr2) {}
                 // No volcar detalles internos al log (pueden filtrar info de Auth)
                 console.warn('Login fallido');
@@ -7473,8 +7467,5 @@
 
         // Ocultar pantalla de carga cuando la app ya pintó
         document.addEventListener('DOMContentLoaded', function () {
-            setTimeout(function () {
-                if (typeof window.__iemHideLoading === 'function') window.__iemHideLoading();
-                else if (typeof setGlobalLoading === 'function') setGlobalLoading(false);
-            }, 900);
+            /* Puntos de carga: solo tras login → búsqueda; no al abrir la app */
         });
