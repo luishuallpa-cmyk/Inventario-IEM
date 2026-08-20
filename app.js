@@ -491,20 +491,31 @@
                 el.setAttribute('aria-busy', 'false');
             }
         }
-        // Fail-safe: nunca dejar la pantalla de carga bloqueada
-        (function () {
-            function hideLoad() { try { setGlobalLoading(false); } catch (e) {
-                var el = document.getElementById('globalLoading');
-                if (el) el.classList.add('gl-hide');
-            } }
-            if (document.readyState === 'complete' || document.readyState === 'interactive') {
-                setTimeout(hideLoad, 500);
-            } else {
-                document.addEventListener('DOMContentLoaded', function () { setTimeout(hideLoad, 500); });
+        // Carga inicial: puntos visibles al menos ~1.1s; luego al login/app
+        window.__iemLoadShownAt = Date.now();
+        window.__iemHideLoading = function () {
+            var minMs = 1100;
+            var waited = Date.now() - (window.__iemLoadShownAt || Date.now());
+            var delay = Math.max(0, minMs - waited);
+            setTimeout(function () {
+                try { setGlobalLoading(false); } catch (e) {
+                    var el = document.getElementById('globalLoading');
+                    if (el) el.classList.add('gl-hide');
+                }
+            }, delay);
+        };
+        // Fail-safe máximo 8s
+        setTimeout(function () {
+            try { setGlobalLoading(false); } catch (e) {}
+        }, 8000);
+        // Asegurar visible al arrancar (por si quedó gl-hide en caché)
+        try {
+            var _gl = document.getElementById('globalLoading');
+            if (_gl) {
+                _gl.classList.remove('gl-hide');
+                _gl.setAttribute('aria-busy', 'true');
             }
-            window.addEventListener('load', function () { setTimeout(hideLoad, 200); });
-            setTimeout(hideLoad, 6000);
-        })();
+        } catch (e) {}
 
         // RESPALDOS MENSUALES: IndexedDB + ZIP (último Excel del día)
         var IEM_BACKUP_DB = 'iem_respaldos_v1';
@@ -6686,7 +6697,10 @@
         }
 
         function mostrarApp() {
-            try { setGlobalLoading(false); } catch (e) {}
+            try {
+                if (typeof window.__iemHideLoading === 'function') window.__iemHideLoading();
+                else setGlobalLoading(false);
+            } catch (e) {}
             loginOverlay.classList.add('hidden');
             appContainer.classList.remove('oculto');
             if (usuarioBadgeTexto) usuarioBadgeTexto.textContent = usuarioActual || '-';
@@ -6703,6 +6717,10 @@
         }
 
         function mostrarLogin() {
+            try {
+                if (typeof window.__iemHideLoading === 'function') window.__iemHideLoading();
+                else setGlobalLoading(false);
+            } catch (e) {}
             appContainer.classList.add('oculto');
             loginOverlay.classList.remove('hidden');
             if (loginUsuario) loginUsuario.value = '';
@@ -7456,10 +7474,7 @@
         // Ocultar pantalla de carga cuando la app ya pintó
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
-                if (typeof setGlobalLoading === 'function') setGlobalLoading(false);
-                else {
-                    var el = document.getElementById('globalLoading');
-                    if (el) el.classList.add('gl-hide');
-                }
-            }, 400);
+                if (typeof window.__iemHideLoading === 'function') window.__iemHideLoading();
+                else if (typeof setGlobalLoading === 'function') setGlobalLoading(false);
+            }, 900);
         });
