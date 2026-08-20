@@ -2525,27 +2525,35 @@
             const lista = document.getElementById('listaAlertaVenc');
             if (!btn || !lista) return;
             const alertas = obtenerAlertasPorVencer(DIAS_ALERTA_VENC);
-            const menuCount = document.getElementById('menuAlertaCount');
-            if (!alertas.length) {
-                btn.hidden = true;
-                btn.setAttribute('aria-expanded', 'false');
-                const panel = document.getElementById('panelAlertaVenc');
-                if (panel) panel.hidden = true;
+            const n = alertas.length;
+            const hayCritico = alertas.some(function (a) { return a.vencido || a.dias <= 7; });
+            // Siempre visible: verde OK / rojo titilante si hay por vencer o vencidos
+            btn.hidden = false;
+            btn.classList.remove('btn-alerta-ok', 'btn-alerta-warn', 'btn-alerta-danger', 'btn-alerta-pulse');
+            if (!n) {
+                btn.classList.add('btn-alerta-ok');
+                btn.setAttribute('title', 'Sin lotes por vencer');
                 if (countEl) countEl.textContent = '0';
-                if (menuCount) { menuCount.textContent = '0'; menuCount.setAttribute('data-empty', '1'); }
+                if (dot) dot.hidden = true;
+                lista.innerHTML = '<li class="alerta-item alerta-item-ok">Todo en orden · sin vencimientos ≤ ' + DIAS_ALERTA_VENC + ' días</li>';
                 return;
             }
-            btn.hidden = false;
-            if (countEl) countEl.textContent = String(alertas.length);
-            if (menuCount) {
-                menuCount.textContent = String(alertas.length);
-                menuCount.setAttribute('data-empty', '0');
+            if (hayCritico) {
+                btn.classList.add('btn-alerta-danger', 'btn-alerta-pulse');
+                btn.setAttribute('title', n + ' lote(s) por vencer o vencidos');
+            } else {
+                btn.classList.add('btn-alerta-warn', 'btn-alerta-pulse');
+                btn.setAttribute('title', n + ' lote(s) por vencer');
             }
-            if (dot) { dot.hidden = false; dot.classList.toggle('alerta-critica', alertas.some(a => a.vencido)); }
-            lista.innerHTML = alertas.map(a => {
+            if (countEl) countEl.textContent = String(n);
+            if (dot) {
+                dot.hidden = false;
+                dot.classList.toggle('alerta-critica', hayCritico);
+            }
+            lista.innerHTML = alertas.map(function (a) {
                 const label = a.vencido ? ('Vencido hace ' + Math.abs(a.dias) + ' d') : (a.dias === 0 ? 'Vence hoy' : ('En ' + a.dias + ' d'));
                 const cls = (a.vencido || a.dias <= 7) ? 'alerta-item-critico' : 'alerta-item-warn';
-                const esc = (s) => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                const esc = function (s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
                 return '<li class="alerta-item ' + cls + '"><div class="alerta-item-top"><span class="alerta-item-cod">' + esc(a.codigo) +
                     '</span><span class="alerta-item-dias">' + label + '</span></div><div class="alerta-item-desc">' + esc(a.descripcion) +
                     '</div><div class="alerta-item-meta">📅 ' + esc(a.vencimiento) + ' · ' + a.cantidad + ' und</div></li>';
