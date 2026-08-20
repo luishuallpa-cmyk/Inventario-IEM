@@ -10,7 +10,7 @@
     height: 100dvh;
     /* Fondo semitransparente: se ve el verde del tema alrededor */
     background: rgba(10, 120, 76, 0.35);
-    z-index: 3000;
+    z-index: 8000;
     overflow: hidden;
     padding: 0.45rem 0.45rem max(0.45rem, env(safe-area-inset-bottom, 0px));
     margin: 0;

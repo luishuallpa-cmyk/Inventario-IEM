@@ -5849,8 +5849,24 @@
                     const item = e.target.closest('[data-admin-goto]');
                     if (!item) return;
                     e.preventDefault();
+                    e.stopPropagation();
                     const tab = item.getAttribute('data-admin-goto') || 'subir';
-                    abrirAdminEnSeccion(tab);
+                    cerrarHeaderMenu();
+                    // Diferir un tick: en PC el click del document a veces cierra antes de abrir
+                    setTimeout(function () {
+                        try { abrirAdminEnSeccion(tab); } catch (err) {
+                            console.error('abrirAdmin', err);
+                            try {
+                                var ov = document.getElementById('adminOverlay');
+                                if (ov) {
+                                    ov.classList.add('visible');
+                                    ov.setAttribute('aria-hidden', 'false');
+                                    document.body.classList.add('admin-open');
+                                }
+                                if (typeof window.cambiarTabAdmin === 'function') window.cambiarTabAdmin(tab);
+                            } catch (e2) {}
+                        }
+                    }, 10);
                 });
             }
             document.addEventListener('click', function (e) {
@@ -6612,8 +6628,13 @@
                 return;
             }
             const ov = document.getElementById('adminOverlay');
-            if (!ov) return;
+            if (!ov) {
+                console.error('adminOverlay no encontrado en el DOM');
+                showToast('Panel admin no disponible. Recarga la app (Ctrl+Shift+R).', 'error');
+                return;
+            }
             ov.classList.add('visible');
+            ov.style.display = 'flex';
             ov.setAttribute('aria-hidden', 'false');
             document.body.classList.add('admin-open');
             document.body.style.overflow = 'hidden';
@@ -6642,6 +6663,7 @@
             const ov = document.getElementById('adminOverlay');
             if (ov) {
                 ov.classList.remove('visible');
+                ov.style.display = '';
                 ov.setAttribute('aria-hidden', 'true');
             }
             document.body.classList.remove('admin-open');

@@ -1,5 +1,5 @@
 /* IEM Inventario — SW v4.4.5: network-first shell, limpia cachés viejos */
-const CACHE = 'iem-inventario-v4.4.6';
+const CACHE = 'iem-inventario-v4.4.7';
 const PRECACHE = [
   './',
   './index.html',

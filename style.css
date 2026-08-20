@@ -2965,19 +2965,21 @@ body.light-theme .global-loading {
   height: 64px;
   object-fit: contain;
   border-radius: 14px;
-  animation: gl-boot-logo 1.4s ease-in-out infinite;
+  animation: gl-boot-logo 1.2s ease-in-out infinite !important;
   position: relative;
   z-index: 1;
   background: rgba(255,255,255,0.06);
+  will-change: transform, opacity;
 }
 .gl-boot-ring {
   position: absolute;
   inset: 0;
   border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.15);
-  border-top-color: rgba(255,255,255,0.9);
-  border-right-color: rgba(16, 185, 129, 0.7);
-  animation: gl-boot-spin 0.9s linear infinite;
+  border-top-color: rgba(255,255,255,0.95);
+  border-right-color: rgba(16, 185, 129, 0.85);
+  animation: gl-boot-spin 0.85s linear infinite !important;
+  will-change: transform;
 }
 @keyframes gl-boot-spin {
   to { transform: rotate(360deg); }
@@ -2992,7 +2994,7 @@ body.light-theme .global-loading {
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 0 10px rgba(255,255,255,0.35);
-  animation: gl-dot 1.05s ease-in-out infinite both;
+  animation: gl-dot 1.05s ease-in-out infinite both !important;
   will-change: transform, opacity;
 }
 .gl-dots span:nth-child(1) { animation-delay: 0s; }
