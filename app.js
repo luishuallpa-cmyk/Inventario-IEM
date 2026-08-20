@@ -5583,7 +5583,7 @@
                 for (;;) {
                     const { data, error } = await supabaseClient
                         .from('clientes')
-                        .select('id,codigo,nombre,ruc,direccion,distrito,activo')
+                        .select('*')
                         .order('nombre', { ascending: true })
                         .range(from, from + PAGE - 1);
                     if (error) throw error;
