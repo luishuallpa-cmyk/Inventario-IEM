@@ -28,7 +28,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=4.4.4">
+    <link rel="stylesheet" href="style.css?v=4.4.5">
     <link rel="stylesheet" href="admin.css?v=4.3.7">
 <script>
 (function(){try{var t=localStorage.getItem('buscador_tema')||'dark';
@@ -706,13 +706,26 @@ else document.body.classList.remove('light-theme');
     </div>
 
 <script src="config.js?v=4.3.5"></script>
-<script src="app.js?v=4.4.4"></script>
+<script src="app.js?v=4.4.6"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('./sw.js').then(function (reg) {
+    navigator.serviceWorker.register('./sw.js?v=4.4.5').then(function (reg) {
       console.log('[PWA] Service Worker OK', reg.scope);
+      try { reg.update(); } catch (e) {}
+      if (reg.waiting) {
+        try { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); } catch (e2) {}
+      }
+      reg.addEventListener('updatefound', function () {
+        var nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', function () {
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+            try { nw.postMessage({ type: 'SKIP_WAITING' }); } catch (e3) {}
+          }
+        });
+      });
     }).catch(function (err) {
       console.warn('[PWA] Service Worker no registrado', err);
     });

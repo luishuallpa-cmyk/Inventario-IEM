@@ -1,5 +1,5 @@
-/* IEM Inventario — SW optimizado: precache UI, red prioritaria en JS/CSS */
-const CACHE = 'iem-inventario-v4.4.4';
+/* IEM Inventario — SW v4.4.5: network-first shell, limpia cachés viejos */
+const CACHE = 'iem-inventario-v4.4.6';
 const PRECACHE = [
   './',
   './index.html',
@@ -29,22 +29,30 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  // Datos y API siempre red
   if (url.hostname.indexOf('supabase') !== -1) return;
   if (url.hostname.indexOf('cdn') !== -1 || url.hostname.indexOf('unpkg') !== -1) return;
 
-  const isAppShell = /\.(js|css)(\?|$)/.test(url.pathname) || /index\.html$/.test(url.pathname) || url.pathname.endsWith('/');
-  if (isAppShell && url.origin === self.location.origin) {
-    // Network-first para no quedar con JS viejo
+  const isShell =
+    url.origin === self.location.origin &&
+    (/\.(js|css)(\?|$)/.test(url.pathname) ||
+      /index\.html$/.test(url.pathname) ||
+      url.pathname.endsWith('/') ||
+      /sw\.js$/.test(url.pathname));
+
+  if (isShell) {
     event.respondWith(
-      fetch(req).then((res) => {
+      fetch(req, { cache: 'no-store' }).then((res) => {
         if (res && res.ok) {
           const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy));
+          caches.open(CACHE).then((c) => c.put(req, copy)).catch(function () {});
         }
         return res;
       }).catch(() => caches.match(req))
@@ -57,7 +65,7 @@ self.addEventListener('fetch', (event) => {
       const net = fetch(req).then((res) => {
         if (res && res.ok && url.origin === self.location.origin) {
           const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy));
+          caches.open(CACHE).then((c) => c.put(req, copy)).catch(function () {});
         }
         return res;
       }).catch(() => cached);

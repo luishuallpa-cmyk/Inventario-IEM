@@ -6640,19 +6640,40 @@
 
         function cerrarPanelAdmin() {
             const ov = document.getElementById('adminOverlay');
-            if (!ov) return;
-            ov.classList.remove('visible');
-            ov.setAttribute('aria-hidden', 'true');
+            if (ov) {
+                ov.classList.remove('visible');
+                ov.setAttribute('aria-hidden', 'true');
+            }
             document.body.classList.remove('admin-open');
             document.body.style.overflow = '';
             adminSelectedFile = null;
             const input = document.getElementById('importExcelInput');
             if (input) input.value = '';
-            if (!_cerrandoDesdeHash && typeof navegarHash === 'function') {
-                if (/^#\/admin/.test(location.hash || '')) {
-                    navegarHash('#/', true);
+            // Siempre limpiar hash admin para que no se reabra ni quede “atrapado”
+            if (!_cerrandoDesdeHash) {
+                try {
+                    if (/^#\/admin/i.test(location.hash || '')) {
+                        if (typeof navegarHash === 'function') {
+                            _cerrandoDesdeHash = true;
+                            navegarHash('#/', true);
+                            _cerrandoDesdeHash = false;
+                        } else {
+                            history.replaceState({ iemGuard: 1 }, '', location.pathname + location.search + '#/');
+                        }
+                    }
+                } catch (e) {
+                    try { location.hash = '#/'; } catch (e2) {}
+                    _cerrandoDesdeHash = false;
                 }
             }
+        }
+
+        function adminEstaAbierto() {
+            var ov = document.getElementById('adminOverlay');
+            if (ov && ov.classList.contains('visible')) return true;
+            if (document.body.classList.contains('admin-open')) return true;
+            if (/^#\/admin/i.test(location.hash || '')) return true;
+            return false;
         }
 
         function seleccionarArchivoAdmin(file) {
@@ -6875,31 +6896,48 @@
             };
 
             window.addEventListener('popstate', function () {
-                // Siempre reponer guardia al instante (evita que Android mande la app a 2.º plano)
-                if (haySesionActiva()) {
+                if (!haySesionActiva()) return;
+
+                // 1) Admin abierto → solo cerrar panel (no sesión). Evitar que quede atrapado.
+                if (typeof adminEstaAbierto === 'function' ? adminEstaAbierto() : false) {
+                    try {
+                        if (typeof cerrarPanelAdmin === 'function') cerrarPanelAdmin();
+                    } catch (e) {}
+                    // Forzar UI por si el hash no cooperó
+                    try {
+                        var ov = document.getElementById('adminOverlay');
+                        if (ov) {
+                            ov.classList.remove('visible');
+                            ov.setAttribute('aria-hidden', 'true');
+                        }
+                        document.body.classList.remove('admin-open');
+                        document.body.style.overflow = '';
+                        if (/^#\/admin/i.test(location.hash || '')) {
+                            history.replaceState({ iemGuard: 1 }, '', location.pathname + location.search + '#/');
+                        }
+                    } catch (e2) {}
                     pushGuardia();
-                } else {
                     return;
                 }
 
-                var ov = document.getElementById('adminOverlay');
-                if (ov && ov.classList.contains('visible')) {
-                    if (typeof cerrarPanelAdmin === 'function') cerrarPanelAdmin();
-                    return;
-                }
                 var panel = document.getElementById('panelAlertaVenc');
                 if (panel && panel.hidden === false) {
                     panel.hidden = true;
                     var btnA = document.getElementById('btnAlertaVenc');
                     if (btnA) btnA.setAttribute('aria-expanded', 'false');
+                    pushGuardia();
                     return;
                 }
                 var menu = document.getElementById('headerMenuDropdown');
                 if (menu && !menu.hidden) {
                     if (typeof cerrarHeaderMenu === 'function') cerrarHeaderMenu();
+                    pushGuardia();
                     return;
                 }
 
+                // 2) Sin overlays: confirmar cierre de sesión
+                // Reponer historial YA para no minimizar la PWA mientras se pregunta
+                pushGuardia();
                 if (preguntandoAtras) return;
                 preguntandoAtras = true;
 
@@ -6911,12 +6949,8 @@
                     preguntandoAtras = false;
                     if (ok) {
                         ejecutarSalirSesion();
-                        // Tras logout, un atrás más puede cerrar/minimizar con normalidad
-                        try {
-                            history.replaceState({ iemGuard: 0 }, '', location.href);
-                        } catch (e) {}
+                        try { history.replaceState({ iemGuard: 0 }, '', location.pathname + location.search + '#/'); } catch (e) {}
                     } else {
-                        // Seguir dentro: reforzar historial
                         if (typeof window.__iemPushBackGuard === 'function') window.__iemPushBackGuard();
                         else pushGuardia();
                     }
@@ -7461,40 +7495,44 @@
             var pulling = false;
             var armed = false;
             var indicator = null;
-            var THRESHOLD = 72;
 
+            function thresholdPx() {
+                // Debe llegar cerca del centro de la pantalla (evita gestos accidentales)
+                return Math.max(160, Math.floor(window.innerHeight * 0.42));
+            }
+            function topZonePx() {
+                return Math.max(48, Math.floor(window.innerHeight * 0.12));
+            }
             function scrollTopNow() {
                 var se = document.scrollingElement || document.documentElement;
-                var t = (window.pageYOffset || 0);
+                var t = window.pageYOffset || 0;
                 if (se && typeof se.scrollTop === 'number') t = Math.max(t, se.scrollTop);
                 if (document.body) t = Math.max(t, document.body.scrollTop || 0);
                 var app = document.getElementById('appContainer');
                 if (app && typeof app.scrollTop === 'number') t = Math.max(t, app.scrollTop);
                 return t;
             }
-
             function ensureIndicator() {
                 if (indicator) return indicator;
                 indicator = document.createElement('div');
                 indicator.id = 'iemPullRefresh';
                 indicator.setAttribute('aria-hidden', 'true');
-                indicator.innerHTML = '<span class="iem-pr-ico">↓</span> <span class="iem-pr-txt">Suelta para actualizar</span>';
+                indicator.innerHTML = '<span class="iem-pr-ico">↓</span> <span class="iem-pr-txt">Desliza hasta el centro</span>';
                 document.body.appendChild(indicator);
                 return indicator;
             }
-
             function setProgress(dy) {
                 var el = ensureIndicator();
-                var p = Math.min(1, Math.max(0, dy / THRESHOLD));
-                el.style.opacity = String(0.35 + p * 0.65);
-                el.style.transform = 'translate(-50%, ' + Math.min(dy * 0.45, 56) + 'px)';
-                el.classList.toggle('iem-pr-ready', dy >= THRESHOLD);
-                el.querySelector('.iem-pr-txt').textContent = dy >= THRESHOLD
-                    ? 'Suelta para actualizar'
-                    : 'Desliza para actualizar';
-                el.querySelector('.iem-pr-ico').textContent = dy >= THRESHOLD ? '↑' : '↓';
+                var th = thresholdPx();
+                var p = Math.min(1, Math.max(0, dy / th));
+                el.style.opacity = String(0.4 + p * 0.6);
+                el.style.transform = 'translate(-50%, ' + Math.min(dy * 0.35, window.innerHeight * 0.35) + 'px)';
+                el.classList.toggle('iem-pr-ready', dy >= th);
+                var txt = el.querySelector('.iem-pr-txt');
+                var ico = el.querySelector('.iem-pr-ico');
+                if (txt) txt.textContent = dy >= th ? 'Suelta para actualizar' : 'Desliza hasta el centro…';
+                if (ico) ico.textContent = dy >= th ? '↑' : '↓';
             }
-
             function hideIndicator() {
                 if (!indicator) return;
                 indicator.style.opacity = '0';
@@ -7502,52 +7540,61 @@
                 indicator.classList.remove('iem-pr-ready');
             }
 
-            function doHardReload() {
+            window.__iemHardRefresh = function () {
                 var el = ensureIndicator();
                 el.classList.add('iem-pr-ready');
-                el.querySelector('.iem-pr-txt').textContent = 'Actualizando…';
                 el.style.opacity = '1';
-                var finish = function () {
+                el.style.transform = 'translate(-50%, 48px)';
+                var txt = el.querySelector('.iem-pr-txt');
+                if (txt) txt.textContent = 'Actualizando…';
+
+                try { localStorage.setItem('iem_force_update', String(Date.now())); } catch (e) {}
+
+                var done = false;
+                function finish() {
+                    if (done) return;
+                    done = true;
                     try {
-                        var u = new URL(location.href);
-                        u.searchParams.set('_r', String(Date.now()));
-                        location.replace(u.toString());
-                    } catch (e) {
+                        var base = location.pathname || './index.html';
+                        if (base.charAt(base.length - 1) === '/') base = base + 'index.html';
+                        location.replace(base + '?_r=' + Date.now());
+                    } catch (e2) {
                         location.reload();
                     }
-                };
-                var pending = 0;
-                function tick() {
-                    pending--;
-                    if (pending <= 0) finish();
                 }
+
+                var tasks = [];
                 try {
                     if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
-                        pending++;
-                        navigator.serviceWorker.getRegistrations().then(function (regs) {
-                            return Promise.all(regs.map(function (r) { return r.unregister(); }));
-                        }).then(tick, tick);
+                        tasks.push(
+                            navigator.serviceWorker.getRegistrations().then(function (regs) {
+                                return Promise.all(regs.map(function (r) { return r.unregister(); }));
+                            })
+                        );
                     }
                     if (window.caches && caches.keys) {
-                        pending++;
-                        caches.keys().then(function (keys) {
-                            return Promise.all(keys.map(function (k) { return caches.delete(k); }));
-                        }).then(tick, tick);
+                        tasks.push(
+                            caches.keys().then(function (keys) {
+                                return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+                            })
+                        );
                     }
                 } catch (err) {}
-                if (pending === 0) finish();
-                else setTimeout(finish, 1200);
-            }
+
+                Promise.all(tasks).then(finish, finish);
+                setTimeout(finish, 1500);
+            };
 
             document.addEventListener('touchstart', function (e) {
                 if (document.body.classList.contains('admin-open')) return;
-                if (document.body.classList.contains('login-visible')) return;
-                if (scrollTopNow() > 8) return;
+                if (scrollTopNow() > 5) return;
                 if (!e.touches || e.touches.length !== 1) return;
-                // No activar si el gesto nace en inputs/botones
+                var y = e.touches[0].clientY;
+                // Solo si el dedo empieza en la franja superior
+                if (y > topZonePx()) return;
                 var t = e.target;
-                if (t && t.closest && t.closest('input, textarea, select, button, a, .header-menu-dropdown, .panel-alerta-venc')) return;
-                startY = e.touches[0].clientY;
+                if (t && t.closest && t.closest('input, textarea, select, button, a, .header-menu-dropdown, .panel-alerta-venc, .result-item')) return;
+                startY = y;
                 pulling = true;
                 armed = false;
             }, { passive: true });
@@ -7555,18 +7602,18 @@
             document.addEventListener('touchmove', function (e) {
                 if (!pulling) return;
                 if (!e.touches || !e.touches[0]) return;
-                if (scrollTopNow() > 8) {
+                if (scrollTopNow() > 5) {
                     pulling = false;
                     hideIndicator();
                     return;
                 }
                 var dy = e.touches[0].clientY - startY;
-                if (dy < 12) {
+                if (dy < 20) {
                     hideIndicator();
                     armed = false;
                     return;
                 }
-                armed = dy >= THRESHOLD;
+                armed = dy >= thresholdPx();
                 setProgress(dy);
             }, { passive: true });
 
@@ -7576,7 +7623,7 @@
                 pulling = false;
                 armed = false;
                 if (should) {
-                    doHardReload();
+                    if (typeof window.__iemHardRefresh === 'function') window.__iemHardRefresh();
                 } else {
                     hideIndicator();
                 }
@@ -7587,6 +7634,32 @@
                 armed = false;
                 hideIndicator();
             }, { passive: true });
+        })();
+
+        // Al reabrir la app: pedir SW actualizado y recargar una vez si hay versión nueva
+        (function initSwUpdate() {
+            if (!('serviceWorker' in navigator)) return;
+            var reloading = false;
+            navigator.serviceWorker.addEventListener('controllerchange', function () {
+                if (reloading) return;
+                reloading = true;
+                try { location.reload(); } catch (e) {}
+            });
+            function tryUpdate() {
+                navigator.serviceWorker.getRegistration('./sw.js').then(function (reg) {
+                    if (reg && reg.update) reg.update().catch(function () {});
+                }).catch(function () {});
+            }
+            window.addEventListener('load', tryUpdate);
+            document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState === 'visible') tryUpdate();
+            });
+            // Si el usuario forzó actualización, limpiar flag
+            try {
+                if (localStorage.getItem('iem_force_update')) {
+                    localStorage.removeItem('iem_force_update');
+                }
+            } catch (e) {}
         })();
 
         // Ocultar pantalla de carga cuando la app ya pintó
