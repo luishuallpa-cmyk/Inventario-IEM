@@ -6361,7 +6361,7 @@
         //   #/admin/barras  → sección Barras / QR
         // El botón "atrás" del navegador también funciona.
         // ============================================================
-        const ADMIN_TABS = ['subir', 'catalogo', 'barras', 'descargas', 'vista', 'reporte', 'pedidos', 'vencimientos', 'clientes', 'sesiones'];
+        const ADMIN_TABS = ['subir', 'catalogo', 'barras', 'descargas', 'respaldos', 'vista', 'reporte', 'pedidos', 'vencimientos', 'clientes', 'sesiones'];
         let _hashNavSilent = false;
 
         function parseHashRuta() {
@@ -6401,16 +6401,19 @@
                     navegarHash('#/', true);
                     return;
                 }
-                // Abrir panel sin volver a escribir el hash
                 const ov = document.getElementById('adminOverlay');
-                if (ov && !ov.classList.contains('visible')) {
-                    if (typeof abrirPanelAdmin === 'function') {
-                        // abrirPanelAdmin también llama cambiarTabAdmin
-                        _abriendoDesdeHash = true;
-                        abrirPanelAdmin(ruta.tab);
-                        _abriendoDesdeHash = false;
-                    }
-                } else if (typeof window.cambiarTabAdmin === 'function') {
+                if (typeof abrirPanelAdmin === 'function') {
+                    _abriendoDesdeHash = true;
+                    abrirPanelAdmin(ruta.tab);
+                    _abriendoDesdeHash = false;
+                }
+                if (ov) {
+                    ov.classList.add('visible');
+                    ov.style.display = 'flex';
+                    ov.setAttribute('aria-hidden', 'false');
+                }
+                document.body.classList.add('admin-open');
+                if (typeof window.cambiarTabAdmin === 'function') {
                     window.cambiarTabAdmin(ruta.tab);
                 }
             } else {
@@ -6612,12 +6615,47 @@
                 return;
             }
             var tab = tabId || 'subir';
-            if (typeof navegarHash === 'function') {
-                navegarHash('#/admin/' + tab);
-            } else {
-                abrirPanelAdmin(tab);
+            if (typeof ADMIN_TABS !== 'undefined' && ADMIN_TABS.indexOf(tab) < 0) {
+                tab = 'subir';
             }
+            // Cerrar menú ☰ primero
             if (typeof cerrarHeaderMenu === 'function') cerrarHeaderMenu();
+            // Abrir panel SIEMPRE de forma directa (no depender solo del hash)
+            try {
+                if (typeof abrirPanelAdmin === 'function') {
+                    _abriendoDesdeHash = true;
+                    abrirPanelAdmin(tab);
+                    _abriendoDesdeHash = false;
+                }
+            } catch (e) {
+                console.error('abrirAdminEnSeccion', e);
+                _abriendoDesdeHash = false;
+            }
+            // Forzar visibilidad por si CSS no aplicó .visible
+            try {
+                var ov = document.getElementById('adminOverlay');
+                if (ov) {
+                    ov.classList.add('visible');
+                    ov.style.display = 'flex';
+                    ov.style.visibility = 'visible';
+                    ov.style.opacity = '1';
+                    ov.style.zIndex = '8000';
+                    ov.setAttribute('aria-hidden', 'false');
+                }
+                document.body.classList.add('admin-open');
+                document.body.style.overflow = 'hidden';
+                if (typeof window.cambiarTabAdmin === 'function') window.cambiarTabAdmin(tab);
+            } catch (e2) {
+                console.error(e2);
+            }
+            // Actualizar hash sin popstate (replace)
+            try {
+                _hashNavSilent = true;
+                history.replaceState({ iemGuard: 1, iemAdmin: tab }, '', '#/admin/' + tab);
+                setTimeout(function () { _hashNavSilent = false; }, 80);
+            } catch (e3) {
+                _hashNavSilent = false;
+            }
         }
 
         let adminSelectedFile = null;
