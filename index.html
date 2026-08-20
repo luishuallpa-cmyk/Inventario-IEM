@@ -28,8 +28,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=4.3.3-menu">
-    <link rel="stylesheet" href="admin.css?v=4.2.25">
+    <link rel="stylesheet" href="style.css?v=4.3.5">
+    <link rel="stylesheet" href="admin.css?v=4.3.5">
 <script>
 (function(){try{var t=localStorage.getItem('buscador_tema')||'dark';
 if(t==='light'){document.documentElement.classList.add('light-theme');document.documentElement.setAttribute('data-theme','light');}
@@ -124,7 +124,7 @@ else document.body.classList.remove('light-theme');
                     <button type="button" class="header-menu-item" role="menuitem" data-admin-goto="descargas">
                         <span class="hmi-icon">📊</span><span class="hmi-label">Descargas</span>
                     </button>
-                        <button type="button" class="header-menu-item" data-admin-tab="respaldos">
+                        <button type="button" class="header-menu-item" role="menuitem" data-admin-goto="respaldos">
                         <span class="hmi-icon">📦</span><span class="hmi-label">Respaldos</span>
                     </button>
                     <button type="button" class="header-menu-item" role="menuitem" data-admin-goto="vista">
@@ -146,7 +146,7 @@ else document.body.classList.remove('light-theme');
                         <span class="hmi-icon">📋</span><span class="hmi-label">Listado por vencer</span>
                     </button>
                     <div class="header-menu-footer">
-                        <span class="version">v4.3.3 · Admin</span>
+                        <span class="version">v4.3.5 · Admin</span>
                     </div>
                 </div>
             </div>
@@ -371,6 +371,11 @@ else document.body.classList.remove('light-theme');
             </div>
             <div class="admin-layout">
                 <!-- Pestañas: en móvil barra horizontal; en escritorio menú lateral -->
+                <div class="admin-nav-wrap" id="adminNavWrap">
+                <button type="button" class="admin-nav-toggle" id="adminNavToggle" aria-expanded="true" aria-controls="adminNav" title="Mostrar u ocultar pestañas">
+                    <span class="admin-nav-toggle-ico" aria-hidden="true">▾</span>
+                    <span class="admin-nav-toggle-txt">Menús</span>
+                </button>
                 <nav class="admin-nav" id="adminNav" aria-label="Secciones del panel" role="tablist">
                     <button type="button" class="admin-nav-btn active" role="tab" aria-selected="true" data-admin-tab="subir" id="tabBtn-subir">
                         <span class="tab-ico" aria-hidden="true">📤</span><span class="tab-txt">Subir Excel</span>
@@ -406,6 +411,7 @@ else document.body.classList.remove('light-theme');
                         <span class="tab-ico" aria-hidden="true">👥</span><span class="tab-txt">Sesiones</span>
                     </button>
                 </nav>
+                </div><!-- /admin-nav-wrap -->
                 <div class="admin-panel-body">
                     <div class="admin-tab active" id="adminTabSubir" data-admin-panel="subir">
                         <p class="admin-lead">Sube un Excel según el tipo. La base de productos ya está en Supabase: <strong>Existencias</strong> solo corrige códigos cortos y cód. de fábrica; <strong>Valorado</strong> solo actualiza stock; <strong>Base Laive</strong> solo habilita por SAP (= fábrica).</p>
@@ -698,8 +704,8 @@ else document.body.classList.remove('light-theme');
         </div>
     </div>
 
-<script src="config.js?v=4.2.25"></script>
-<script src="app.js?v=4.3.3-menu"></script>
+<script src="config.js?v=4.3.5"></script>
+<script src="app.js?v=4.3.5"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {

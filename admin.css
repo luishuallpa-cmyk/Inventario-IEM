@@ -8,48 +8,59 @@
     width: 100%;
     height: 100%;
     height: 100dvh;
-    background: #0c1220;
+    /* Fondo semitransparente: se ve el verde del tema alrededor */
+    background: rgba(10, 120, 76, 0.35);
     z-index: 3000;
     overflow: hidden;
-    padding: 0;
+    padding: 0.45rem 0.45rem max(0.45rem, env(safe-area-inset-bottom, 0px));
     margin: 0;
+    box-sizing: border-box;
+}
+body:not(.light-theme) .admin-overlay {
+    background: rgba(8, 20, 18, 0.45);
 }
 body.light-theme .admin-overlay {
-    background: #f1f5f9;
+    background: rgba(10, 120, 76, 0.28);
 }
 .admin-overlay.visible {
     display: flex;
     flex-direction: column;
 }
-/* Oculta el contenido principal: se siente como otra pantalla, no un popup */
-body.admin-open .container,
+/* El fondo de la app (mesh verde) sigue visible en los bordes */
+body.admin-open .container {
+    visibility: visible !important;
+    pointer-events: none !important;
+    filter: none;
+}
 body.admin-open .login-overlay {
     visibility: hidden !important;
     pointer-events: none !important;
 }
 body.admin-open {
-    background: #0c1220;
-}
-body.light-theme.admin-open {
-    background: #f1f5f9;
+    /* hereda mesh del body */
 }
 .admin-panel,
 .admin-panel-window {
-    background: transparent;
-    border: none;
-    border-radius: 0;
+    background: var(--card-bg, #0f172a);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px;
     width: 100%;
     max-width: 100%;
     height: 100%;
     max-height: 100%;
     min-height: 0;
-    box-shadow: none;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
     overflow: hidden;
     display: flex;
     flex-direction: column;
     margin: 0;
     padding: 0;
     flex: 1;
+}
+body.light-theme .admin-panel,
+body.light-theme .admin-panel-window {
+    background: #f8fafc;
+    border-color: rgba(15, 23, 42, 0.08);
 }
 .admin-panel-header {
     display: flex;
@@ -1230,4 +1241,67 @@ body:not(.light-theme) .apc-estado.bad { color: #f87171; }
 }
 @media (min-width: 641px) {
   .admin-venc-mobile { display: none; }
+}
+
+
+/* —— Nav colapsable + hint swipe —— */
+.admin-nav-wrap {
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--divider, rgba(128,128,128,0.2));
+    background: rgba(0,0,0,0.12);
+}
+body.light-theme .admin-nav-wrap {
+    background: rgba(255,255,255,0.9);
+}
+.admin-nav-toggle {
+    display: none;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary, #64748b);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+}
+.admin-nav-toggle-ico {
+    display: inline-block;
+    transition: transform 0.25s ease;
+}
+.admin-nav-wrap.nav-collapsed .admin-nav-toggle-ico {
+    transform: rotate(-90deg);
+}
+.admin-nav-wrap.nav-collapsed .admin-nav {
+    display: none !important;
+}
+.admin-panel-body {
+    touch-action: pan-y;
+}
+.admin-swipe-hint {
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--text-secondary, #94a3b8);
+    padding: 0.2rem 0.5rem 0.35rem;
+    opacity: 0.85;
+}
+@media (max-width: 900px) {
+    .admin-nav-toggle { display: flex; }
+    .admin-overlay {
+        padding: 0.55rem 0.4rem max(0.5rem, env(safe-area-inset-bottom, 0px));
+    }
+}
+@media (min-width: 901px) {
+    .admin-overlay {
+        padding: 0.75rem 1rem 1rem;
+        align-items: center;
+    }
+    .admin-panel-window {
+        max-width: 1100px;
+        margin: 0 auto;
+        border-radius: 20px;
+    }
 }

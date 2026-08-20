@@ -1,6 +1,66 @@
     (function() {
 
         // Tab admin: función global (disponible desde el primer instante)
+        
+        // Admin: colapsar pestañas + deslizar entre secciones
+        (function initAdminNavSwipe() {
+            var TAB_ORDER = ['subir','catalogo','barras','descargas','respaldos','vista','reporte','pedidos','vencimientos','clientes','sesiones'];
+            function tabActual() {
+                var a = document.querySelector('.admin-nav-btn.active');
+                return a ? (a.getAttribute('data-admin-tab') || 'subir') : 'subir';
+            }
+            function irTabRelativo(dir) {
+                var cur = tabActual();
+                var i = TAB_ORDER.indexOf(cur);
+                if (i < 0) i = 0;
+                var n = (i + dir + TAB_ORDER.length) % TAB_ORDER.length;
+                if (typeof window.cambiarTabAdmin === 'function') window.cambiarTabAdmin(TAB_ORDER[n]);
+            }
+            function bind() {
+                var toggle = document.getElementById('adminNavToggle');
+                var wrap = document.getElementById('adminNavWrap');
+                if (toggle && wrap && !toggle._bound) {
+                    toggle._bound = true;
+                    toggle.addEventListener('click', function () {
+                        var col = wrap.classList.toggle('nav-collapsed');
+                        toggle.setAttribute('aria-expanded', col ? 'false' : 'true');
+                        try { localStorage.setItem('iem_admin_nav_collapsed', col ? '1' : '0'); } catch (e) {}
+                    });
+                    try {
+                        if (localStorage.getItem('iem_admin_nav_collapsed') === '1') {
+                            wrap.classList.add('nav-collapsed');
+                            toggle.setAttribute('aria-expanded', 'false');
+                        }
+                    } catch (e) {}
+                }
+                var body = document.querySelector('.admin-panel-body');
+                if (body && !body._swipeBound) {
+                    body._swipeBound = true;
+                    var x0 = 0, y0 = 0, t0 = 0;
+                    body.addEventListener('touchstart', function (e) {
+                        if (!e.touches || !e.touches[0]) return;
+                        x0 = e.touches[0].clientX;
+                        y0 = e.touches[0].clientY;
+                        t0 = Date.now();
+                    }, { passive: true });
+                    body.addEventListener('touchend', function (e) {
+                        if (!e.changedTouches || !e.changedTouches[0]) return;
+                        var dx = e.changedTouches[0].clientX - x0;
+                        var dy = e.changedTouches[0].clientY - y0;
+                        var dt = Date.now() - t0;
+                        if (dt > 600) return;
+                        if (Math.abs(dx) < 55) return;
+                        if (Math.abs(dx) < Math.abs(dy) * 1.2) return; // más vertical = scroll
+                        if (dx < 0) irTabRelativo(1);  // swipe izq → siguiente
+                        else irTabRelativo(-1);       // swipe der → anterior
+                    }, { passive: true });
+                }
+            }
+            document.addEventListener('DOMContentLoaded', bind);
+            // por si el DOM ya cargó
+            if (document.readyState !== 'loading') setTimeout(bind, 0);
+        })();
+
         window.cambiarTabAdmin = function (tabId) {
             try {
                 if (!tabId) return false;
@@ -9,6 +69,7 @@
                     catalogo: '🔎 Catálogo',
                     barras: 'Barras / QR',
                     descargas: '📊 Descargas',
+                    respaldos: '📦 Respaldos',
                     vista: '👁️ Vista previa',
                     reporte: '📋 Reporte sistema',
                     pedidos: '🛒 Pedidos sugeridos',
@@ -5612,7 +5673,7 @@
                 clientesData = all;
                 if (st) st.textContent = clientesData.length
                     ? ('✅ ' + clientesData.length + ' clientes en la nube.')
-                    : 'Sin clientes en la nube. Usa “Actualizar base” abajo.';
+                    : 'Sin clientes en la nube. Usa Actualizar base abajo.';
                 const inp = document.getElementById('adminClienteInput');
                 buscarClientesAdmin(inp ? inp.value : '');
             } catch (e) {
