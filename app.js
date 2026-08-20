@@ -805,10 +805,19 @@
                     fechaISO: new Date().toISOString()
                 }));
             } catch (e) {
-                // Si no se puede guardar (almacenamiento lleno/bloqueado), no es
-                // crítico: simplemente no habrá respaldo la próxima vez.
                 console.warn('No se pudo guardar el respaldo de datos.', e);
             }
+            // Offline real: IndexedDB (más capacidad que localStorage)
+            try {
+                if (window.IEM && typeof IEM.guardarCatalogoOffline === 'function') {
+                    IEM.guardarCatalogoOffline(data);
+                }
+            } catch (e2) {}
+            try {
+                if (window.IEM && typeof IEM.setOfflineBadge === 'function') {
+                    IEM.setOfflineBadge(false);
+                }
+            } catch (e3) {}
         }
 
         function cargarRespaldo() {
@@ -992,21 +1001,56 @@
         // Si Google Sheets falla o está vacío, primero intenta usar el último
         // respaldo bueno guardado en este dispositivo. Solo si tampoco hay
         // respaldo, cae a los datos de ejemplo.
-        function useBackupOrLocalData() {
-            const respaldo = cargarRespaldo();
-            if (respaldo) {
-                currentData = respaldo.data;
-                const fechaTexto = formatearFechaRespaldo(respaldo.fechaISO);
-                actualizarEstadoCatalogo(); fileStatus.textContent = (fileStatus.textContent || '') + ' · respaldo ' + fechaTexto;
-            } else {
-                useLocalData();
-                return;
+        function aplicarRespaldoCatalogo(respaldo, origen) {
+            if (!respaldo || !respaldo.data || !respaldo.data.length) return false;
+            currentData = respaldo.data;
+            try {
+                if (typeof reindexarCatalogo === 'function') reindexarCatalogo();
+            } catch (eIdx) {}
+            try { aplicarBarrasLocalADatos(); } catch (eB) {}
+            const fechaTexto = formatearFechaRespaldo(respaldo.fechaISO);
+            actualizarEstadoCatalogo();
+            if (fileStatus) {
+                fileStatus.textContent = (fileStatus.textContent || '') +
+                    ' · ' + (origen || 'respaldo') + (fechaTexto ? (' ' + fechaTexto) : '');
             }
+            try {
+                if (window.IEM && typeof IEM.setOfflineBadge === 'function') {
+                    IEM.setOfflineBadge(true, fechaTexto || '');
+                }
+            } catch (eOff) {}
             if (!searchInput.value.trim() && selectedIndex === -1) {
                 filteredData = [];
                 renderResults([]);
                 limpiarCantidades();
             }
+            return true;
+        }
+
+        function useBackupOrLocalData() {
+            // 1) Intento síncrono localStorage
+            var local = cargarRespaldo();
+            if (local && aplicarRespaldoCatalogo(local, 'offline')) {
+                // 2) Mejorar con IndexedDB si hay copia más reciente (async)
+                if (window.IEM && typeof IEM.leerCatalogoOffline === 'function') {
+                    IEM.leerCatalogoOffline().then(function (idb) {
+                        if (!idb || !idb.data || !idb.data.length) return;
+                        var tLocal = local && local.fechaISO ? Date.parse(local.fechaISO) : 0;
+                        var tIdb = idb.fechaISO ? Date.parse(idb.fechaISO) : 0;
+                        if (tIdb > tLocal) aplicarRespaldoCatalogo(idb, 'offline IDB');
+                    }).catch(function () {});
+                }
+                return;
+            }
+            // Solo IDB
+            if (window.IEM && typeof IEM.leerCatalogoOffline === 'function') {
+                IEM.leerCatalogoOffline().then(function (idb) {
+                    if (idb && aplicarRespaldoCatalogo(idb, 'offline IDB')) return;
+                    useLocalData();
+                }).catch(function () { useLocalData(); });
+                return;
+            }
+            useLocalData();
         }
 
         function useLocalData() {
@@ -1762,6 +1806,10 @@
         let filtroTipoLaive = ''; // '' | 'FRIOS' | 'SECOS'
 
         function activarModoPedido() {
+            // Desactivado en Inventario: usar app Ventas / pedidos sugeridos
+            try { showToast('Pedidos: usa la app Ventas.', 'info'); } catch (e) {}
+            modoPedido = false;
+            return;
             modoPedido = true;
             document.body.classList.add('modo-pedido-activo');
             const banner = document.getElementById('modoPedidoBanner');
@@ -6275,18 +6323,18 @@
             btnRegistrarFisico.addEventListener('click', registrarFisico);
             btnCambiarProducto.addEventListener('click', volverABuscar);
 
-            exportPedidoBtn.addEventListener('click', exportarPedido);
-            guardarPedidoDriveBtn.addEventListener('click', guardarPedidoEnDrive);
-            limpiarPedidoBtn.addEventListener('click', limpiarPedido);
+            // Pedidos viven en app Ventas — listeners solo si existen nodos (código legado)
+            if (exportPedidoBtn) exportPedidoBtn.addEventListener('click', exportarPedido);
+            if (guardarPedidoDriveBtn) guardarPedidoDriveBtn.addEventListener('click', guardarPedidoEnDrive);
+            if (limpiarPedidoBtn) limpiarPedidoBtn.addEventListener('click', limpiarPedido);
 
             const btnArmarPedido = document.getElementById('btnArmarPedido');
-            if (btnArmarPedido) btnArmarPedido.addEventListener('click', activarModoPedido);
+            if (btnArmarPedido) btnArmarPedido.addEventListener('click', function () {
+                showToast('Los pedidos se arman en la app Ventas.', 'info');
+            });
             const btnSalirModoPedido = document.getElementById('btnSalirModoPedido');
             if (btnSalirModoPedido) btnSalirModoPedido.addEventListener('click', salirModoPedido);
-            if (btnAgregar) btnAgregar.addEventListener('click', function () {
-                if (!modoPedido) activarModoPedido();
-                agregarProducto();
-            });
+            // btnAgregar (pedido) eliminado del HTML de inventario
 
             const enviarInventarioBtn = document.getElementById('enviarInventarioBtn');
             if (enviarInventarioBtn) enviarInventarioBtn.addEventListener('click', enviarInventarioCompleto);
@@ -6828,6 +6876,11 @@
         }
 
         function mostrarLogin() {
+            try {
+                var lv = document.getElementById('loginVersion');
+                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.5.2');
+            } catch (eVer) {}
+
             try {
                 if (typeof window.__iemHideLoading === 'function') window.__iemHideLoading(700);
                 else setGlobalLoading(false);

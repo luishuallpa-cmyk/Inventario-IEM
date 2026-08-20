@@ -3991,3 +3991,29 @@ body:not(.light-theme) .login-field input:focus {
 body:not(.light-theme) #iemPullRefresh {
   background: rgba(16, 185, 129, 0.95);
 }
+
+
+/* Versión en login */
+.login-version {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  opacity: 0.65;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+/* Badge offline */
+.offline-badge {
+  display: none;
+  background: #b45309;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+}
+.offline-badge.offline-badge-on,
+.offline-badge:not([hidden]) {
+  display: inline-flex;
+  align-items: center;
+}
