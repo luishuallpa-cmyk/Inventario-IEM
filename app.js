@@ -982,6 +982,8 @@
                     aplicarBarrasLocalADatos();
                     try { if (typeof reindexarCatalogo === 'function') reindexarCatalogo(); } catch (e) {}
                     actualizarEstadoCatalogo();
+                    // Refrescar teórico del conteo físico con el stock actual del catálogo
+                    try { if (typeof sincronizarTeoricoDesdeCatalogo === 'function') sincronizarTeoricoDesdeCatalogo(); } catch (eSyncT) {}
                     if (!searchInput.value.trim() && selectedIndex === -1) {
                         filteredData = [];
                         renderResults([]);
@@ -1010,6 +1012,7 @@
             try { aplicarBarrasLocalADatos(); } catch (eB) {}
             const fechaTexto = formatearFechaRespaldo(respaldo.fechaISO);
             actualizarEstadoCatalogo();
+            try { if (typeof sincronizarTeoricoDesdeCatalogo === 'function') sincronizarTeoricoDesdeCatalogo(); } catch (eSyncT) {}
             if (fileStatus) {
                 fileStatus.textContent = (fileStatus.textContent || '') +
                     ' · ' + (origen || 'respaldo') + (fechaTexto ? (' ' + fechaTexto) : '');
@@ -1056,6 +1059,7 @@
         function useLocalData() {
             currentData = [...sampleData];
             fileStatus.textContent = `📋 ${currentData.length} registros de ejemplo`;
+            try { if (typeof sincronizarTeoricoDesdeCatalogo === 'function') sincronizarTeoricoDesdeCatalogo(); } catch (eSyncT) {}
             // Bug #2: mismo cuidado que en loadFromGoogleSheets, para no interrumpir
             // una búsqueda o selección en curso si esto ocurre durante el auto-refresco.
             if (!searchInput.value.trim() && selectedIndex === -1) {
@@ -2235,6 +2239,50 @@
         }
         window.aplicarBajasLotesPorTeorico = aplicarBajasLotesPorTeorico;
 
+        /**
+         * Actualiza el stock teórico de todos los registros del conteo físico
+         * con el valor actual del catálogo (currentData). Así, si alguien
+         * actualiza el inventario (Excel valorado, Supabase, etc.) mientras
+         * se está contando, el "Teórico" y la "Diferencia" del conteo se
+         * refrescan en tiempo real (en el siguiente load del catálogo o al
+         * llamar esta función).
+         * @returns {{ actualizados: number }}
+         */
+        function sincronizarTeoricoDesdeCatalogo() {
+            const resumen = { actualizados: 0 };
+            if (!Array.isArray(inventarioFisico) || !inventarioFisico.length) return resumen;
+            if (!Array.isArray(currentData) || !currentData.length) return resumen;
+            if (typeof getCodigo !== 'function' || typeof getCantidad !== 'function') return resumen;
+
+            // Índice rápido código → item del catálogo
+            const mapa = Object.create(null);
+            currentData.forEach(function (item) {
+                const c = String(getCodigo(item) || '').trim();
+                if (c) mapa[c] = item;
+            });
+
+            inventarioFisico.forEach(function (record) {
+                const cod = String(record.codigo || '').trim();
+                if (!cod) return;
+                const item = mapa[cod];
+                if (!item) return;
+                const nuevo = Number(getCantidad(item));
+                if (!isFinite(nuevo)) return;
+                const anterior = Number(record.stockTeorico);
+                if (isFinite(anterior) && anterior === nuevo) return;
+                record.stockTeorico = nuevo;
+                record.diferencia = (Number(record.stockFisico) || 0) - nuevo;
+                resumen.actualizados += 1;
+            });
+
+            if (resumen.actualizados > 0) {
+                try { if (typeof saveInventario === 'function') saveInventario(); } catch (e) {}
+                try { if (typeof renderInventario === 'function') renderInventario(); } catch (e) {}
+            }
+            return resumen;
+        }
+        window.sincronizarTeoricoDesdeCatalogo = sincronizarTeoricoDesdeCatalogo;
+
 
         function sincronizarLoteAlServidor(record, lote) {
             const factor = record.factor || 1;
@@ -2313,6 +2361,15 @@
                     record.factor = getFactorFinal(item);
                 }
                 inventarioFisico.push(record);
+            } else {
+                // Registro ya existente: refrescar teórico desde el catálogo actual
+                try {
+                    const item = currentData.find(it => getCodigo(it) === r.codigo);
+                    if (item && typeof getCantidad === 'function') {
+                        const nuevo = Number(getCantidad(item));
+                        if (isFinite(nuevo)) record.stockTeorico = nuevo;
+                    }
+                } catch (e) {}
             }
 
             const idCanonico = r.id || idLotePorProductoYVencimiento(r.codigo, r.vencimiento);
@@ -2835,6 +2892,35 @@
 
 
         function renderInventario() {
+            // Antes de pintar: alinear teórico del conteo con el catálogo actual
+            // (sin forzar save/render recursivo; solo actualiza en memoria).
+            try {
+                if (Array.isArray(inventarioFisico) && inventarioFisico.length
+                    && Array.isArray(currentData) && currentData.length
+                    && typeof getCodigo === 'function' && typeof getCantidad === 'function') {
+                    const mapa = Object.create(null);
+                    currentData.forEach(function (item) {
+                        const c = String(getCodigo(item) || '').trim();
+                        if (c) mapa[c] = item;
+                    });
+                    let huboCambioTeorico = false;
+                    inventarioFisico.forEach(function (record) {
+                        const cod = String(record.codigo || '').trim();
+                        if (!cod || !mapa[cod]) return;
+                        const nuevo = Number(getCantidad(mapa[cod]));
+                        if (!isFinite(nuevo)) return;
+                        if (Number(record.stockTeorico) !== nuevo) {
+                            record.stockTeorico = nuevo;
+                            record.diferencia = (Number(record.stockFisico) || 0) - nuevo;
+                            huboCambioTeorico = true;
+                        }
+                    });
+                    if (huboCambioTeorico) {
+                        try { if (typeof saveInventario === 'function') saveInventario(); } catch (e) {}
+                    }
+                }
+            } catch (eTeo) { /* no bloquear el render */ }
+
             document.querySelectorAll('.diff-filtro-btn[data-diff-filtro]').forEach(btn => {
                 btn.classList.toggle('active', btn.getAttribute('data-diff-filtro') === filtroDiffModo);
             });
