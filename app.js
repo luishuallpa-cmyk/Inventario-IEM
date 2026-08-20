@@ -5192,9 +5192,72 @@
                     }
                     if (error) throw error;
                 }
+                // Valorado = foto completa del almacén: lo que NO viene en el Excel queda en 0
+                let extraCero = '';
+                if (esValorado) {
+                    try {
+                        const enExcel = new Set();
+                        (productos || []).forEach(function (p) {
+                            const c = String(p.codigo || '').trim();
+                            if (c) enExcel.add(c);
+                        });
+                        const aCero = [];
+                        (currentData || []).forEach(function (it) {
+                            const cod = String((typeof getCodigo === 'function' ? getCodigo(it) : it.Codigo) || '').trim();
+                            if (!cod || enExcel.has(cod)) return;
+                            const stockAnt = (typeof getCantidad === 'function')
+                                ? Number(getCantidad(it)) || 0
+                                : Number(it.Cantidad || it.stock_teorico || 0) || 0;
+                            if (stockAnt <= 0) return;
+                            aCero.push(cod);
+                        });
+                        if (aCero.length) {
+                            showToast('⏳ Poniendo a 0 stock de ' + aCero.length + ' productos ausentes en el valorado...', 'info');
+                            const CONC = 30;
+                            const ahoraIso = new Date().toISOString();
+                            for (let zi = 0; zi < aCero.length; zi += CONC) {
+                                const chunk = aCero.slice(zi, zi + CONC);
+                                const results = await Promise.all(chunk.map(function (cod) {
+                                    return supabaseClient
+                                        .from('productos')
+                                        .update({ stock_teorico: 0, actualizado_en: ahoraIso })
+                                        .eq('codigo', cod);
+                                }));
+                                const failed = results.find(function (x) { return x && x.error; });
+                                if (failed) throw failed.error;
+                            }
+                            // Alinear teórico en conteo físico local
+                            aCero.forEach(function (cod) {
+                                const reg = (inventarioFisico || []).find(function (d) {
+                                    return String(d.codigo || '').trim() === cod;
+                                });
+                                if (reg) {
+                                    const ant = Number(reg.stockTeorico) || 0;
+                                    reg.stockTeorico = 0;
+                                    reg.diferencia = (Number(reg.stockFisico) || 0) - 0;
+                                    if (ant > 0 && typeof aplicarBajasLotesPorTeorico === 'function') {
+                                        try {
+                                            aplicarBajasLotesPorTeorico([{
+                                                codigo: cod,
+                                                anterior: ant,
+                                                nuevo: 0,
+                                                descripcion: reg.descripcion || ''
+                                            }]);
+                                        } catch (eZ) {}
+                                    }
+                                }
+                            });
+                            extraCero = ' · ' + aCero.length + ' ausentes → stock 0';
+                            console.info('[IEM] Valorado: stock a 0 por ausencia en Excel', aCero.length, aCero.slice(0, 20));
+                        }
+                    } catch (eCero) {
+                        console.warn('Valorado: no se pudo poner a 0 ausentes', eCero);
+                        showToast('Aviso: stock actualizado, pero falló poner a 0 los ausentes: ' + (eCero.message || eCero), 'error');
+                    }
+                }
                 let extra = '';
                 if (!esLaive && !esValorado) extra = ' (existencias: solo cód. fábrica / códigos cortos; sin tocar nombres ni stock)';
-                if (esValorado) extra = ' (valorado: solo stock del sistema)';
+                if (esValorado) extra = ' (valorado: stock del Excel' + extraCero + ')';
                 if (esLaive) {
                     const st = window.__laiveImportStats || {};
                     extra = ' (Base Laive: solo SAP/fábrica · ' + (st.habilitados || subidos) + ' habilitados'
@@ -5257,6 +5320,7 @@
                 } catch (eBackup) { console.warn(eBackup); }
                 await loadFromGoogleSheets();
                 try { if (typeof renderInventario === 'function') renderInventario(); } catch (e) {}
+                try { if (typeof renderReporteSistema === 'function') renderReporteSistema(); } catch (e) {}
             } catch (err) {
                 console.error(err);
                 showToast('❌ Error al importar: ' + (err.message || err), 'error');
@@ -6660,8 +6724,20 @@
             }
         }
 
+        /** Usuarios con acceso admin forzado (además del rol en tabla perfiles). */
+        var ADMIN_USUARIOS = ['luis', 'andric'];
+
+        function esUsuarioAdminForzado(nombre) {
+            var u = String(nombre || usuarioActual || '').toLowerCase().trim();
+            if (!u) return false;
+            return ADMIN_USUARIOS.some(function (x) {
+                return String(x).toLowerCase().trim() === u;
+            });
+        }
+
         function esAdmin() {
-            return String(rolUsuario || '').toLowerCase() === 'admin';
+            if (String(rolUsuario || '').toLowerCase() === 'admin') return true;
+            return esUsuarioAdminForzado(usuarioActual);
         }
 
         /** Usuarios (login) que pueden escanear QR/barras para buscar. Admin siempre puede. */
@@ -6998,9 +7074,9 @@
                 console.warn('No se pudo leer perfiles (¿ejecutaste el SQL de migración?)', e);
             }
             // Fallback: sin tabla perfiles → usuario del email, rol usuario
-            // (excepto si el email empieza por luis@ → admin de emergencia)
+            // (admin forzado para lista ADMIN_USUARIOS: luis, andric, …)
             const u = split_part_email(emailFallback);
-            const rol = (u === 'luis') ? 'admin' : 'usuario';
+            const rol = esUsuarioAdminForzado(u) ? 'admin' : 'usuario';
             return { ok: true, usuario: u, rol: rol };
         }
 
@@ -7026,7 +7102,7 @@
                 }
                 // Fallback: mantener sesión con datos del email
                 usuarioActual = split_part_email(session.user.email);
-                rolUsuario = (usuarioActual === 'luis') ? 'admin' : 'usuario';
+                rolUsuario = esUsuarioAdminForzado(usuarioActual) ? 'admin' : 'usuario';
                 guardarMetaSesion(usuarioActual, rolUsuario);
                 try { setGlobalLoading(true, 'dots'); } catch (e) {}
                 mostrarApp();
@@ -7034,6 +7110,10 @@
             }
             usuarioActual = perfil.usuario;
             rolUsuario = perfil.rol;
+            // Admin forzado por lista (luis, andric, …) aunque perfiles diga otro rol
+            if (esUsuarioAdminForzado(usuarioActual)) {
+                rolUsuario = 'admin';
+            }
             // Cuentas de vendedor NO entran a Inventario (solo a la PWA de pedidos)
             if (String(rolUsuario || '').toLowerCase() === 'vendedor') {
                 try { await supabaseClient.auth.signOut(); } catch (e) {}
