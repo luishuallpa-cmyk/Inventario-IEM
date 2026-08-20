@@ -7321,34 +7321,135 @@
 
         // Pull-to-refresh en la zona superior (móvil): recarga limpia de caché
         (function initPullToRefresh() {
-            var startY = 0, pulling = false;
+            var startY = 0;
+            var pulling = false;
+            var armed = false;
+            var indicator = null;
+            var THRESHOLD = 72;
+
+            function scrollTopNow() {
+                var se = document.scrollingElement || document.documentElement;
+                var t = (window.pageYOffset || 0);
+                if (se && typeof se.scrollTop === 'number') t = Math.max(t, se.scrollTop);
+                if (document.body) t = Math.max(t, document.body.scrollTop || 0);
+                var app = document.getElementById('appContainer');
+                if (app && typeof app.scrollTop === 'number') t = Math.max(t, app.scrollTop);
+                return t;
+            }
+
+            function ensureIndicator() {
+                if (indicator) return indicator;
+                indicator = document.createElement('div');
+                indicator.id = 'iemPullRefresh';
+                indicator.setAttribute('aria-hidden', 'true');
+                indicator.innerHTML = '<span class="iem-pr-ico">↓</span> <span class="iem-pr-txt">Suelta para actualizar</span>';
+                document.body.appendChild(indicator);
+                return indicator;
+            }
+
+            function setProgress(dy) {
+                var el = ensureIndicator();
+                var p = Math.min(1, Math.max(0, dy / THRESHOLD));
+                el.style.opacity = String(0.35 + p * 0.65);
+                el.style.transform = 'translate(-50%, ' + Math.min(dy * 0.45, 56) + 'px)';
+                el.classList.toggle('iem-pr-ready', dy >= THRESHOLD);
+                el.querySelector('.iem-pr-txt').textContent = dy >= THRESHOLD
+                    ? 'Suelta para actualizar'
+                    : 'Desliza para actualizar';
+                el.querySelector('.iem-pr-ico').textContent = dy >= THRESHOLD ? '↑' : '↓';
+            }
+
+            function hideIndicator() {
+                if (!indicator) return;
+                indicator.style.opacity = '0';
+                indicator.style.transform = 'translate(-50%, -40px)';
+                indicator.classList.remove('iem-pr-ready');
+            }
+
+            function doHardReload() {
+                var el = ensureIndicator();
+                el.classList.add('iem-pr-ready');
+                el.querySelector('.iem-pr-txt').textContent = 'Actualizando…';
+                el.style.opacity = '1';
+                var finish = function () {
+                    try {
+                        var u = new URL(location.href);
+                        u.searchParams.set('_r', String(Date.now()));
+                        location.replace(u.toString());
+                    } catch (e) {
+                        location.reload();
+                    }
+                };
+                var pending = 0;
+                function tick() {
+                    pending--;
+                    if (pending <= 0) finish();
+                }
+                try {
+                    if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+                        pending++;
+                        navigator.serviceWorker.getRegistrations().then(function (regs) {
+                            return Promise.all(regs.map(function (r) { return r.unregister(); }));
+                        }).then(tick, tick);
+                    }
+                    if (window.caches && caches.keys) {
+                        pending++;
+                        caches.keys().then(function (keys) {
+                            return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+                        }).then(tick, tick);
+                    }
+                } catch (err) {}
+                if (pending === 0) finish();
+                else setTimeout(finish, 1200);
+            }
+
             document.addEventListener('touchstart', function (e) {
-                if (window.scrollY > 2 && (document.documentElement.scrollTop || 0) > 2) return;
                 if (document.body.classList.contains('admin-open')) return;
-                if (!e.touches || !e.touches[0]) return;
+                if (document.body.classList.contains('login-visible')) return;
+                if (scrollTopNow() > 8) return;
+                if (!e.touches || e.touches.length !== 1) return;
+                // No activar si el gesto nace en inputs/botones
+                var t = e.target;
+                if (t && t.closest && t.closest('input, textarea, select, button, a, .header-menu-dropdown, .panel-alerta-venc')) return;
                 startY = e.touches[0].clientY;
                 pulling = true;
+                armed = false;
             }, { passive: true });
-            document.addEventListener('touchend', function (e) {
+
+            document.addEventListener('touchmove', function (e) {
                 if (!pulling) return;
-                pulling = false;
-                if (!e.changedTouches || !e.changedTouches[0]) return;
-                var dy = e.changedTouches[0].clientY - startY;
-                if (dy > 90 && (window.scrollY <= 2)) {
-                    try {
-                        if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
-                            navigator.serviceWorker.getRegistrations().then(function (regs) {
-                                regs.forEach(function (r) { r.unregister(); });
-                            });
-                        }
-                        if (window.caches && caches.keys) {
-                            caches.keys().then(function (keys) {
-                                keys.forEach(function (k) { caches.delete(k); });
-                            });
-                        }
-                    } catch (err) {}
-                    setTimeout(function () { location.reload(); }, 200);
+                if (!e.touches || !e.touches[0]) return;
+                if (scrollTopNow() > 8) {
+                    pulling = false;
+                    hideIndicator();
+                    return;
                 }
+                var dy = e.touches[0].clientY - startY;
+                if (dy < 12) {
+                    hideIndicator();
+                    armed = false;
+                    return;
+                }
+                armed = dy >= THRESHOLD;
+                setProgress(dy);
+            }, { passive: true });
+
+            document.addEventListener('touchend', function () {
+                if (!pulling) return;
+                var should = armed;
+                pulling = false;
+                armed = false;
+                if (should) {
+                    doHardReload();
+                } else {
+                    hideIndicator();
+                }
+            }, { passive: true });
+
+            document.addEventListener('touchcancel', function () {
+                pulling = false;
+                armed = false;
+                hideIndicator();
             }, { passive: true });
         })();
 
