@@ -2755,26 +2755,13 @@
                 }
             }
 
+            // Botón de alerta del header: siempre oculto (solo se usa el FAB flotante).
             if (btn) {
-                btn.hidden = false;
-                btn.style.display = 'inline-flex';
-                btn.classList.remove('btn-alerta-ok', 'btn-alerta-warn', 'btn-alerta-danger', 'btn-alerta-pulse');
-                if (!n) {
-                    btn.classList.add('btn-alerta-ok');
-                    btn.setAttribute('title', 'Sin lotes por vencer');
-                    if (countEl) countEl.textContent = '0';
-                    if (dot) dot.hidden = true;
-                } else if (hayCritico) {
-                    btn.classList.add('btn-alerta-danger', 'btn-alerta-pulse');
-                    btn.setAttribute('title', n + ' lote(s) por vencer o vencidos');
-                    if (countEl) countEl.textContent = String(n);
-                    if (dot) { dot.hidden = false; dot.classList.add('alerta-critica'); }
-                } else {
-                    btn.classList.add('btn-alerta-warn', 'btn-alerta-pulse');
-                    btn.setAttribute('title', n + ' lote(s) por vencer');
-                    if (countEl) countEl.textContent = String(n);
-                    if (dot) { dot.hidden = false; dot.classList.remove('alerta-critica'); }
-                }
+                btn.hidden = true;
+                btn.style.display = 'none';
+                btn.setAttribute('aria-hidden', 'true');
+                if (countEl) countEl.textContent = String(n);
+                if (dot) dot.hidden = true;
             }
             if (lista) {
                 if (!n) {

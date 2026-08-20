@@ -89,7 +89,9 @@ else document.body.classList.remove('light-theme');
         <span class="badge offline-badge" id="offlineBadge" hidden>📴 Offline</span>
         <span class="badge badge-usuario" id="usuarioBadge" title="Usuario con sesión activa en este dispositivo"><span class="dot-activo"></span><span id="usuarioBadgeTexto">-</span></span>
         <div class="header-actions">
-            <button type="button" class="btn-alerta-venc btn-alerta-ok" id="btnAlertaVenc" title="Productos por vencer (15 días o menos)" aria-label="Alertas de vencimiento" aria-expanded="false" aria-controls="panelAlertaVenc">
+            <!-- Alerta de vencimiento del header desactivada a propósito:
+                 se usa solo el FAB flotante (#fabAlertaVenc) para un look más limpio. -->
+            <button type="button" class="btn-alerta-venc btn-alerta-ok" id="btnAlertaVenc" hidden style="display:none !important;" title="Productos por vencer (15 días o menos)" aria-label="Alertas de vencimiento" aria-expanded="false" aria-controls="panelAlertaVenc" aria-hidden="true">
                 <span class="alerta-venc-ico" aria-hidden="true">⚠</span>
                 <span class="alerta-venc-dot" id="alertaVencDot" hidden></span>
                 <span class="alerta-venc-count" id="alertaVencCount">0</span>
