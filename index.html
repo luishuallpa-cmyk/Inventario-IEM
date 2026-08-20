@@ -28,7 +28,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=4.4.0">
+    <link rel="stylesheet" href="style.css?v=4.4.1">
     <link rel="stylesheet" href="admin.css?v=4.3.7">
 <script>
 (function(){try{var t=localStorage.getItem('buscador_tema')||'dark';
@@ -46,7 +46,7 @@ else document.body.classList.remove('light-theme');
 }catch(e){}})();
 </script>
 
-<div id="globalLoading" class="global-loading gl-hide" aria-live="polite" aria-busy="false" aria-label="Cargando">
+<div id="globalLoading" class="global-loading" aria-live="polite" aria-busy="true" aria-label="Cargando">
   <div class="gl-dots" aria-hidden="true"><span></span><span></span><span></span></div>
 </div>
     <a class="skip-link" href="#mainContent">Saltar al contenido</a>
@@ -702,7 +702,7 @@ else document.body.classList.remove('light-theme');
     </div>
 
 <script src="config.js?v=4.3.5"></script>
-<script src="app.js?v=4.4.0"></script>
+<script src="app.js?v=4.4.1"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {

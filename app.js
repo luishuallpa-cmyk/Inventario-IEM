@@ -492,9 +492,9 @@
                 el.setAttribute('aria-busy', 'false');
             }
         }
-        // Puntos solo al pasar de login → menú búsqueda (mín. ~0.9s visibles)
-        window.__iemHideLoading = function () {
-            var minMs = 900;
+        // Mínimo visible para que se note la animación de puntos
+        window.__iemHideLoading = function (minMs) {
+            minMs = (minMs == null) ? 900 : minMs;
             var waited = Date.now() - (window.__iemLoadShownAt || Date.now());
             var delay = Math.max(0, minMs - waited);
             setTimeout(function () {
@@ -504,7 +504,16 @@
                 }
             }, delay);
         };
-        // Fail-safe: si algo quedó colgado, ocultar
+        // Arranque: puntos visibles hasta el login (o app si hay sesión)
+        window.__iemLoadShownAt = Date.now();
+        try {
+            var _gl0 = document.getElementById('globalLoading');
+            if (_gl0) {
+                _gl0.classList.remove('gl-hide');
+                _gl0.setAttribute('aria-busy', 'true');
+            }
+        } catch (e0) {}
+        // Fail-safe
         setTimeout(function () {
             try { setGlobalLoading(false); } catch (e) {}
         }, 12000);
@@ -6709,7 +6718,10 @@
         }
 
         function mostrarLogin() {
-            try { setGlobalLoading(false); } catch (e) {}
+            try {
+                if (typeof window.__iemHideLoading === 'function') window.__iemHideLoading(700);
+                else setGlobalLoading(false);
+            } catch (e) {}
             appContainer.classList.add('oculto');
             loginOverlay.classList.remove('hidden');
             if (loginUsuario) loginUsuario.value = '';
