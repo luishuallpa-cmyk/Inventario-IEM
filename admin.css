@@ -1350,3 +1350,42 @@ body.light-theme .admin-nav-wrap {
         border-radius: 20px;
     }
 }
+
+
+/* Header compacto: sin título visible, solo X */
+.admin-panel-header-compact {
+    justify-content: flex-end;
+    min-height: 2.5rem;
+    padding: 0.35rem 0.65rem 0.25rem !important;
+    padding-top: max(0.35rem, env(safe-area-inset-top, 0px)) !important;
+    border-bottom: none;
+    background: transparent !important;
+}
+.admin-panel-title-sr {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0,0,0,0) !important;
+    border: 0 !important;
+}
+.admin-header-spacer { flex: 1; }
+.admin-panel-header-compact .admin-close {
+    margin-top: 0.15rem;
+    margin-right: 0.1rem;
+}
+@media (max-width: 900px) {
+    .admin-panel-header-compact {
+        padding-top: max(0.5rem, env(safe-area-inset-top, 0px)) !important;
+        padding-bottom: 0.15rem !important;
+    }
+    .admin-panel-header-compact .admin-close {
+        width: 2.5rem;
+        height: 2.5rem;
+        min-height: 2.5rem;
+        border-radius: 12px;
+        margin-top: 0.35rem;
+    }
+}

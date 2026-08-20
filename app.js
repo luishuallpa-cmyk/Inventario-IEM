@@ -6792,7 +6792,7 @@
         }
 
         function cerrarSesion() {
-            confirmarAccion('¿Cerrar sesión?', 'Salir', 'primary').then(async ok => {
+            confirmarAccion('¿Salir de la sesión?', 'Salir', 'danger').then(async ok => {
                 if (!ok) return;
                 await borrarSesionActiva();
                 try { localStorage.removeItem(SESSION_KEY); } catch (e) {}

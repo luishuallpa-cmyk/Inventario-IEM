@@ -3884,3 +3884,23 @@ body:not(.light-theme) .login-field input:focus {
 }
 /* Header alerta siempre visible para admin */
 #btnAlertaVenc { display: inline-flex !important; }
+
+/* Menú: Salir destacado en rojo */
+.header-menu-item-salir {
+  background: #dc2626 !important;
+  color: #fff !important;
+  border-radius: 10px !important;
+  margin: 0.35rem 0.5rem 0.25rem !important;
+  font-weight: 700 !important;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.35);
+}
+.header-menu-item-salir .hmi-icon,
+.header-menu-item-salir .hmi-label {
+  color: #fff !important;
+}
+.header-menu-item-salir:hover,
+.header-menu-item-salir:active {
+  background: #b91c1c !important;
+  color: #fff !important;
+}
