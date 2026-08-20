@@ -125,6 +125,16 @@
                         panel.classList.remove('active');
                     }
                 });
+                // Mantener panel abierto al cambiar de sección
+                try {
+                    var _ovKeep = document.getElementById('adminOverlay');
+                    if (_ovKeep) {
+                        _ovKeep.classList.add('visible');
+                        _ovKeep.style.display = 'flex';
+                        _ovKeep.setAttribute('aria-hidden', 'false');
+                    }
+                    document.body.classList.add('admin-open');
+                } catch (eKeep) {}
                 if (tabId === 'sesiones' && typeof window.__cargarSesionesActivas === 'function') {
                     window.__cargarSesionesActivas();
                 }
@@ -6339,17 +6349,25 @@
             if (typeof window.cambiarTabAdmin === 'function') window.cambiarTabAdmin(tabId);
         }
 
-        // Clic / toque en menú admin (delega a cambiarTabAdmin + hash)
+        // Clic / toque en menú lateral admin: cambiar pestaña SIN cerrar el panel
         document.addEventListener('click', function (e) {
             const btn = e.target && e.target.closest && e.target.closest('.admin-nav-btn');
             if (!btn) return;
+            // Solo si el panel admin está abierto
+            var ov = document.getElementById('adminOverlay');
+            if (!ov || !ov.classList.contains('visible')) return;
             e.preventDefault();
             e.stopPropagation();
             const tab = btn.getAttribute('data-admin-tab');
-            if (tab) {
-                // Actualiza la URL (#/admin/barras) y cambia la vista
-                if (typeof navegarHash === 'function') navegarHash('#/admin/' + tab);
-                else if (typeof window.cambiarTabAdmin === 'function') window.cambiarTabAdmin(tab);
+            if (!tab) return;
+            if (typeof window.cambiarTabAdmin === 'function') window.cambiarTabAdmin(tab);
+            // Hash con replace: no genera "atrás" ni cierra el panel
+            try {
+                _hashNavSilent = true;
+                history.replaceState({ iemGuard: 1, iemAdmin: tab }, '', '#/admin/' + tab);
+                setTimeout(function () { _hashNavSilent = false; }, 50);
+            } catch (err) {
+                _hashNavSilent = false;
             }
         }, true);
 
