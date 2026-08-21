@@ -1816,35 +1816,47 @@
             } catch (eF) { factorChip = 1; }
             if (factorChip < 1) factorChip = 1;
 
+            // Solo admin puede eliminar lotes; usuarios de almacén solo ven el registro
+            var puedeEliminarLote = (typeof esAdmin === 'function') ? esAdmin() : false;
+
             vencChips.innerHTML = recientes.map(function (l) {
                 var cant = Number(l.cantidad) || 0;
                 var cajasL = factorChip > 1 ? Math.floor(cant / factorChip) : 0;
                 var undL = factorChip > 1 ? (cant % factorChip) : cant;
+                // Solo cajas/unidades; el factor (CJ*24/UND) no se muestra (va en el reporte)
                 var qtyTxt = factorChip > 1
                     ? (cajasL + ' cj · ' + undL + ' und')
                     : (undL + ' und');
+                var delBtn = puedeEliminarLote
+                    ? ('<button type="button" class="venc-chip-del" data-codigo="' + codigo +
+                       '" data-idx="' + l.idx + '" title="Eliminar este lote">✕</button>')
+                    : '';
                 return '<span class="venc-chip">' +
                     '<span class="venc-chip-date">' + (l.vencimiento || 'S/F') + '</span>' +
                     '<span class="venc-chip-qty">' + qtyTxt + '</span>' +
-                    (unidadRef ? '<span class="venc-chip-um">' + escapeHtml(String(unidadRef)) + '</span>' : '') +
-                    '<button type="button" class="venc-chip-del" data-codigo="' + codigo +
-                    '" data-idx="' + l.idx + '" title="Eliminar este lote">✕</button></span>';
+                    delBtn + '</span>';
             }).join('');
 
-            document.querySelectorAll('.venc-chip-del').forEach(btn => {
-                btn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    eliminarLote(this.dataset.codigo, parseInt(this.dataset.idx));
+            if (puedeEliminarLote) {
+                document.querySelectorAll('.venc-chip-del').forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        eliminarLote(this.dataset.codigo, parseInt(this.dataset.idx));
+                    });
                 });
-            });
+            }
         }
 
         // Elimina un lote puntual (una cantidad con su fecha) de un producto
         // ya contado, y recalcula el total físico y la diferencia. Si era el
         // único lote, se elimina la fila completa del inventario físico.
         // También avisa al servidor para que el borrado se refleje en los
-        // demás celulares/PC.
+        // demás celulares/PC. Solo administrador.
         function eliminarLote(codigo, idx) {
+            if (typeof esAdmin === 'function' && !esAdmin()) {
+                try { showToast('Solo el administrador puede eliminar lotes.', 'error'); } catch (e) {}
+                return;
+            }
             const record = inventarioFisico.find(d => d.codigo === codigo);
             if (!record || !record.lotes) return;
             const [loteEliminado] = record.lotes.splice(idx, 1);

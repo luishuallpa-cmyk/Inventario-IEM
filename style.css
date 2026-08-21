@@ -4997,6 +4997,12 @@ body:has(.header-menu-dropdown:not([hidden]))::after {
   background: rgba(0, 0, 0, 0.45);
   pointer-events: auto;
 }
+/* Header + menú por encima del fondo oscuro (si no, el menú queda bloqueado/gris) */
+body:has(.header-menu-dropdown:not([hidden])) .app-header,
+body:has(.header-menu-dropdown:not([hidden])) header.header,
+body:has(.header-menu-dropdown:not([hidden])) header {
+  z-index: 9001 !important;
+}
 
 @media (max-width: 959px) {
   .app-header,
@@ -5004,6 +5010,11 @@ body:has(.header-menu-dropdown:not([hidden]))::after {
   header {
     overflow: visible !important;
     z-index: 200 !important;
+  }
+  body:has(.header-menu-dropdown:not([hidden])) .app-header,
+  body:has(.header-menu-dropdown:not([hidden])) header.header,
+  body:has(.header-menu-dropdown:not([hidden])) header {
+    z-index: 9001 !important;
   }
   .header-menu-dropdown {
     position: fixed !important;
@@ -5020,6 +5031,7 @@ body:has(.header-menu-dropdown:not([hidden]))::after {
     box-shadow: 0 20px 48px rgba(0, 0, 0, 0.5) !important;
     border-radius: 16px !important;
     padding: 0.45rem !important;
+    z-index: 9002 !important;
   }
 }
 /* Panel admin siempre por encima */
