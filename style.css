@@ -98,10 +98,11 @@
             background-attachment: fixed;
             min-height: 100vh;
             min-height: 100dvh;
-            padding-left: env(safe-area-inset-left, 0);
-            padding-right: env(safe-area-inset-right, 0);
-            padding-bottom: env(safe-area-inset-bottom, 0);
-            padding: 0.75rem;
+            /* Edge-to-edge: respetar safe-area (status bar / notch / home indicator) */
+            padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+            padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+            padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+            padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
             color: var(--text-primary);
             transition: background 0.35s, color 0.25s;
             line-height: 1.55;
@@ -347,7 +348,8 @@
             margin-bottom: 0.8rem;
             flex-wrap: nowrap;
             position: relative;
-            z-index: 40;
+            /* Por encima del buscador (z-index 100) para que el menú ☰ no quede debajo */
+            z-index: 200;
         }
         .header .logo {
             display: flex;
@@ -1231,7 +1233,12 @@
            RESPONSIVE MÓVIL (con descripción visible y código)
            ============================================================ */
         @media (max-width: 640px) {
-            body { padding: 0.5rem; }
+            body {
+                padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
+                padding-right: max(0.5rem, env(safe-area-inset-right, 0px));
+                padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+                padding-left: max(0.5rem, env(safe-area-inset-left, 0px));
+            }
             .header {
                 padding: 0.3rem 0.45rem 0.3rem 0.55rem;
                 border-radius: 16px;
@@ -1925,9 +1932,8 @@ label.btn-drive {
         padding: 0.5rem 0.7rem !important;
     }
 
-    /* Header un poco más usable con safe area */
+    /* Header redondeado; el safe-area-top ya lo aporta el body */
     .header {
-        padding-top: max(0.4rem, env(safe-area-inset-top, 0));
         border-radius: 24px !important;
     }
 
@@ -4950,6 +4956,13 @@ html, body {
 /* ============================================================
    v4.7.4 — Menú admin funcional (no recortar dropdown)
    ============================================================ */
+/* Header por encima del buscador para que el menú no quede debajo */
+.app-header,
+header.header,
+header {
+  overflow: visible !important;
+  z-index: 200 !important;
+}
 .header-menu-wrap {
   position: relative !important;
   z-index: 9001 !important;
@@ -4962,24 +4975,22 @@ html, body {
 .header-menu-dropdown:not([hidden]) {
   display: flex !important;
 }
-/* Header no debe recortar el menú ☰ */
-.app-header,
-header.header,
-header {
-  overflow: visible !important;
-}
 @media (max-width: 959px) {
   .app-header,
+  header.header,
   header {
     overflow: visible !important;
+    z-index: 200 !important;
   }
   .header-menu-dropdown {
     position: fixed !important;
-    top: calc(env(safe-area-inset-top, 0px) + 3.6rem) !important;
+    /* Debajo del header + safe-area; el buscador queda por debajo (z-index menor) */
+    top: calc(env(safe-area-inset-top, 0px) + 4.1rem) !important;
     right: 0.5rem !important;
     left: auto !important;
     width: min(280px, calc(100vw - 1rem)) !important;
     max-height: min(75vh, 480px) !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4) !important;
   }
 }
 /* Panel admin siempre por encima */
@@ -4999,13 +5010,14 @@ header {
 @media (max-width: 959px) {
   #searchSection {
     position: relative !important;
-    z-index: 100 !important;
+    /* Por debajo del header (z-index 200) para que el menú ☰ no quede oculto */
+    z-index: 50 !important;
     overflow: visible !important;
   }
   .search-suggest-wrap {
     position: relative !important;
     width: 100% !important;
-    z-index: 120 !important;
+    z-index: 60 !important;
   }
   .search-suggest-wrap .result-list.result-list-open,
   #resultList.result-list-open {
@@ -5048,6 +5060,7 @@ header {
   #searchSection,
   #searchSection.card {
     overflow: visible !important;
+    /* Mantener por debajo del header (z-index 200) */
     z-index: 40 !important;
   }
 
