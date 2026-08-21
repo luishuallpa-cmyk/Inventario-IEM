@@ -4094,7 +4094,7 @@ body:not(.light-theme) #iemPullRefresh {
 
 
 /* ============================================================
-   v4.6.3 — nombres completos + chips con cajas/unidades
+   v4.6.8 — nombres completos + chips con cajas/unidades
    ============================================================ */
 @media (max-width: 959px) {
   .result-item-suggest {
@@ -4161,7 +4161,7 @@ body:not(.light-theme) #iemPullRefresh {
 
 
 /* ============================================================
-   v4.6.4/6 — Cajas|Unidades: móvil en grid; PC en fila compacta
+   v4.6.8/6 — Cajas|Unidades: móvil en grid; PC en fila compacta
    ============================================================ */
 @media (max-width: 959px) {
   .cantidad-row {
@@ -4225,7 +4225,7 @@ body:not(.light-theme) #iemPullRefresh {
 
 
 /* ============================================================
-   v4.6.5 — móvil: sin icono alerta header, sin bloque Resultados,
+   v4.6.8 — móvil: sin icono alerta header, sin bloque Resultados,
    filtros visibles, cantidades solo con producto
    ============================================================ */
 
@@ -4314,7 +4314,7 @@ button.btn-alerta-venc {
 
 
 /* ============================================================
-   v4.6.6 RELEASE — PC profesional: lista | panel al lado
+   v4.6.8 RELEASE — PC profesional: lista | panel al lado
    ============================================================ */
 @media (min-width: 960px) {
   /* Layout principal 2 columnas al seleccionar */
@@ -4482,7 +4482,7 @@ button.btn-alerta-venc {
 
 
 /* ============================================================
-   v4.6.7 — lista con altura controlada + Cambiar producto sin cuadro
+   v4.6.8 — lista con altura controlada + Cambiar producto sin cuadro
    ============================================================ */
 @media (min-width: 960px) {
   /* No desplegar toda la página: lista con scroll interno acotado */
@@ -4542,4 +4542,72 @@ button.btn-alerta-venc {
     color: #0A784C !important;
     background: rgba(10, 120, 76, 0.06) !important;
   }
+}
+
+
+/* ============================================================
+   v4.6.8 — móvil menos cargado + editar inventario
+   ============================================================ */
+@media (max-width: 959px) {
+  /* Buscar: oculto (búsqueda al escribir / Enter) */
+  #searchButton {
+    display: none !important;
+  }
+  #searchSection .search-row {
+    gap: 0.4rem !important;
+  }
+  /* Acciones inventario: más ordenadas */
+  #diffCardHeader .diff-actions,
+  .diff-actions {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.4rem !important;
+    justify-content: flex-start !important;
+  }
+}
+
+/* Botones editar / eliminar en tarjeta inventario */
+.mi-card-actions {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.35rem !important;
+  flex-shrink: 0 !important;
+}
+.mi-card-edit,
+.mi-card-del {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 10px !important;
+  border: 1px solid var(--card-border, #e2e8f0) !important;
+  background: var(--input-bg, #f8fafc) !important;
+  cursor: pointer !important;
+  font-size: 1rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+}
+.mi-card-edit:hover {
+  border-color: #0A784C !important;
+  background: rgba(10, 120, 76, 0.1) !important;
+}
+.mi-card-del:hover {
+  border-color: #dc2626 !important;
+  background: rgba(220, 38, 38, 0.08) !important;
+}
+.acciones-cell {
+  display: flex !important;
+  gap: 0.25rem !important;
+  align-items: center !important;
+}
+.btn-edit-diff {
+  background: transparent;
+  border: 1px solid rgba(10, 120, 76, 0.35);
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 0.15rem 0.35rem;
+  font-size: 0.85rem;
+}
+.btn-edit-diff:hover {
+  background: rgba(10, 120, 76, 0.1);
 }

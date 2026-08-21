@@ -3204,7 +3204,7 @@
                     <td style="color:var(--heading-color);" title="${vencTitulo}">${vencTexto}</td>
                     <td style="color:var(--text-muted);">${d.fecha}</td>
                     <td style="color:${usuarioColor}; font-weight:${usuarioDuplicado ? '700' : '400'};" title="${usuarioTitulo}">${usuarioCelda}</td>
-                    <td class="acciones-cell"><button class="eliminar-diff" data-index="${idx}">✕</button></td>
+                    <td class="acciones-cell"><button type="button" class="btn-edit-diff editar-diff" data-index="${idx}" title="Editar">✏️</button><button class="eliminar-diff" data-index="${idx}" title="Eliminar">✕</button></td>
                 </tr>`;
                 mobileHtml += `<div class="mi-card">
                     <div class="mi-card-head">
@@ -3216,7 +3216,10 @@
                             </div>
                             <div class="mi-card-desc">${d.descripcion}</div>
                         </div>
-                        <button class="mi-card-del eliminar-diff-movil" data-index="${idx}" title="Eliminar registro">🗑️</button>
+                        <div class="mi-card-actions">
+                            <button type="button" class="mi-card-edit editar-diff-movil" data-index="${idx}" title="Editar fecha o cantidad">✏️</button>
+                            <button type="button" class="mi-card-del eliminar-diff-movil" data-index="${idx}" title="Eliminar registro">🗑️</button>
+                        </div>
                     </div>
                     <div class="mi-card-stats">
                         <div><span class="mi-stat-label">Teórico</span><span class="mi-stat-value">${teoricoTexto}</span></div>
@@ -3263,6 +3266,62 @@
                     });
                 });
             });
+            document.querySelectorAll('.editar-diff, .editar-diff-movil').forEach(btn => {
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const idx = parseInt(this.dataset.index, 10);
+                    if (typeof editarRegistroInventario === 'function') editarRegistroInventario(idx);
+                });
+            });
+        }
+
+        /** Abre el producto contado para corregir fecha/cantidad sin borrar. */
+        function editarRegistroInventario(idx) {
+            try {
+                const registro = inventarioFisico[idx];
+                if (!registro) return;
+                const cod = String(registro.codigo || '').trim();
+                if (!cod) return;
+                let item = null;
+                if (Array.isArray(currentData)) {
+                    item = currentData.find(function (p) {
+                        return String(getCodigo(p) || '').trim() === cod;
+                    }) || null;
+                }
+                if (!item) {
+                    showToast('Producto ' + cod + ' no está en el catálogo cargado', 'error');
+                    return;
+                }
+                filteredData = [item];
+                selectedIndex = 0;
+                try { if (searchInput) searchInput.value = cod; } catch (e0) {}
+                try { renderResults(filteredData); } catch (e1) {}
+                actualizarCantidades(item);
+                // Prefill cantidades desde el físico contado
+                try {
+                    const factor = getFactorFinal(item) || 1;
+                    const fisico = Number(registro.stockFisico) || 0;
+                    if (factor > 1) {
+                        txtCajas.value = String(Math.floor(fisico / factor));
+                        txtUnidades.value = String(fisico % factor);
+                    } else {
+                        if (txtCajas) txtCajas.value = '0';
+                        txtUnidades.value = String(fisico);
+                    }
+                    if (typeof actualizarTotalCalculado === 'function') actualizarTotalCalculado();
+                    else if (typeof actualizarCantidades === 'function') { /* total se recalcula al input */ }
+                } catch (ePref) {}
+                // Scroll al panel de conteo
+                try {
+                    const card = document.getElementById('productoActivoCard') || document.getElementById('resultsSection');
+                    if (card && card.scrollIntoView) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } catch (eSc) {}
+                showToast('Edita fecha o cantidad y pulsa Guardar conteo', 'info');
+            } catch (eEdit) {
+                console.warn('editarRegistroInventario', eEdit);
+                showToast('No se pudo abrir para editar', 'error');
+            }
         }
 
         // ============================================================
@@ -7336,7 +7395,7 @@
             const exportBtn = document.getElementById('exportDiffBtn');
             if (exportBtn) exportBtn.style.display = (es || !vend) ? '' : 'none';
             // Limpiar, Nube y Pedido: solo admin
-            ['clearDiffBtn', 'guardarDriveBtn', 'exportPedidoBtn'].forEach(id => {
+            ['clearDiffBtn', 'exportPedidoBtn'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.style.display = es ? '' : 'none';
             });
@@ -7593,7 +7652,7 @@
         function mostrarLogin() {
             try {
                 var lv = document.getElementById('loginVersion');
-                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.6.6');
+                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.6.8');
             } catch (eVer) {}
 
             try {
