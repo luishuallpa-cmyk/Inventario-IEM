@@ -1471,7 +1471,39 @@
             renderResults(filteredData);
         }
 
+
+        // PC = lista en resultsSection (estilo 4.5.3). Móvil = desplegable bajo el input.
+        function iemPlaceResultList() {
+            var list = document.getElementById('resultList');
+            if (!list) return;
+            var suggest = document.getElementById('searchSuggestWrap');
+            var panel = document.getElementById('pcPanelLista') || document.getElementById('resultsSection');
+            var mobile = false;
+            try { mobile = window.matchMedia && window.matchMedia('(max-width: 959px)').matches; } catch (e) {}
+            if (mobile && suggest) {
+                if (list.parentElement !== suggest) suggest.appendChild(list);
+            } else if (panel) {
+                // Insertar después del results-header si existe
+                var header = panel.querySelector('.results-header');
+                if (header && header.nextSibling !== list) {
+                    if (header.nextSibling) panel.insertBefore(list, header.nextSibling);
+                    else panel.appendChild(list);
+                } else if (list.parentElement !== panel) {
+                    panel.appendChild(list);
+                }
+            }
+        }
+        try {
+            iemPlaceResultList();
+            window.addEventListener('resize', function () {
+                clearTimeout(window.__iemPlaceListT);
+                window.__iemPlaceListT = setTimeout(iemPlaceResultList, 120);
+            });
+            document.addEventListener('DOMContentLoaded', iemPlaceResultList);
+        } catch (ePlace) {}
+
         function renderResults(items) {
+            try { if (typeof iemPlaceResultList === 'function') iemPlaceResultList(); } catch (ePL) {}
             const MAX_SHOW = 60;
             const totalHit = items ? items.length : 0;
             if (items && items.length > MAX_SHOW) items = items.slice(0, MAX_SHOW);
@@ -7540,7 +7572,7 @@
         function mostrarLogin() {
             try {
                 var lv = document.getElementById('loginVersion');
-                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.6.1');
+                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.6.2');
             } catch (eVer) {}
 
             try {
