@@ -1834,6 +1834,13 @@
 
             // Datos de la tarjeta de producto seleccionado (vista ampliada)
             document.body.classList.add('modo-seleccion');
+            try {
+                if (typeof iemPlaceResultList === 'function') iemPlaceResultList();
+                if (resultList) {
+                    resultList.classList.remove('result-list-collapsed');
+                    resultList.classList.add('result-list-open');
+                }
+            } catch (eMS) {}
             paDescripcion.textContent = getDescripcion(item);
             const codFab = getCodigoFabrica(item);
             paCodigo.textContent = codFab ? `Cód: ${getCodigo(item)} | Cód. Fábrica: ${codFab}` : `Cód: ${getCodigo(item)}`;
@@ -7586,7 +7593,7 @@
         function mostrarLogin() {
             try {
                 var lv = document.getElementById('loginVersion');
-                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.6.5');
+                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.6.6');
             } catch (eVer) {}
 
             try {

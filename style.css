@@ -4161,75 +4161,47 @@ body:not(.light-theme) #iemPullRefresh {
 
 
 /* ============================================================
-   v4.6.4 — alineación Cajas | Unidades (misma altura y ancho)
+   v4.6.4/6 — Cajas|Unidades: móvil en grid; PC en fila compacta
    ============================================================ */
-.cantidad-row {
-  display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  gap: 0.65rem !important;
-  align-items: stretch !important;
+@media (max-width: 959px) {
+  .cantidad-row {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.65rem !important;
+    align-items: stretch !important;
+  }
+  .cantidad-row .group {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.35rem !important;
+    min-width: 0 !important;
+  }
+  .cantidad-row .group label {
+    text-align: center !important;
+    width: 100% !important;
+  }
+  .cantidad-row .group input {
+    width: 100% !important;
+    text-align: center !important;
+  }
+  .cantidad-row .info-text,
+  .cantidad-row .acciones { grid-column: 1 / -1 !important; }
+  body.modo-seleccion .cantidad-row .group {
+    min-height: 5.25rem !important;
+    padding: 0.5rem !important;
+    border-radius: 14px !important;
+  }
+  body.modo-seleccion .cantidad-row .group input {
+    min-height: 48px !important;
+    font-size: 1.4rem !important;
+    font-weight: 700 !important;
+  }
+  .cantidad-row:has(.cajas-group.hidden) {
+    grid-template-columns: 1fr !important;
+  }
 }
-.cantidad-row .group.cajas-group,
-.cantidad-row .group.unidades-group,
-.cantidad-row .group {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: stretch !important;
-  justify-content: flex-start !important;
-  gap: 0.35rem !important;
-  margin: 0 !important;
-  min-width: 0 !important;
-  box-sizing: border-box !important;
-}
-.cantidad-row .group label {
-  display: block !important;
-  width: 100% !important;
-  text-align: center !important;
-  margin: 0 !important;
-  line-height: 1.2 !important;
-}
-.cantidad-row .group input {
-  width: 100% !important;
-  box-sizing: border-box !important;
-  text-align: center !important;
-  margin: 0 !important;
-}
-.cantidad-row .info-text,
-.cantidad-row .acciones {
-  grid-column: 1 / -1 !important;
-}
-
-/* Móvil / modo selección: tarjetas gemelas */
-body.modo-seleccion .cantidad-row {
-  display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  gap: 0.65rem !important;
-}
-body.modo-seleccion .cantidad-row .group {
-  flex: none !important;
-  min-height: 5.5rem !important;
-  padding: 0.55rem 0.5rem !important;
-  border-radius: 14px !important;
-}
-body.modo-seleccion .cantidad-row .group label {
-  font-size: 0.68rem !important;
-  letter-spacing: 0.04em !important;
-  min-height: 1.1rem !important;
-}
-body.modo-seleccion .cantidad-row .group input {
-  width: 100% !important;
-  min-height: 48px !important;
-  font-size: 1.45rem !important;
-  font-weight: 700 !important;
-}
-
-/* Si cajas está oculto (factor 1), unidades ocupa todo el ancho */
-.cantidad-row:has(.cajas-group.hidden) {
-  grid-template-columns: 1fr !important;
-}
-.cajas-group.hidden {
-  display: none !important;
-}
+.cajas-group.hidden { display: none !important; }
 
 /* Chips: cajas y unidades alineadas en una línea clara */
 .venc-chip {
@@ -4337,5 +4309,173 @@ button.btn-alerta-venc {
 @media (min-width: 960px) {
   #resultsSection .results-header {
     display: flex !important;
+  }
+}
+
+
+/* ============================================================
+   v4.6.6 RELEASE — PC profesional: lista | panel al lado
+   ============================================================ */
+@media (min-width: 960px) {
+  /* Layout principal 2 columnas al seleccionar */
+  body.modo-seleccion #resultsSection.card,
+  body.modo-seleccion #resultsSection {
+    display: grid !important;
+    grid-template-columns: minmax(280px, 1fr) minmax(380px, 460px) !important;
+    gap: 1rem 1.25rem !important;
+    align-items: start !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  body.modo-seleccion .pc-panel-lista {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    min-height: 320px !important;
+    max-height: calc(100vh - 7rem) !important;
+    background: var(--card-bg, #fff) !important;
+    border: 1px solid var(--card-border, #e2e8f0) !important;
+    border-radius: 14px !important;
+    padding: 0.75rem 0.85rem !important;
+    overflow: hidden !important;
+  }
+
+  body.modo-seleccion .pc-panel-lista > .results-header {
+    display: flex !important;
+    flex-shrink: 0 !important;
+  }
+
+  body.modo-seleccion .pc-panel-lista > #resultList,
+  body.modo-seleccion #resultList {
+    display: block !important;
+    visibility: visible !important;
+    flex: 1 1 auto !important;
+    min-height: 180px !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    opacity: 1 !important;
+  }
+  body.modo-seleccion #resultList.result-list-collapsed {
+    max-height: none !important;
+    min-height: 180px !important;
+    pointer-events: auto !important;
+  }
+
+  body.modo-seleccion .pc-panel-conteo {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    background: var(--card-bg, #fff) !important;
+    border: 1px solid var(--card-border, #e2e8f0) !important;
+    border-radius: 14px !important;
+    padding: 1rem 1.15rem !important;
+    position: sticky !important;
+    top: 0.75rem !important;
+    max-height: calc(100vh - 7rem) !important;
+    overflow-y: auto !important;
+  }
+
+  body.modo-seleccion .producto-activo-card {
+    display: block !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 0 0.5rem !important;
+  }
+
+  /* Cajas / Unidades en PC: fila horizontal profesional */
+  body.modo-seleccion .cantidad-row,
+  .cantidad-row {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 0.75rem 1.25rem !important;
+    grid-template-columns: none !important;
+  }
+  body.modo-seleccion .cantidad-row .group,
+  .cantidad-row .group {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.45rem !important;
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+    padding: 0.35rem 0.5rem !important;
+    background: var(--input-bg, #f8fafc) !important;
+    border: 1px solid var(--card-border, #e2e8f0) !important;
+    border-radius: 10px !important;
+  }
+  body.modo-seleccion .cantidad-row .group label,
+  .cantidad-row .group label {
+    width: auto !important;
+    text-align: left !important;
+    font-size: 0.78rem !important;
+    white-space: nowrap !important;
+    margin: 0 !important;
+  }
+  body.modo-seleccion .cantidad-row .group input,
+  .cantidad-row .group input {
+    width: 72px !important;
+    min-height: 36px !important;
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    text-align: center !important;
+  }
+  body.modo-seleccion .cantidad-row .info-text {
+    font-size: 0.75rem !important;
+    opacity: 0.75 !important;
+  }
+
+  /* TOTAL CALCULADO discreto en PC */
+  body.modo-seleccion .pa-total-box {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin: 0.15rem 0 0.35rem !important;
+    padding: 0.35rem 0.6rem !important;
+    background: transparent !important;
+    border: none !important;
+    border-top: 1px dashed var(--card-border, #e2e8f0) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+  body.modo-seleccion .pa-total-label {
+    font-size: 0.68rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.04em !important;
+    color: var(--text-muted, #94a3b8) !important;
+    text-transform: uppercase !important;
+  }
+  body.modo-seleccion .pa-total-value {
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    color: var(--heading-color, #0f172a) !important;
+  }
+
+  /* Panel conteo más limpio */
+  body.modo-seleccion .pa-header {
+    align-items: flex-start !important;
+  }
+  body.modo-seleccion .pa-img {
+    width: 88px !important;
+    height: 88px !important;
+    border-radius: 12px !important;
+  }
+  body.modo-seleccion .btn-guardar-grande {
+    width: 100% !important;
+    margin-top: 0.5rem !important;
+  }
+}
+
+@media (min-width: 1280px) {
+  body.modo-seleccion #resultsSection {
+    grid-template-columns: minmax(360px, 1fr) minmax(400px, 480px) !important;
   }
 }
