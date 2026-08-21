@@ -13,11 +13,11 @@
             color-scheme: dark;
 
             /* Tema oscuro — estilo corporativo (azul/slate, legible en almacén) */
-            --bg-gradient: linear-gradient(180deg, #0f1419 0%, #141a22 50%, #121820 100%);
-            --mesh-opacity: 0.5;
-            --mesh-glow: rgba(45, 212, 191, 0.07);
-            --mesh-glow-2: rgba(59, 130, 246, 0.05);
-            --mesh-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 800' preserveAspectRatio='xMidYMid slice'%3E%3Crect fill='%230f1419' width='1200' height='800'/%3E%3Cg fill='none' stroke='%2314b8a6' stroke-opacity='0.32' stroke-width='1'%3E%3Cpath d='M0 400 L150 200 L300 350 L200 500 Z' fill='%230f766e' fill-opacity='0.22'/%3E%3Cpath d='M150 200 L350 80 L450 220 L300 350 Z' fill='%230d9488' fill-opacity='0.18'/%3E%3Cpath d='M350 80 L550 40 L650 180 L450 220 Z' fill='%2314b8a6' fill-opacity='0.12'/%3E%3Cpath d='M200 500 L300 350 L450 450 L320 620 Z' fill='%230f766e' fill-opacity='0.2'/%3E%3Cpath d='M320 620 L450 450 L600 550 L480 720 Z' fill='%230d9488' fill-opacity='0.16'/%3E%3Cpath d='M900 100 L1100 50 L1200 200 L1000 280 Z' fill='%230f766e' fill-opacity='0.25'/%3E%3Cpath d='M1000 280 L1200 200 L1200 400 L1050 450 Z' fill='%2314b8a6' fill-opacity='0.18'/%3E%3Cpath d='M850 500 L1050 450 L1200 600 L950 680 Z' fill='%230d9488' fill-opacity='0.2'/%3E%3Cpath d='M0 600 L180 550 L250 700 L50 750 Z' fill='%230f766e' fill-opacity='0.18'/%3E%3Cpath d='M600 0 L750 60 L700 200 L520 120 Z' fill='%2314b8a6' fill-opacity='0.1'/%3E%3Cpath d='M700 350 L900 300 L980 480 L780 520 Z' fill='%230f766e' fill-opacity='0.14'/%3E%3C/g%3E%3Cg fill='%235eead4' fill-opacity='0.45'%3E%3Ccircle cx='150' cy='200' r='2'/%3E%3Ccircle cx='300' cy='350' r='2'/%3E%3Ccircle cx='450' cy='220' r='2'/%3E%3Ccircle cx='900' cy='100' r='2'/%3E%3Ccircle cx='1000' cy='280' r='2'/%3E%3Ccircle cx='450' cy='450' r='2'/%3E%3C/g%3E%3C/svg%3E");
+            --bg-gradient: linear-gradient(180deg, #0f172a 0%, #111827 50%, #0f1419 100%);
+            --mesh-opacity: 0.55;
+            --mesh-glow: rgba(59, 130, 246, 0.08);
+            --mesh-glow-2: rgba(37, 99, 235, 0.06);
+            --mesh-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 800' preserveAspectRatio='xMidYMid slice'%3E%3Crect fill='%230f172a' width='1200' height='800'/%3E%3Cg fill='none' stroke='%233b82f6' stroke-opacity='0.35' stroke-width='1'%3E%3Cpath d='M0 400 L150 200 L300 350 L200 500 Z' fill='%231e3a5f' fill-opacity='0.28'/%3E%3Cpath d='M150 200 L350 80 L450 220 L300 350 Z' fill='%231e40af' fill-opacity='0.22'/%3E%3Cpath d='M350 80 L550 40 L650 180 L450 220 Z' fill='%232563eb' fill-opacity='0.15'/%3E%3Cpath d='M200 500 L300 350 L450 450 L320 620 Z' fill='%231e3a5f' fill-opacity='0.25'/%3E%3Cpath d='M320 620 L450 450 L600 550 L480 720 Z' fill='%231e40af' fill-opacity='0.2'/%3E%3Cpath d='M900 100 L1100 50 L1200 200 L1000 280 Z' fill='%231e3a5f' fill-opacity='0.3'/%3E%3Cpath d='M1000 280 L1200 200 L1200 400 L1050 450 Z' fill='%232563eb' fill-opacity='0.2'/%3E%3Cpath d='M850 500 L1050 450 L1200 600 L950 680 Z' fill='%231e40af' fill-opacity='0.24'/%3E%3Cpath d='M0 600 L180 550 L250 700 L50 750 Z' fill='%231e3a5f' fill-opacity='0.22'/%3E%3Cpath d='M600 0 L750 60 L700 200 L520 120 Z' fill='%232563eb' fill-opacity='0.12'/%3E%3Cpath d='M700 350 L900 300 L980 480 L780 520 Z' fill='%231e3a5f' fill-opacity='0.18'/%3E%3C/g%3E%3Cg fill='%2393c5fd' fill-opacity='0.5'%3E%3Ccircle cx='150' cy='200' r='2'/%3E%3Ccircle cx='300' cy='350' r='2'/%3E%3Ccircle cx='450' cy='220' r='2'/%3E%3Ccircle cx='900' cy='100' r='2'/%3E%3Ccircle cx='1000' cy='280' r='2'/%3E%3Ccircle cx='450' cy='450' r='2'/%3E%3C/g%3E%3C/svg%3E");
 
             --card-bg: #1a222d;
             --card-border: rgba(148, 163, 184, 0.12);
@@ -90,17 +90,17 @@
         html {
             /* Reduce el "jalar para actualizar" del navegador (iOS/Android) */
             overscroll-behavior-y: none;
-            /* Verde hasta el borde (evita franja negra bajo la status bar) */
-            background-color: #0A784C;
-            background: var(--bg-gradient, #0A784C);
+            /* Fondo hasta el borde (evita franja bajo la status bar). Oscuro por defecto = azul */
+            background-color: #0f172a;
+            background: var(--bg-gradient, #0f172a);
             min-height: 100%;
             min-height: 100dvh;
         }
         body {
             font-family: var(--font);
             margin: 0;
-            background-color: #0A784C;
-            background: var(--bg-gradient, #0A784C);
+            background-color: #0f172a;
+            background: var(--bg-gradient, #0f172a);
             background-attachment: fixed;
             min-height: 100vh;
             min-height: 100dvh;
@@ -127,12 +127,19 @@
             inset: 0;
             z-index: -1;
             pointer-events: none;
-            background-color: #0A784C;
+            background-color: #0f172a;
             opacity: var(--mesh-opacity, 0.5);
             background-image: var(--mesh-svg);
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
+        }
+
+        /* En tema claro el fondo base vuelve a verde de marca */
+        body.light-theme,
+        body.light-theme::before,
+        html:has(body.light-theme) {
+            background-color: #0A784C;
         }
 
 
@@ -956,7 +963,7 @@
             position: fixed;
             inset: 0;
             /* Misma malla geométrica que el resto de la app / ventas */
-            background-color: #0f1419;
+            background-color: #0f172a;
             background-image: var(--mesh-svg);
             background-size: cover;
             background-position: center;
@@ -966,6 +973,9 @@
             justify-content: center;
             z-index: 2000;
             padding: 1rem;
+        }
+        body.light-theme .login-overlay {
+            background-color: #0A784C;
         }
         .login-overlay.hidden { display: none; }
         .login-theme-toggle {

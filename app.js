@@ -5085,6 +5085,11 @@
             if (themeToggleBtn) themeToggleBtn.textContent = icono;
             var loginThemeBtn = document.getElementById('loginThemeToggleBtn');
             if (loginThemeBtn) loginThemeBtn.textContent = icono;
+            // Actualizar color de la barra de estado (status bar)
+            try {
+                var meta = document.getElementById('metaThemeColor') || document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', esClaro ? '#0A784C' : '#0f172a');
+            } catch (e) {}
             // Forzar repaint del overlay de login (fondo malla)
             var ov = document.getElementById('loginOverlay');
             if (ov) {
