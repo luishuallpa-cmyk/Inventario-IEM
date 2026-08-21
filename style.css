@@ -90,18 +90,27 @@
         html {
             /* Reduce el "jalar para actualizar" del navegador (iOS/Android) */
             overscroll-behavior-y: none;
+            /* Verde hasta el borde (evita franja negra bajo la status bar) */
+            background-color: #0A784C;
+            background: var(--bg-gradient, #0A784C);
+            min-height: 100%;
+            min-height: 100dvh;
         }
         body {
             font-family: var(--font);
-            background: var(--bg-gradient);
+            margin: 0;
+            background-color: #0A784C;
+            background: var(--bg-gradient, #0A784C);
             background-attachment: fixed;
             min-height: 100vh;
             min-height: 100dvh;
-            /* Edge-to-edge: respetar safe-area (status bar / notch / home indicator) */
-            padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
-            padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
-            padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
-            padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+            width: 100%;
+            box-sizing: border-box;
+            /* Edge-to-edge: el fondo llega al borde; el padding empuja el contenido */
+            padding-top: max(0.55rem, env(safe-area-inset-top, 0px));
+            padding-right: max(0.55rem, env(safe-area-inset-right, 0px));
+            padding-bottom: max(0.55rem, env(safe-area-inset-bottom, 0px));
+            padding-left: max(0.55rem, env(safe-area-inset-left, 0px));
             color: var(--text-primary);
             transition: background 0.35s, color 0.25s;
             line-height: 1.55;
@@ -118,6 +127,7 @@
             inset: 0;
             z-index: -1;
             pointer-events: none;
+            background-color: #0A784C;
             opacity: var(--mesh-opacity, 0.5);
             background-image: var(--mesh-svg);
             background-size: cover;
@@ -1233,13 +1243,21 @@
            ============================================================ */
         @media (max-width: 640px) {
             body {
-                padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
-                padding-right: max(0.5rem, env(safe-area-inset-right, 0px));
-                padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
-                padding-left: max(0.5rem, env(safe-area-inset-left, 0px));
+                padding-top: max(0.45rem, env(safe-area-inset-top, 0px));
+                padding-right: max(0.45rem, env(safe-area-inset-right, 0px));
+                padding-bottom: max(0.45rem, env(safe-area-inset-bottom, 0px));
+                padding-left: max(0.45rem, env(safe-area-inset-left, 0px));
+            }
+            .header,
+            .card {
+                width: 100%;
+                max-width: 100%;
+                box-sizing: border-box;
+                margin-left: 0;
+                margin-right: 0;
             }
             .header {
-                padding: 0.3rem 0.45rem 0.3rem 0.55rem;
+                padding: 0.35rem 0.5rem;
                 border-radius: 16px;
                 gap: 0.35rem;
             }
