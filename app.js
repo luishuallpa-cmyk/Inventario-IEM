@@ -3135,13 +3135,63 @@
         // EXPORTAR INVENTARIO
         // ============================================================
         
+        /**
+         * ARCHIVO permanente del conteo (solo admin descarga).
+         * Tabla Supabase: inventarios_enviados
+         *  - id, enviado_en, usuario, total_productos, total_lotes, payload (jsonb)
+         * lotes_conteo = solo conteo en vivo (varios celulares).
+         * Al enviar: 1) guarda snapshot en inventarios_enviados
+         *            2) respaldo Excel local
+         *            3) borra lotes_conteo
+         *            4) limpia inventario local en todos los dispositivos
+         */
+        async function archivarInventarioEnviado(filas, productosCount) {
+            const payload = {
+                productos: (inventarioFisico || []).map(function (r) {
+                    return {
+                        codigo: r.codigo,
+                        descripcion: r.descripcion,
+                        linea: r.linea,
+                        stockTeorico: r.stockTeorico,
+                        stockFisico: r.stockFisico,
+                        diferencia: r.diferencia,
+                        factor: r.factor,
+                        lotes: r.lotes || []
+                    };
+                }),
+                lotes: filas,
+                meta: {
+                    usuario: usuarioActual || '',
+                    device_id: deviceId,
+                    ts: new Date().toISOString()
+                }
+            };
+            const row = {
+                usuario: usuarioActual || '',
+                total_productos: productosCount || 0,
+                total_lotes: (filas && filas.length) || 0,
+                payload: payload,
+                enviado_en: new Date().toISOString()
+            };
+            const { data, error } = await supabaseClient
+                .from('inventarios_enviados')
+                .insert([row])
+                .select('id, enviado_en')
+                .maybeSingle();
+            if (error) throw error;
+            return data;
+        }
+
         async function enviarInventarioCompleto() {
             if (!inventarioFisico || inventarioFisico.length === 0) {
                 showToast('No hay conteo físico para enviar.', 'error');
                 return;
             }
             const ok = await confirmarAccion(
-                '¿Enviar el inventario físico a la nube?\nSe subirán los lotes contados y se limpiará el conteo de este dispositivo para el próximo conteo.',
+                '¿Enviar el inventario a Supabase?\n' +
+                '1) Se guarda un archivo permanente para el administrador\n' +
+                '2) Se limpia el conteo en vivo (todos los celulares)\n' +
+                'Así mañana pueden contar de nuevo.',
                 'Enviar y limpiar',
                 'primary'
             );
@@ -3152,10 +3202,11 @@
                 btn.disabled = true;
                 btn.innerHTML = '<span class="btn-icon">⏳</span><span class="btn-label"> Enviando...</span>';
             }
-            showToast('⏳ Enviando inventario a la nube...', 'info');
+            showToast('⏳ Archivando conteo en Supabase...', 'info');
 
             try {
                 const filas = [];
+                const productosCount = inventarioFisico.length;
                 inventarioFisico.forEach(record => {
                     const factor = record.factor || 1;
                     (record.lotes || []).forEach(lote => {
@@ -3182,32 +3233,99 @@
                     return;
                 }
 
-                const TAM = 200;
-                for (let i = 0; i < filas.length; i += TAM) {
-                    const lote = filas.slice(i, i + TAM);
-                    const { error } = await supabaseClient
-                        .from('lotes_conteo')
-                        .upsert(lote, { onConflict: 'id' });
-                    if (error) throw error;
+                // 1) Archivo permanente (tabla inventarios_enviados)
+                let archivoId = null;
+                try {
+                    const arch = await archivarInventarioEnviado(filas, productosCount);
+                    archivoId = arch && arch.id ? arch.id : null;
+                } catch (eArch) {
+                    console.error('inventarios_enviados', eArch);
+                    const msg = (eArch && eArch.message) ? String(eArch.message) : String(eArch);
+                    if (/inventarios_enviados|does not exist|relation|schema cache/i.test(msg)) {
+                        showToast('❌ Falta crear la tabla inventarios_enviados en Supabase (SQL abajo en el mensaje).', 'error');
+                        throw new Error(
+                            'Crea en Supabase SQL:\n' +
+                            'create table inventarios_enviados (\n' +
+                            '  id uuid primary key default gen_random_uuid(),\n' +
+                            '  enviado_en timestamptz default now(),\n' +
+                            '  usuario text,\n' +
+                            '  total_productos int,\n' +
+                            '  total_lotes int,\n' +
+                            '  payload jsonb not null\n' +
+                            ');\n' +
+                            'alter table inventarios_enviados enable row level security;\n' +
+                            'create policy "auth all inventarios_enviados" on inventarios_enviados for all to authenticated using (true) with check (true);'
+                        );
+                    }
+                    throw eArch;
                 }
+
+                // 2) Respaldo Excel en este dispositivo (IndexedDB mensuales)
+                try {
+                    if (typeof exportarInventario === 'function' && typeof XLSX !== 'undefined') {
+                        // Generar buffer sin depender de admin para el respaldo interno
+                        const filasX = [
+                            ['#', 'Código', 'Descripción', 'Línea', 'Stock Teórico', 'Stock Físico', 'Diferencia', 'Vencimiento', 'Fecha/Hora', 'Usuario(s)']
+                        ];
+                        let n = 1;
+                        (inventarioFisico || []).forEach(function (d) {
+                            const det = (d.lotes || []).map(function (l) {
+                                return (l.vencimiento || 'S/F') + ': ' + l.cantidad;
+                            }).join(' | ');
+                            const us = (typeof usuariosDeRegistro === 'function')
+                                ? usuariosDeRegistro(d).join(', ')
+                                : '';
+                            filasX.push([
+                                n++, d.codigo, d.descripcion, d.linea || '',
+                                d.stockTeorico, d.stockFisico, d.diferencia,
+                                det, d.fecha || '', us
+                            ]);
+                        });
+                        const wb = XLSX.utils.book_new();
+                        const ws = XLSX.utils.aoa_to_sheet(filasX);
+                        XLSX.utils.book_append_sheet(wb, ws, 'ConteoEnviado');
+                        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+                        if (typeof guardarRespaldoMensual === 'function') {
+                            await guardarRespaldoMensual('conteo_fisico', wbout, 'conteo_enviado');
+                        }
+                    }
+                } catch (eBack) {
+                    console.warn('Respaldo local del envío', eBack);
+                }
+
+                // 3) Vaciar conteo en vivo en Supabase (todos los celulares)
+                try {
+                    const { error: errDel } = await supabaseClient
+                        .from('lotes_conteo')
+                        .delete()
+                        .neq('id', '');
+                    if (errDel) console.warn('No se pudo vaciar lotes_conteo:', errDel);
+                } catch (eDel) {
+                    console.warn(eDel);
+                }
+
+                // 4) Limpiar local + marcar para no re-sincronizar lo viejo
+                inventarioFisico = [];
+                marcarConteoLimpioTrasEnvio();
+                try { if (typeof saveInventario === 'function') saveInventario(); } catch (eClr) {}
+                try { if (typeof renderInventario === 'function') renderInventario(); } catch (eRnd) {}
 
                 try {
                     localStorage.setItem('iem_ultimo_envio_inventario', JSON.stringify({
                         ts: Date.now(),
                         usuario: usuarioActual || '',
                         lotes: filas.length,
-                        productos: inventarioFisico.length
+                        productos: productosCount,
+                        archivo_id: archivoId
                     }));
                 } catch (e) {}
 
-                showToast('✅ Inventario enviado (' + filas.length + ' lotes). El administrador ya puede descargarlo.', 'success');
-                // Limpiar conteo local para que mañana empiecen de cero
-                // (la nube conserva los lotes enviados para descarga admin)
-                inventarioFisico = [];
-                marcarConteoLimpioTrasEnvio(); // evita que el sync cada 10s vuelva a llenar la lista
-                try { if (typeof saveInventario === 'function') saveInventario(); } catch (eClr) {}
-                try { if (typeof renderInventario === 'function') renderInventario(); } catch (eRnd) {}
-                showToast('🧹 Conteo local limpiado. Listo para el próximo conteo.', 'info');
+                showToast(
+                    '✅ Conteo archivado en Supabase (' + filas.length + ' lotes)' +
+                    (archivoId ? ' · id ' + String(archivoId).slice(0, 8) + '…' : '') +
+                    '. Conteo en vivo limpio.',
+                    'success'
+                );
             } catch (err) {
                 console.error(err);
                 showToast('❌ No se pudo enviar: ' + (err.message || err), 'error');
@@ -3219,6 +3337,105 @@
             }
         }
 
+        async function listarInventariosEnviados() {
+            if (!esAdmin()) {
+                showToast('Solo el administrador puede ver los envíos archivados.', 'error');
+                return;
+            }
+            const box = document.getElementById('adminListaEnviados');
+            if (box) box.innerHTML = '<p class="admin-lead">Cargando envíos…</p>';
+            try {
+                const { data, error } = await supabaseClient
+                    .from('inventarios_enviados')
+                    .select('id, enviado_en, usuario, total_productos, total_lotes')
+                    .order('enviado_en', { ascending: false })
+                    .limit(30);
+                if (error) throw error;
+                if (!data || !data.length) {
+                    if (box) box.innerHTML = '<p class="admin-lead">Aún no hay envíos archivados. Usa <strong>Enviar inventario</strong> en el conteo.</p>';
+                    return;
+                }
+                if (box) {
+                    box.innerHTML = '<ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:0.4rem;">' +
+                        data.map(function (r) {
+                            const f = r.enviado_en ? new Date(r.enviado_en).toLocaleString('es-PE') : '-';
+                            return '<li style="display:flex;flex-wrap:wrap;align-items:center;gap:0.4rem;padding:0.5rem 0.65rem;border:1px solid var(--card-border);border-radius:10px;background:var(--input-bg);">' +
+                                '<span style="flex:1;min-width:140px;font-size:0.85rem;">📅 ' + f +
+                                '<br><span style="color:var(--text-muted);font-size:0.78rem;">👤 ' + (r.usuario || '-') +
+                                ' · ' + (r.total_productos || 0) + ' prod · ' + (r.total_lotes || 0) + ' lotes</span></span>' +
+                                '<button type="button" class="btn btn-sm btn-primary btn-descarga-envio" data-id="' + r.id + '">⬇️ Excel</button>' +
+                                '</li>';
+                        }).join('') + '</ul>';
+                    box.querySelectorAll('.btn-descarga-envio').forEach(function (b) {
+                        b.addEventListener('click', function () {
+                            descargarInventarioEnviadoExcel(b.getAttribute('data-id'));
+                        });
+                    });
+                }
+            } catch (e) {
+                console.error(e);
+                const msg = (e && e.message) ? e.message : String(e);
+                if (box) {
+                    box.innerHTML = /inventarios_enviados|does not exist|relation/i.test(msg)
+                        ? '<p class="admin-lead" style="color:var(--danger);">Falta crear la tabla <code>inventarios_enviados</code> en Supabase (SQL del envío).</p>'
+                        : '<p class="admin-lead" style="color:var(--danger);">Error: ' + msg + '</p>';
+                }
+            }
+        }
+
+        async function descargarInventarioEnviadoExcel(id) {
+            if (!esAdmin()) return;
+            showToast('⏳ Preparando Excel del envío…', 'info');
+            try {
+                let q = supabaseClient.from('inventarios_enviados').select('id, enviado_en, usuario, payload, total_productos, total_lotes');
+                if (id) q = q.eq('id', id).maybeSingle();
+                else q = q.order('enviado_en', { ascending: false }).limit(1).maybeSingle();
+                const { data, error } = await q;
+                if (error) throw error;
+                if (!data) {
+                    showToast('No hay envío archivado.', 'error');
+                    return;
+                }
+                const payload = data.payload || {};
+                const productos = payload.productos || [];
+                const filas = [
+                    ['#', 'Código', 'Descripción', 'Línea', 'Stock Teórico', 'Stock Físico', 'Diferencia', 'Vencimiento', 'Fecha', 'Usuario(s)']
+                ];
+                let n = 1;
+                productos.forEach(function (d) {
+                    const det = (d.lotes || []).map(function (l) {
+                        return (l.vencimiento || 'S/F') + ': ' + l.cantidad;
+                    }).join(' | ');
+                    const us = [...new Set((d.lotes || []).map(function (l) { return l.usuario; }).filter(Boolean))].join(', ');
+                    filas.push([
+                        n++, d.codigo, d.descripcion, d.linea || '',
+                        d.stockTeorico, d.stockFisico, d.diferencia,
+                        det, (d.lotes && d.lotes[0] && d.lotes[0].fecha) || '', us
+                    ]);
+                });
+                if (filas.length === 1 && payload.lotes) {
+                    payload.lotes.forEach(function (l, i) {
+                        filas.push([i + 1, l.codigo, l.descripcion, l.linea || '', '', l.cantidad, '', l.vencimiento || '', l.fecha || '', l.usuario || '']);
+                    });
+                }
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(filas);
+                XLSX.utils.book_append_sheet(wb, ws, 'ConteoEnviado');
+                const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+                const blob = new Blob([wbout], { type: 'application/octet-stream' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                const dia = (data.enviado_en || '').slice(0, 10) || new Date().toISOString().slice(0, 10);
+                a.download = 'conteo_enviado_' + dia + '.xlsx';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                showToast('📥 Excel del envío archivado descargado.', 'success');
+            } catch (e) {
+                console.error(e);
+                showToast('❌ ' + (e.message || e), 'error');
+            }
+        }
+
         async function exportarInventario() {
             // Disponible para admin y usuarios de conteo (guardar su conteo terminado)
             if (typeof esVendedor === 'function' && esVendedor() && !esAdmin()) {
@@ -3226,7 +3443,7 @@
                 return;
             }
             if (inventarioFisico.length === 0) {
-                showToast('No hay datos para exportar.', 'error');
+                showToast('No hay datos para exportar. Si ya enviaste, usa «Excel del último envío archivado» en Descargas (admin).', 'error');
                 return;
             }
 
@@ -6269,6 +6486,20 @@
                 adminExportInvBtn.addEventListener('click', function () {
                     if (!esAdmin()) return;
                     exportarInventario();
+                });
+            }
+            const adminExportUltimoEnviadoBtn = document.getElementById('adminExportUltimoEnviadoBtn');
+            if (adminExportUltimoEnviadoBtn) {
+                adminExportUltimoEnviadoBtn.addEventListener('click', function () {
+                    if (!esAdmin()) return;
+                    descargarInventarioEnviadoExcel(null);
+                });
+            }
+            const adminListarEnviadosBtn = document.getElementById('adminListarEnviadosBtn');
+            if (adminListarEnviadosBtn) {
+                adminListarEnviadosBtn.addEventListener('click', function () {
+                    if (!esAdmin()) return;
+                    listarInventariosEnviados();
                 });
             }
             const adminCatalogInput = document.getElementById('adminCatalogInput');

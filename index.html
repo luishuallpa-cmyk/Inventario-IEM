@@ -28,8 +28,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=4.5.11">
-    <link rel="stylesheet" href="admin.css?v=4.5.11">
+    <link rel="stylesheet" href="style.css?v=4.5.12">
+    <link rel="stylesheet" href="admin.css?v=4.5.12">
 <script>
 (function(){try{var t=localStorage.getItem('buscador_tema')||'dark';
 if(t==='light'){document.documentElement.classList.add('light-theme');document.documentElement.setAttribute('data-theme','light');}
@@ -509,12 +509,22 @@ else document.body.classList.remove('light-theme');
 
                     <div class="admin-tab" id="adminTabDescargas" data-admin-panel="descargas" hidden>
                         <h3 class="admin-subtitle">📥 Descargar inventarios terminados</h3>
-                        <p class="admin-lead">Excel plano (sin agrupar por línea). Ideal para Excel/ERP.</p>
-                        <div class="admin-actions" style="justify-content:stretch;">
+                        <p class="admin-lead">
+                            <strong>Conteo en vivo</strong> (varios celulares) → tabla <code>lotes_conteo</code>.<br>
+                            Al pulsar <strong>Enviar inventario</strong> se archiva en <code>inventarios_enviados</code> (solo admin) y se limpia el conteo en vivo.
+                        </p>
+                        <div class="admin-actions" style="justify-content:stretch; flex-wrap:wrap; gap:0.5rem;">
                             <button type="button" class="btn btn-primary" id="adminExportInvBtn" style="flex:1;">
-                                <span class="btn-icon">📊</span><span class="btn-label"> Descargar Excel (plano)</span>
+                                <span class="btn-icon">📊</span><span class="btn-label"> Excel del conteo en vivo</span>
+                            </button>
+                            <button type="button" class="btn btn-success" id="adminExportUltimoEnviadoBtn" style="flex:1;">
+                                <span class="btn-icon">📦</span><span class="btn-label"> Excel del último envío archivado</span>
+                            </button>
+                            <button type="button" class="btn btn-outline" id="adminListarEnviadosBtn" style="flex:1;">
+                                <span class="btn-icon">🔄</span><span class="btn-label"> Listar envíos en Supabase</span>
                             </button>
                         </div>
+                        <div id="adminListaEnviados" class="admin-lista-enviados" style="margin-top:0.75rem;"></div>
                     </div>
 
                     
@@ -706,14 +716,14 @@ else document.body.classList.remove('light-theme');
         </div>
     </div>
 
-<script src="config.js?v=4.5.11"></script>
-<script src="iem-core.js?v=4.5.11"></script>
-<script src="app.js?v=4.5.11"></script>
+<script src="config.js?v=4.5.12"></script>
+<script src="iem-core.js?v=4.5.12"></script>
+<script src="app.js?v=4.5.12"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('./sw.js?v=4.5.11').then(function (reg) {
+    navigator.serviceWorker.register('./sw.js?v=4.5.12').then(function (reg) {
       console.log('[PWA] Service Worker OK', reg.scope);
       try { reg.update(); } catch (e) {}
       if (reg.waiting) {
