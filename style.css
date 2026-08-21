@@ -95,7 +95,6 @@
             font-family: var(--font);
             background: var(--bg-gradient);
             background-attachment: fixed;
-            background-attachment: fixed;
             min-height: 100vh;
             min-height: 100dvh;
             /* Edge-to-edge: respetar safe-area (status bar / notch / home indicator) */

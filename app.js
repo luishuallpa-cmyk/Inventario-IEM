@@ -2369,6 +2369,8 @@
         // reaparecía en los demás.
         function eliminarLoteDelServidor(id) {
             if (!id) return;
+            if (typeof esAdmin === 'function' && !esAdmin()) return;
+            if (!supabaseClient) return;
             supabaseClient.from('lotes_conteo').delete().eq('id', id)
                 .then(({ error }) => { if (error) console.warn('No se pudo borrar lote:', error); });
         }
@@ -7483,8 +7485,12 @@
             }
         }
 
-        /** Usuarios con acceso admin forzado (además del rol en tabla perfiles). */
-        var ADMIN_USUARIOS = ['luis', 'andric'];
+        /** Usuarios con acceso admin forzado (además del rol en tabla perfiles).
+         * Preferir rol=admin en public.perfiles. Esta lista es respaldo operativo.
+         * Se puede ampliar con window.IEM_CONFIG.ADMIN_USUARIOS = ['...'] en config.js */
+        var ADMIN_USUARIOS = (window.IEM_CONFIG && Array.isArray(window.IEM_CONFIG.ADMIN_USUARIOS) && window.IEM_CONFIG.ADMIN_USUARIOS.length)
+            ? window.IEM_CONFIG.ADMIN_USUARIOS.slice()
+            : ['luis', 'andric'];
 
         function esUsuarioAdminForzado(nombre) {
             var u = String(nombre || usuarioActual || '').toLowerCase().trim();
@@ -7795,7 +7801,7 @@
         function mostrarLogin() {
             try {
                 var lv = document.getElementById('loginVersion');
-                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.7.4');
+                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.8.1');
             } catch (eVer) {}
 
             try {
