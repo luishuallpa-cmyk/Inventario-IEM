@@ -2251,9 +2251,9 @@ body.light-theme .pa-scan-btn:hover {
     cursor: pointer;
     transition: 0.15s ease;
 }
-.filtro-tipo-btn:hover { border-color: #22d3ee; color: #fff; }
+.filtro-tipo-btn:hover { border-color: #60a5fa; color: #fff; }
 .filtro-tipo-btn.active {
-    background: linear-gradient(135deg, #5b45d6, #22d3ee);
+    background: linear-gradient(135deg, #5b45d6, #60a5fa);
     border-color: transparent;
     color: #fff;
 }
@@ -2295,7 +2295,7 @@ body.modo-vendedor .card:has(#diffCardBody) {
 /* Pedido siempre visible y abierto */
 body.modo-vendedor #pedidoSection {
     display: block !important;
-    border: 1px solid rgba(34, 211, 238, 0.35);
+    border: 1px solid rgba(96, 165, 250, 0.35);
 }
 body.modo-vendedor #pedidoCardBody {
     display: block !important;
@@ -2320,8 +2320,8 @@ body.modo-vendedor .vendedor-only-banner {
     margin: 0.5rem 0 0.75rem;
     padding: 0.55rem 0.85rem;
     border-radius: 10px;
-    background: rgba(34, 211, 238, 0.12);
-    border: 1px solid rgba(34, 211, 238, 0.3);
+    background: rgba(96, 165, 250, 0.12);
+    border: 1px solid rgba(96, 165, 250, 0.3);
     color: #a5f3fc;
     font-size: 0.85rem;
     font-weight: 600;
@@ -3382,7 +3382,7 @@ tr.row-sube { background: rgba(37,99,235,0.06); }
     color: #2563eb;
   }
   body:not(.light-theme) .result-item .ri-meta .unidad {
-    background: rgba(34, 211, 238, 0.12);
+    background: rgba(96, 165, 250, 0.12);
     color: #67e8f9;
   }
 
@@ -5236,4 +5236,54 @@ body.light-theme {
 html.light-theme,
 html:has(body.light-theme) {
   background-color: #3B6EA5 !important;
+}
+
+
+/* ===== Login inputs: forzar azul (sin verde/cyan) ===== */
+.login-field input,
+.login-field input:hover,
+.login-field input:focus,
+.login-field input:focus-visible,
+.login-field input:active,
+body:not(.light-theme) .login-field input,
+body:not(.light-theme) .login-field input:focus,
+body:not(.light-theme) .login-field input:focus-visible,
+body.light-theme .login-field input,
+body.light-theme .login-field input:focus {
+  outline: none !important;
+  accent-color: #2563eb !important;
+  caret-color: #60a5fa !important;
+}
+body:not(.light-theme) .login-field input {
+  border: 1.5px solid rgba(148, 163, 184, 0.35) !important;
+  box-shadow: none !important;
+}
+body:not(.light-theme) .login-field input:focus,
+body:not(.light-theme) .login-field input:focus-visible {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25) !important;
+  outline: none !important;
+}
+body.light-theme .login-field input:focus,
+body.light-theme .login-field input:focus-visible {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.22) !important;
+  outline: none !important;
+}
+/* Autofill del navegador (a veces pone verde) */
+.login-field input:-webkit-autofill,
+.login-field input:-webkit-autofill:hover,
+.login-field input:-webkit-autofill:focus,
+.login-field input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #0f172a inset !important;
+  -webkit-text-fill-color: #e2e8f0 !important;
+  border: 1.5px solid #3b82f6 !important;
+  caret-color: #60a5fa !important;
+  transition: background-color 99999s ease-in-out 0s;
+}
+body.light-theme .login-field input:-webkit-autofill,
+body.light-theme .login-field input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 30px #ffffff inset !important;
+  -webkit-text-fill-color: #0f172a !important;
+  border: 1.5px solid #2563eb !important;
 }
