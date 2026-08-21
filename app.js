@@ -7783,7 +7783,7 @@
         function mostrarLogin() {
             try {
                 var lv = document.getElementById('loginVersion');
-                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.7.3');
+                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.7.4');
             } catch (eVer) {}
 
             try {
