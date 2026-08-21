@@ -1902,7 +1902,7 @@
 label.btn-drive {
     background: linear-gradient(135deg, #10b981, #059669) !important;
     color: #fff !important;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.28);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.28);
 }
 
 @media (max-width: 640px) {
@@ -3028,7 +3028,7 @@ body.light-theme .global-loading {
   border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.15);
   border-top-color: rgba(255,255,255,0.95);
-  border-right-color: rgba(16, 185, 129, 0.85);
+  border-right-color: rgba(59, 130, 246, 0.95);
   animation: gl-boot-spin 0.85s linear infinite !important;
   will-change: transform;
 }
@@ -3912,7 +3912,7 @@ body:not(.light-theme) .login-field input:focus {
   text-align: center;
 }
 .btn-alerta-ok {
-  background: rgba(16, 185, 129, 0.18);
+  background: rgba(59, 130, 246, 0.18);
   border-color: #10b981;
   color: #059669;
 }
@@ -3992,8 +3992,8 @@ body:not(.light-theme) .login-field input:focus {
 .fab-alerta-venc[hidden] { display: none !important; }
 .fab-alerta-venc.fab-ok {
   border-color: #10b981;
-  background: rgba(16, 185, 129, 0.92);
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+  background: rgba(59, 130, 246, 0.92);
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
   animation: none;
 }
 .fab-alerta-ico { font-size: 1.15rem; line-height: 1; }
@@ -4052,7 +4052,7 @@ body:not(.light-theme) .login-field input:focus {
   background: rgba(5, 150, 105, 0.98);
 }
 body:not(.light-theme) #iemPullRefresh {
-  background: rgba(16, 185, 129, 0.95);
+  background: rgba(59, 130, 246, 0.95);
 }
 
 
