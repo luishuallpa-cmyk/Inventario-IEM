@@ -1,7 +1,7 @@
 /* IEM Inventario — núcleo compartido (versión + catálogo offline) */
 (function (w) {
   'use strict';
-  var VERSION = '4.6.9';
+  var VERSION = '4.7.0';
   var DB_NAME = 'iem_inventario_db';
   var DB_VER = 1;
   var STORE = 'catalogo';

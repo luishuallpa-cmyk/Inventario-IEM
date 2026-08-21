@@ -4094,7 +4094,7 @@ body:not(.light-theme) #iemPullRefresh {
 
 
 /* ============================================================
-   v4.6.9 — nombres completos + chips con cajas/unidades
+   v4.7.0 — nombres completos + chips con cajas/unidades
    ============================================================ */
 @media (max-width: 959px) {
   .result-item-suggest {
@@ -4161,7 +4161,7 @@ body:not(.light-theme) #iemPullRefresh {
 
 
 /* ============================================================
-   v4.6.9/6 — Cajas|Unidades: móvil en grid; PC en fila compacta
+   v4.7.0/6 — Cajas|Unidades: móvil en grid; PC en fila compacta
    ============================================================ */
 @media (max-width: 959px) {
   .cantidad-row {
@@ -4225,7 +4225,7 @@ body:not(.light-theme) #iemPullRefresh {
 
 
 /* ============================================================
-   v4.6.9 — móvil: sin icono alerta header, sin bloque Resultados,
+   v4.7.0 — móvil: sin icono alerta header, sin bloque Resultados,
    filtros visibles, cantidades solo con producto
    ============================================================ */
 
@@ -4287,13 +4287,14 @@ button.btn-alerta-venc {
     width: 100% !important;
   }
   #searchSection .filtro-tipo-btn,
-  #searchSection #searchButton,
   #searchSection #scanBarcodeBtn,
   #searchSection #refreshDriveBtn {
     display: inline-flex !important;
     visibility: visible !important;
     opacity: 1 !important;
   }
+  /* searchButton no forzado aquí — se oculta en capa 4.7.0 */
+
 
   /* fileStatus admin: compacto, no tape botones */
   #fileStatus {
@@ -4314,7 +4315,7 @@ button.btn-alerta-venc {
 
 
 /* ============================================================
-   v4.6.9 RELEASE — PC profesional: lista | panel al lado
+   v4.7.0 RELEASE — PC profesional: lista | panel al lado
    ============================================================ */
 @media (min-width: 960px) {
   /* Layout principal 2 columnas al seleccionar */
@@ -4482,7 +4483,7 @@ button.btn-alerta-venc {
 
 
 /* ============================================================
-   v4.6.9 — lista con altura controlada + Cambiar producto sin cuadro
+   v4.7.0 — lista con altura controlada + Cambiar producto sin cuadro
    ============================================================ */
 @media (min-width: 960px) {
   /* No desplegar toda la página: lista con scroll interno acotado */
@@ -4546,7 +4547,7 @@ button.btn-alerta-venc {
 
 
 /* ============================================================
-   v4.6.9 — móvil menos cargado + editar inventario
+   v4.7.0 — móvil menos cargado + editar inventario
    ============================================================ */
 @media (max-width: 959px) {
   /* Buscar: oculto (búsqueda al escribir / Enter) */
@@ -4613,7 +4614,7 @@ button.btn-alerta-venc {
 }
 
 
-/* v4.6.9 — ocultar Buscar en móvil (más específico) */
+/* v4.7.0 — ocultar Buscar en móvil (más específico) */
 @media (max-width: 959px) {
   #searchSection #searchButton,
   #searchSection .search-row #searchButton,
@@ -4627,5 +4628,261 @@ button.btn-alerta-venc {
     margin: 0 !important;
     overflow: hidden !important;
     pointer-events: none !important;
+  }
+}
+
+
+/* ============================================================
+   v4.7.0 — Optimización móvil profunda (contenidos, sin desbordes)
+   ============================================================ */
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+@media (max-width: 959px) {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  body {
+    overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
+
+  #mainContent,
+  main,
+  .app-shell,
+  .container {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 0.65rem !important;
+    padding-right: 0.65rem !important;
+    overflow-x: hidden !important;
+  }
+
+  .card,
+  section.card {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Header compacto */
+  .app-header,
+  header {
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+  .header-actions {
+    flex-wrap: nowrap !important;
+    gap: 0.35rem !important;
+  }
+
+  /* —— Búsqueda —— */
+  #searchSection {
+    padding: 0.65rem 0.75rem !important;
+  }
+  #searchSection .search-row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.4rem !important;
+    width: 100% !important;
+  }
+  #searchSection input#searchInput {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    font-size: 16px !important; /* evita zoom iOS */
+  }
+
+  /* Buscar: oculto (busca al tipear / Enter) — gana a reglas previas */
+  #searchSection #searchButton,
+  #searchSection .search-row #searchButton,
+  .search-row #searchButton,
+  button#searchButton {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    left: -9999px !important;
+  }
+
+  #searchSection .filtro-tipo-row {
+    display: flex !important;
+    width: 100% !important;
+    gap: 0.35rem !important;
+  }
+  #searchSection .filtro-tipo-btn {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    justify-content: center !important;
+    font-size: 0.78rem !important;
+    padding: 0.45rem 0.35rem !important;
+  }
+  #searchSection #scanBarcodeBtn {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+  #searchSection #scanBarcodeBtn .btn-label {
+    font-size: 0.75rem !important;
+  }
+  #searchSection #refreshDriveBtn {
+    flex: 0 0 44px !important;
+    width: 44px !important;
+  }
+
+  /* fileStatus: una línea o oculto si no aporta */
+  #fileStatus {
+    font-size: 0.62rem !important;
+    line-height: 1.25 !important;
+    max-height: 2.6em !important;
+    overflow: hidden !important;
+    margin: 0.3rem 0 0 !important;
+    word-break: break-word !important;
+  }
+
+  /* Resultados vacío / colapsado: sin hueco */
+  .results-header { display: none !important; }
+  .result-list.result-list-collapsed {
+    display: none !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+  body:not(.modo-seleccion) .cantidad-row,
+  body:not(.modo-seleccion) .pa-total-box,
+  body:not(.modo-seleccion) .conversion-hint,
+  body:not(.modo-seleccion) #vencBlock,
+  body:not(.modo-seleccion) .producto-activo-card {
+    display: none !important;
+  }
+
+  /* Producto seleccionado contenido */
+  body.modo-seleccion .producto-activo-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    padding: 0.75rem !important;
+  }
+  body.modo-seleccion .pa-descripcion {
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+  }
+  body.modo-seleccion .pa-img {
+    max-width: 80px !important;
+    max-height: 80px !important;
+  }
+  body.modo-seleccion .cantidad-row {
+    width: 100% !important;
+  }
+  body.modo-seleccion .year-tabs {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    max-width: 100% !important;
+    gap: 0.35rem !important;
+    padding-bottom: 0.25rem !important;
+  }
+  body.modo-seleccion .btn-guardar-grande {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  body.modo-seleccion .pa-total-box {
+    display: none !important; /* total discreto no necesario en móvil */
+  }
+
+  /* Inventario físico */
+  #diffCardBody,
+  .card-body-inner {
+    overflow-x: hidden !important;
+    max-width: 100% !important;
+  }
+  .card-actions-row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.4rem !important;
+    width: 100% !important;
+  }
+  .card-actions-row .btn {
+    flex: 1 1 auto !important;
+    min-width: calc(50% - 0.3rem) !important;
+    max-width: 100% !important;
+    justify-content: center !important;
+    font-size: 0.78rem !important;
+  }
+  .diff-filtro-row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.3rem !important;
+    width: 100% !important;
+    overflow-x: hidden !important;
+  }
+  .diff-filtro-btn {
+    font-size: 0.72rem !important;
+    padding: 0.35rem 0.5rem !important;
+    max-width: 100% !important;
+  }
+  /* Tabla PC oculta en móvil */
+  #diffTable,
+  .diff-table,
+  .table-wrap {
+    display: none !important;
+  }
+  #diffMobileList {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+  .mi-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+  .mi-card-desc {
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+  }
+  .mi-lotes {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.3rem !important;
+    max-width: 100% !important;
+  }
+  .mi-lote-chip {
+    max-width: 100% !important;
+    word-break: break-word !important;
+  }
+
+  /* FAB alerta no tape contenido */
+  #fabAlertaVenc {
+    bottom: 1rem !important;
+    right: 1rem !important;
+    z-index: 90 !important;
+  }
+
+  /* Admin drawer */
+  .admin-drawer,
+  #adminPanel {
+    max-width: 100vw !important;
   }
 }
