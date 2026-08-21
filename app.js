@@ -1772,6 +1772,28 @@
             actualizarTotalCalculado();
         }
 
+
+        /** Oculta el desplegable de productos sugeridos (sin borrar el texto del buscador). */
+        function cerrarSugerenciasBusqueda() {
+            try {
+                if (!resultList) return;
+                var abierto = resultList.classList.contains('result-list-open') ||
+                    document.body.classList.contains('search-open');
+                if (!abierto && !(resultList.innerHTML && resultList.innerHTML.trim())) return false;
+                resultList.innerHTML = '';
+                resultList.classList.add('result-list-collapsed');
+                resultList.classList.remove('result-list-open');
+                document.body.classList.remove('search-open');
+                try {
+                    var rs = document.getElementById('resultsSection');
+                    if (rs) rs.classList.remove('has-results');
+                } catch (e) {}
+                return true;
+            } catch (err) {
+                return false;
+            }
+        }
+
         function limpiarCantidades() {
             cajasGroup.classList.remove('hidden');
             txtCajas.value = '0';
@@ -6304,6 +6326,7 @@
             if (headerMenuBtn) {
                 headerMenuBtn.addEventListener('click', function (e) {
                     e.stopPropagation();
+                    if (typeof cerrarSugerenciasBusqueda === 'function') cerrarSugerenciasBusqueda();
                     toggleHeaderMenu();
                 });
             }
@@ -6359,12 +6382,32 @@
             }
             document.addEventListener('click', function (e) {
                 const wrap = document.getElementById('headerMenuWrap');
-                if (!wrap) return;
-                if (!wrap.contains(e.target)) cerrarHeaderMenu();
+                if (wrap && !wrap.contains(e.target)) cerrarHeaderMenu();
+
+                // Cerrar sugerencias de productos al tocar fuera del buscador / lista
+                try {
+                    var t = e.target;
+                    var enBuscador = t && t.closest && (
+                        t.closest('#searchSection') ||
+                        t.closest('#searchSuggestWrap') ||
+                        t.closest('#resultList') ||
+                        t.closest('.result-item') ||
+                        t.id === 'searchInput'
+                    );
+                    // No cerrar si el clic es en la lista de resultados (selección)
+                    if (!enBuscador && typeof cerrarSugerenciasBusqueda === 'function') {
+                        // Si hay texto y lista abierta, colapsar
+                        if (document.body.classList.contains('search-open') ||
+                            (resultList && resultList.classList.contains('result-list-open'))) {
+                            cerrarSugerenciasBusqueda();
+                        }
+                    }
+                } catch (errSug) {}
             });
             document.addEventListener('keydown', function (e) {
                 if (e.key !== 'Escape') return;
                 cerrarHeaderMenu();
+                if (typeof cerrarSugerenciasBusqueda === 'function') cerrarSugerenciasBusqueda();
                 const ov = document.getElementById('adminOverlay');
                 if (ov && ov.classList.contains('visible') && typeof cerrarPanelAdmin === 'function') {
                     cerrarPanelAdmin();
@@ -7496,6 +7539,17 @@
 
             /** Cierra la capa superior. true = había algo que cerrar. */
             function cerrarCapaSuperior() {
+                // 0) Sugerencias de búsqueda abiertas
+                try {
+                    if (document.body.classList.contains('search-open') ||
+                        (resultList && resultList.classList.contains('result-list-open'))) {
+                        if (typeof cerrarSugerenciasBusqueda === 'function') {
+                            cerrarSugerenciasBusqueda();
+                            return true;
+                        }
+                    }
+                } catch (eSug) {}
+
                 // 1) Menú ☰
                 var menu = document.getElementById('headerMenuDropdown');
                 if (menu && !menu.hidden) {

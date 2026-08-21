@@ -347,7 +347,7 @@
             margin-bottom: 0.8rem;
             flex-wrap: nowrap;
             position: relative;
-            z-index: 40;
+            z-index: 120; /* por encima de sugerencias de búsqueda (80) */
         }
         .header .logo {
             display: flex;
@@ -471,7 +471,7 @@
             background: var(--card-bg);
             backdrop-filter: blur(16px);
             box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
-            z-index: 50;
+            z-index: 130; /* siempre por encima de la lista de productos sugeridos */
             display: flex;
             flex-direction: column;
             gap: 0.2rem;
