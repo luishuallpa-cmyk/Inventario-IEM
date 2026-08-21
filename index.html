@@ -28,8 +28,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=4.6.3">
-    <link rel="stylesheet" href="admin.css?v=4.6.3">
+    <link rel="stylesheet" href="style.css?v=4.6.5">
+    <link rel="stylesheet" href="admin.css?v=4.6.5">
 <script>
 (function(){try{var t=localStorage.getItem('buscador_tema')||'dark';
 if(t==='light'){document.documentElement.classList.add('light-theme');document.documentElement.setAttribute('data-theme','light');}
@@ -62,7 +62,7 @@ else document.body.classList.remove('light-theme');
         </div>
         <h2>Iniciar sesión</h2>
         <p class="login-subtitle">Inventario físico · IEM GROUP</p>
-        <p class="login-version" id="loginVersion">v4.6.3</p>
+        <p class="login-version" id="loginVersion">v4.6.5</p>
         <form id="loginForm" action="#" method="post" autocomplete="on">
             <div class="login-field">
                 <label for="loginUsuario">Usuario</label>
@@ -154,7 +154,7 @@ else document.body.classList.remove('light-theme');
                         <span class="hmi-icon hmi-text-ico" aria-hidden="true">◷</span><span class="hmi-label">Por vencer</span>
                     </button>
                     <div class="header-menu-footer">
-                        <span class="version">v4.6.3 · Admin</span>
+                        <span class="version">v4.6.5 · Admin</span>
                     </div>
                 </div>
             </div>
@@ -254,7 +254,7 @@ else document.body.classList.remove('light-theme');
                 <label for="txtCajas">📦 Cajas</label>
                 <input type="number" id="txtCajas" value="0" min="0" disabled>
             </div>
-            <div class="group">
+            <div class="group unidades-group" id="unidadesGroup">
                 <label for="txtUnidades">🧩 Unidades</label>
                 <input type="number" id="txtUnidades" value="0" min="0">
             </div>
@@ -717,15 +717,15 @@ else document.body.classList.remove('light-theme');
         </div>
     </div>
 
-<script src="config.js?v=4.6.3"></script>
-<script src="iem-core.js?v=4.6.3"></script>
-<script src="app.js?v=4.6.3"></script>
+<script src="config.js?v=4.6.5"></script>
+<script src="iem-core.js?v=4.6.5"></script>
+<script src="app.js?v=4.6.5"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('./sw.js?v=4.6.3', { scope: './' }).then(function (reg) {
-      console.log('[PWA] Service Worker OK v4.6.3', reg.scope);
+    navigator.serviceWorker.register('./sw.js?v=4.6.5', { scope: './' }).then(function (reg) {
+      console.log('[PWA] Service Worker OK v4.6.5', reg.scope);
       try { reg.update(); } catch (e) {}
       function skipWaiting(worker) {
         if (!worker) return;

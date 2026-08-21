@@ -1758,8 +1758,9 @@
                     ? (cajasL + ' cj · ' + undL + ' und')
                     : (undL + ' und');
                 return '<span class="venc-chip">' +
-                    (l.vencimiento || 'S/F') + ' · ' + qtyTxt +
-                    (unidadRef ? ' <span class="venc-chip-um">' + escapeHtml(String(unidadRef)) + '</span>' : '') +
+                    '<span class="venc-chip-date">' + (l.vencimiento || 'S/F') + '</span>' +
+                    '<span class="venc-chip-qty">' + qtyTxt + '</span>' +
+                    (unidadRef ? '<span class="venc-chip-um">' + escapeHtml(String(unidadRef)) + '</span>' : '') +
                     '<button type="button" class="venc-chip-del" data-codigo="' + codigo +
                     '" data-idx="' + l.idx + '" title="Eliminar este lote">✕</button></span>';
             }).join('');
@@ -6551,12 +6552,12 @@
                             const b = document.getElementById('logoutBtn');
                             if (b) b.click();
                         } else if (act === 'alerta') {
-                            const a = document.getElementById('btnAlertaVenc');
-                            if (a) {
-                                a.hidden = false;
-                                a.click();
-                            } else if (typeof abrirAdminEnSeccion === 'function') {
+                            // No usar icono del header; ir a listado admin o FAB
+                            if (typeof abrirAdminEnSeccion === 'function') {
                                 abrirAdminEnSeccion('vencimientos');
+                            } else {
+                                const fab = document.getElementById('fabAlertaVenc');
+                                if (fab) fab.click();
                             }
                         }
                         return;
@@ -7585,7 +7586,7 @@
         function mostrarLogin() {
             try {
                 var lv = document.getElementById('loginVersion');
-                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.6.3');
+                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.6.5');
             } catch (eVer) {}
 
             try {

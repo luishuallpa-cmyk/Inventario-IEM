@@ -4158,3 +4158,184 @@ body:not(.light-theme) #iemPullRefresh {
   flex-shrink: 0 !important;
   margin-left: auto !important;
 }
+
+
+/* ============================================================
+   v4.6.4 — alineación Cajas | Unidades (misma altura y ancho)
+   ============================================================ */
+.cantidad-row {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 0.65rem !important;
+  align-items: stretch !important;
+}
+.cantidad-row .group.cajas-group,
+.cantidad-row .group.unidades-group,
+.cantidad-row .group {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  gap: 0.35rem !important;
+  margin: 0 !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+.cantidad-row .group label {
+  display: block !important;
+  width: 100% !important;
+  text-align: center !important;
+  margin: 0 !important;
+  line-height: 1.2 !important;
+}
+.cantidad-row .group input {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  text-align: center !important;
+  margin: 0 !important;
+}
+.cantidad-row .info-text,
+.cantidad-row .acciones {
+  grid-column: 1 / -1 !important;
+}
+
+/* Móvil / modo selección: tarjetas gemelas */
+body.modo-seleccion .cantidad-row {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 0.65rem !important;
+}
+body.modo-seleccion .cantidad-row .group {
+  flex: none !important;
+  min-height: 5.5rem !important;
+  padding: 0.55rem 0.5rem !important;
+  border-radius: 14px !important;
+}
+body.modo-seleccion .cantidad-row .group label {
+  font-size: 0.68rem !important;
+  letter-spacing: 0.04em !important;
+  min-height: 1.1rem !important;
+}
+body.modo-seleccion .cantidad-row .group input {
+  width: 100% !important;
+  min-height: 48px !important;
+  font-size: 1.45rem !important;
+  font-weight: 700 !important;
+}
+
+/* Si cajas está oculto (factor 1), unidades ocupa todo el ancho */
+.cantidad-row:has(.cajas-group.hidden) {
+  grid-template-columns: 1fr !important;
+}
+.cajas-group.hidden {
+  display: none !important;
+}
+
+/* Chips: cajas y unidades alineadas en una línea clara */
+.venc-chip {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 0.4rem !important;
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+.venc-chip-qty {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.venc-chip-um {
+  opacity: 0.6;
+  white-space: nowrap;
+}
+
+
+/* ============================================================
+   v4.6.5 — móvil: sin icono alerta header, sin bloque Resultados,
+   filtros visibles, cantidades solo con producto
+   ============================================================ */
+
+/* Icono ⚠ del header: nunca (solo FAB flotante) */
+#btnAlertaVenc,
+button.btn-alerta-venc {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+@media (max-width: 959px) {
+  /* Quitar bloque Resultados (count/stats): no aporta en móvil */
+  #resultsSection .results-header,
+  .results-header {
+    display: none !important;
+  }
+
+  /* Cajas/Unidades solo cuando hay producto seleccionado */
+  body:not(.modo-seleccion) .cantidad-row,
+  body:not(.modo-seleccion) .pa-total-box,
+  body:not(.modo-seleccion) .conversion-hint,
+  body:not(.modo-seleccion) #vencBlock,
+  body:not(.modo-seleccion) .producto-activo-card {
+    display: none !important;
+  }
+
+  /* Lista colapsada: cero altura (no dejar hueco blanco) */
+  .result-list.result-list-collapsed,
+  .search-suggest-wrap .result-list.result-list-collapsed {
+    max-height: 0 !important;
+    min-height: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    overflow: hidden !important;
+  }
+
+  /* Filtros + Buscar + Escanear + Actualizar siempre visibles */
+  #searchSection .search-row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.4rem !important;
+    align-items: center !important;
+    margin-top: 0.5rem !important;
+    position: relative !important;
+    z-index: 5 !important;
+  }
+  #searchSection .filtro-tipo-row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.35rem !important;
+    width: 100% !important;
+  }
+  #searchSection .filtro-tipo-btn,
+  #searchSection #searchButton,
+  #searchSection #scanBarcodeBtn,
+  #searchSection #refreshDriveBtn {
+    display: inline-flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  /* fileStatus admin: compacto, no tape botones */
+  #fileStatus {
+    font-size: 0.65rem !important;
+    line-height: 1.2 !important;
+    margin-top: 0.35rem !important;
+    max-height: 2.4em !important;
+    overflow: hidden !important;
+  }
+}
+
+/* PC: sí mostrar Resultados (útil en escritorio) */
+@media (min-width: 960px) {
+  #resultsSection .results-header {
+    display: flex !important;
+  }
+}
