@@ -1473,17 +1473,32 @@
                 var termNow = '';
                 try { termNow = (searchInput && searchInput.value) ? searchInput.value.trim() : ''; } catch (e) {}
                 if (!termNow) {
-                    resultList.innerHTML = '<div class="empty-message empty-idle"><span class="empty-title">Busca un producto</span>Escribe código, nombre o código de barras para comenzar.<span class="empty-hint">Ej.: 0589 · mantequilla · EAN</span></div>';
+                    // Sin búsqueda: colapsar lista para no bloquear scroll/touch
+                    resultList.innerHTML = '';
+                    resultList.classList.add('result-list-collapsed');
+                    resultList.classList.remove('result-list-open');
                 } else {
                     resultList.innerHTML = '<div class="empty-message"><span class="empty-title">Sin resultados</span>No hay productos con ese criterio.<span class="empty-hint">Revisa el código o prueba menos letras · PROM/CMB en cero no aparecen</span></div>';
+                    resultList.classList.remove('result-list-collapsed');
+                    resultList.classList.add('result-list-open');
                 }
                 resultCount.textContent = '0';
                 cajasCount.textContent = '0';
                 unidadesCount.textContent = '0';
                 selectedIndex = -1;
                 limpiarCantidades();
+                try {
+                    var rs = document.getElementById('resultsSection');
+                    if (rs) rs.classList.toggle('has-results', !!termNow);
+                } catch (eRs) {}
                 return;
             }
+            resultList.classList.remove('result-list-collapsed');
+            resultList.classList.add('result-list-open');
+            try {
+                var rs2 = document.getElementById('resultsSection');
+                if (rs2) rs2.classList.add('has-results');
+            } catch (eRs2) {}
 
             let html = '';
             items.forEach((item, idx) => {
@@ -3072,8 +3087,8 @@
                 return;
             }
             const ok = await confirmarAccion(
-                '¿Enviar el inventario físico revisado a la nube?\nSe subirán todos los lotes contados para que el administrador los vea y descargue.',
-                'Enviar',
+                '¿Enviar el inventario físico a la nube?\nSe subirán los lotes contados y se limpiará el conteo de este dispositivo para el próximo conteo.',
+                'Enviar y limpiar',
                 'primary'
             );
             if (!ok) return;
@@ -3132,7 +3147,12 @@
                 } catch (e) {}
 
                 showToast('✅ Inventario enviado (' + filas.length + ' lotes). El administrador ya puede descargarlo.', 'success');
-                await sincronizarDesdeServidor();
+                // Limpiar conteo local para que mañana empiecen de cero
+                // (la nube conserva los lotes enviados para descarga admin)
+                inventarioFisico = [];
+                try { if (typeof saveInventario === 'function') saveInventario(); } catch (eClr) {}
+                try { if (typeof renderInventario === 'function') renderInventario(); } catch (eRnd) {}
+                showToast('🧹 Conteo local limpiado. Listo para el próximo conteo.', 'info');
             } catch (err) {
                 console.error(err);
                 showToast('❌ No se pudo enviar: ' + (err.message || err), 'error');
