@@ -3821,10 +3821,17 @@ body:not(.light-theme) .login-field input:focus {
     display: none;
 }
 @media (max-width: 720px) {
-    body.es-admin .header-actions > .btn-alerta-venc,
-    body.es-admin .header-actions > .theme-toggle,
+    /* Admin en móvil: alerta fuera del header (usa FAB / menú) */
+    body.es-admin .header-actions > .btn-alerta-venc {
+        display: none !important;
+    }
+    /* Admin en móvil: Salir solo dentro del menú ☰ (no duplicar en header) */
     body.es-admin .header-actions > .btn-logout {
         display: none !important;
+    }
+    /* Tema siempre visible también para admin */
+    body.es-admin .header-actions > .theme-toggle {
+        display: inline-flex !important;
     }
     body.es-admin .header-menu-item-mobile {
         display: flex;
@@ -3907,9 +3914,14 @@ body:not(.light-theme) .login-field input:focus {
   justify-content: center;
 }
 
-/* Móvil: logout solo en el menú (arriba); no duplicar el botón del header */
+/* Móvil:
+   - Usuario normal: Salir visible en el header (no tienen menú ☰)
+   - Admin: Salir oculto en header (está dentro del menú ☰) */
 @media (max-width: 640px) {
   .header-actions > .btn-logout {
+    display: inline-flex !important;
+  }
+  body.es-admin .header-actions > .btn-logout {
     display: none !important;
   }
 }
@@ -4995,13 +5007,13 @@ body:has(.header-menu-dropdown:not([hidden]))::after {
   }
   .header-menu-dropdown {
     position: fixed !important;
-    /* Debajo del header real; evita que el status bar corte el menú */
-    top: max(4.6rem, calc(env(safe-area-inset-top, 0px) + 3.8rem)) !important;
+    /* Debajo del header completo (logo + botones) para no cortar «Cerrar sesión» */
+    top: max(5.2rem, calc(env(safe-area-inset-top, 0px) + 4.4rem)) !important;
     right: 0.4rem !important;
     left: auto !important;
     width: min(300px, calc(100vw - 0.8rem)) !important;
-    /* Usa casi toda la altura disponible para que no se corte */
-    max-height: calc(100dvh - max(4.6rem, calc(env(safe-area-inset-top, 0px) + 3.8rem)) - env(safe-area-inset-bottom, 0px) - 0.6rem) !important;
+    /* Usa casi toda la altura disponible */
+    max-height: calc(100dvh - max(5.2rem, calc(env(safe-area-inset-top, 0px) + 4.4rem)) - env(safe-area-inset-bottom, 0px) - 0.6rem) !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
     overscroll-behavior: contain !important;
