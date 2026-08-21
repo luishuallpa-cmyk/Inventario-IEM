@@ -4479,3 +4479,67 @@ button.btn-alerta-venc {
     grid-template-columns: minmax(360px, 1fr) minmax(400px, 480px) !important;
   }
 }
+
+
+/* ============================================================
+   v4.6.7 — lista con altura controlada + Cambiar producto sin cuadro
+   ============================================================ */
+@media (min-width: 960px) {
+  /* No desplegar toda la página: lista con scroll interno acotado */
+  body.modo-seleccion .pc-panel-lista {
+    max-height: min(70vh, calc(100vh - 11rem)) !important;
+  }
+  body.modo-seleccion .pc-panel-lista > #resultList,
+  body.modo-seleccion #resultList {
+    max-height: min(58vh, calc(100vh - 14rem)) !important;
+    min-height: 120px !important;
+    overflow-y: auto !important;
+  }
+  body.modo-seleccion .pc-panel-conteo {
+    max-height: min(70vh, calc(100vh - 11rem)) !important;
+  }
+
+  /* «Cambiar producto» como enlace, sin caja */
+  body.modo-seleccion .pa-cambiar-btn,
+  body.light-theme.modo-seleccion .pa-cambiar-btn {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0.15rem 0.1rem !important;
+    border-radius: 0 !important;
+    color: #0A784C !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    text-decoration: none !important;
+    opacity: 0.9;
+  }
+  body.modo-seleccion .pa-cambiar-btn:hover,
+  body.light-theme.modo-seleccion .pa-cambiar-btn:hover {
+    background: transparent !important;
+    border: none !important;
+    text-decoration: underline !important;
+    opacity: 1;
+  }
+  body.modo-seleccion .pa-cambiar-btn:active {
+    transform: none !important;
+  }
+}
+
+/* Móvil: Cambiar producto CON cuadro (botón táctil) */
+@media (max-width: 959px) {
+  body.modo-seleccion .pa-cambiar-btn {
+    background: transparent !important;
+    border: 1px solid rgba(10, 120, 76, 0.45) !important;
+    color: #34d399 !important;
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    padding: 0.4rem 0.8rem !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+  }
+  body.light-theme.modo-seleccion .pa-cambiar-btn {
+    border-color: rgba(10, 120, 76, 0.4) !important;
+    color: #0A784C !important;
+    background: rgba(10, 120, 76, 0.06) !important;
+  }
+}
