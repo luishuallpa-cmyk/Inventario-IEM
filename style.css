@@ -3697,12 +3697,15 @@ tr.row-sube { background: rgba(10,120,76,0.06); }
     color: #60a5fa;
   }
   .result-item-suggest .suggest-text {
-    display: block !important;
-    font-size: 0.88rem;
-    line-height: 1.25;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 3 !important;
+    font-size: 0.9rem !important;
+    line-height: 1.35 !important;
+    font-weight: 600 !important;
+    white-space: normal !important;
+    overflow: hidden !important;
+    word-break: break-word !important;
   }
 }
 
@@ -4324,55 +4327,161 @@ body:not(.light-theme) #iemPullRefresh {
 
 
 /* ============================================================
-   PC ≥960px — vista amplia (estilo 4.5.3 + legibilidad)
+   FIX UI v4.6.1 — PC como 4.5.3 + móvil nombres completos
    ============================================================ */
-@media (min-width: 960px) {
-  .container {
-    max-width: 1400px;
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
+
+/* Nombre completo en sugerencias (móvil y PC) */
+.result-item-suggest .suggest-text,
+.suggest-text {
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 3 !important;
+  white-space: normal !important;
+  overflow: hidden !important;
+  text-overflow: unset !important;
+  word-break: break-word !important;
+  line-height: 1.35 !important;
+  max-height: none !important;
+  font-weight: 600 !important;
+}
+
+/* Móvil: ocultar TOTAL CALCULADO (basta cajas + unidades) */
+@media (max-width: 959px) {
+  .pa-total-box,
+  body.modo-seleccion .pa-total-box {
+    display: none !important;
   }
-  .result-list {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0;
+  .cantidad-row {
+    gap: 0.5rem !important;
+    margin: 0.35rem 0 !important;
   }
-  .result-item {
-    grid-template-columns: 64px 80px 100px 1fr 80px 60px 60px;
-    padding: 0.55rem 1rem;
-    align-items: center;
+  .cantidad-row .group {
+    padding: 0.45rem 0.5rem !important;
   }
-  .result-item .prod-img,
-  .result-item .prod-img-placeholder {
-    width: 56px !important;
-    height: 56px !important;
+  .cantidad-row .group input {
+    font-size: 1.25rem !important;
+    min-height: 44px !important;
   }
-  /* Producto seleccionado: más aire en escritorio */
-  body.modo-seleccion .producto-activo-card {
-    max-width: 720px;
-    margin-left: auto;
-    margin-right: auto;
+  .conversion-hint {
+    display: none !important;
   }
-  body.modo-seleccion .pa-img {
-    width: 120px !important;
-    height: 120px !important;
-  }
-  /* Admin panel casi pantalla completa en PC */
-  .admin-panel,
-  .admin-panel-window {
-    width: min(1240px, 96vw) !important;
-    max-width: 96vw !important;
-    height: min(92vh, 920px) !important;
+  /* Nombre en tarjeta seleccionada */
+  body.modo-seleccion .pa-descripcion,
+  .pa-descripcion {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+    -webkit-line-clamp: unset !important;
+    display: block !important;
+    font-size: 1.05rem !important;
+    line-height: 1.3 !important;
   }
 }
-@media (min-width: 1280px) {
-  .container { max-width: 1480px; }
-  .result-item {
-    grid-template-columns: 72px 90px 110px 1fr 90px 70px 70px;
+
+/* PC ≥960px: barra de búsqueda limpia (estilo 4.5.3) */
+@media (min-width: 960px) {
+  #searchSection.card {
+    padding: 1rem 1.15rem !important;
+  }
+  .search-input-block {
+    position: relative !important;
+    width: 100% !important;
+    z-index: 20 !important;
+  }
+  .search-input-block #searchInput {
+    width: 100% !important;
+    min-height: 44px !important;
+    border-radius: 999px !important;
+    padding: 0.65rem 1.15rem !important;
+    font-size: 0.95rem !important;
+    border: 1px solid var(--input-border) !important;
+  }
+  /* Resultados en flujo normal (no flotante raro) */
+  .search-suggest-wrap {
+    position: static !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    z-index: 1 !important;
+  }
+  .result-list,
+  .result-list.result-list-open {
+    position: static !important;
+    max-height: min(52vh, 520px) !important;
+    overflow-y: auto !important;
+    margin-top: 0.65rem !important;
+    border-radius: 12px !important;
+    box-shadow: none !important;
+  }
+  .search-row.search-row-actions {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    margin-top: 0.65rem !important;
+  }
+  /* Producto activo: no se sale de la ventana */
+  #resultsSection {
+    overflow: visible !important;
+  }
+  .producto-activo-card {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  body.modo-seleccion .producto-activo-card {
+    position: sticky !important;
+    top: 0.75rem !important;
+    max-height: calc(100vh - 5rem) !important;
+    overflow-y: auto !important;
+    max-width: 640px !important;
+    margin: 0.5rem auto !important;
+  }
+  body.modo-seleccion .pa-img {
+    width: 100px !important;
+    height: 100px !important;
+  }
+  /* Lista de resultados tipo filas legibles en PC */
+  .result-item:not(.result-item-suggest) {
+    display: grid !important;
+    grid-template-columns: 56px 72px 88px minmax(0, 1fr) 72px 56px 56px !important;
+    gap: 0.35rem 0.5rem !important;
+    align-items: center !important;
+    padding: 0.5rem 0.85rem !important;
+  }
+  .result-item .descripcion,
+  .result-item .row2 .descripcion {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+    -webkit-line-clamp: 2 !important;
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    word-break: break-word !important;
   }
   .result-item .prod-img,
   .result-item .prod-img-placeholder {
-    width: 64px !important;
-    height: 64px !important;
+    width: 48px !important;
+    height: 48px !important;
+  }
+}
+
+@media (min-width: 1200px) {
+  body.modo-seleccion #mainContent {
+    display: grid !important;
+    grid-template-columns: 1fr minmax(340px, 420px) !important;
+    gap: 1rem !important;
+    align-items: start !important;
+  }
+  body.modo-seleccion #searchSection {
+    grid-column: 1 / -1 !important;
+  }
+  body.modo-seleccion #resultsSection {
+    grid-column: 1 / 2 !important;
+  }
+  body.modo-seleccion .producto-activo-card {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+    margin: 0 !important;
+    max-width: none !important;
   }
 }

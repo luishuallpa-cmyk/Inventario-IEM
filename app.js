@@ -7540,7 +7540,7 @@
         function mostrarLogin() {
             try {
                 var lv = document.getElementById('loginVersion');
-                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.6.0');
+                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.6.1');
             } catch (eVer) {}
 
             try {
