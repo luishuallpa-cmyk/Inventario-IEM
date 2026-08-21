@@ -1530,16 +1530,17 @@
                     ? `<img class="prod-img" src="${escapeHtml(imgUrl)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.classList.add('img-broken');this.removeAttribute('src');this.outerHTML='<span class=\\'prod-img prod-img-placeholder\\' aria-hidden=\\'true\\'>📦</span>';">`
                     : `<span class="prod-img prod-img-placeholder" aria-hidden="true">📦</span>`;
 
-                // Móvil: sugerencia compacta con imagen + código + nombre
+                // Móvil: una sola imagen + código + nombre (sin icono extra)
                 if (isMobileList) {
                     const imgSuggest = imgUrl
-                        ? `<img class="suggest-img" src="${escapeHtml(imgUrl)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.style.display='none';var n=this.nextElementSibling;if(n)n.style.display='flex';">`
-                            + `<span class="suggest-img suggest-img-ph" style="display:none" aria-hidden="true">📦</span>`
+                        ? `<img class="suggest-img" src="${escapeHtml(imgUrl)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='';this.classList.add('suggest-img-ph');this.alt='';">`
                         : `<span class="suggest-img suggest-img-ph" aria-hidden="true">📦</span>`;
                     html += `<div class="result-item result-item-suggest${selectedClass}" data-index="${idx}" role="option" aria-selected="${idx === selectedIndex ? 'true' : 'false'}">
                         ${imgSuggest}
-                        <span class="suggest-code">${codigo}</span>
-                        <span class="suggest-text">${desc}</span>
+                        <div class="suggest-main">
+                            <span class="suggest-code">${codigo}</span>
+                            <span class="suggest-text">${desc}</span>
+                        </div>
                     </div>`;
                     return;
                 }

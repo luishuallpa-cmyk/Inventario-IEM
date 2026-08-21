@@ -28,8 +28,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=4.5.10">
-    <link rel="stylesheet" href="admin.css?v=4.5.10">
+    <link rel="stylesheet" href="style.css?v=4.5.11">
+    <link rel="stylesheet" href="admin.css?v=4.5.11">
 <script>
 (function(){try{var t=localStorage.getItem('buscador_tema')||'dark';
 if(t==='light'){document.documentElement.classList.add('light-theme');document.documentElement.setAttribute('data-theme','light');}
@@ -166,9 +166,15 @@ else document.body.classList.remove('light-theme');
     ============================================================ -->
     <main id="mainContent">
     <section class="card" id="searchSection" aria-label="Búsqueda de productos">
-        <div class="search-row" role="search">
+        <div class="search-input-block" role="search">
             <label for="searchInput" class="sr-only">Buscar producto por código, descripción, marca o barras</label>
-            <input type="text" id="searchInput" aria-describedby="searchStatus" placeholder="Buscar por código, descripción, marca o barras..." autofocus>
+            <input type="text" id="searchInput" aria-describedby="searchStatus" placeholder="Buscar por código, descripción, marca o barras..." autofocus autocomplete="off">
+            <!-- Desplegable justo bajo el input (tapa filtros/escáner mientras eliges) -->
+            <div class="search-suggest-wrap" id="searchSuggestWrap">
+                <div id="resultList" role="listbox" aria-label="Resultados de búsqueda" class="result-list result-list-collapsed"></div>
+            </div>
+        </div>
+        <div class="search-row search-row-actions">
             <div class="filtro-tipo-row" role="group" aria-label="Filtro Frios o Secos">
                 <button type="button" class="filtro-tipo-btn active" data-filtro-tipo="">Todos</button>
                 <button type="button" class="filtro-tipo-btn" data-filtro-tipo="FRIOS">❄️ Frios</button>
@@ -178,21 +184,14 @@ else document.body.classList.remove('light-theme');
             <button class="btn btn-outline btn-scan" id="scanBarcodeBtn" type="button" title="Escanear código de barras o QR" aria-label="Escanear código de barras o QR">
                 <span class="btn-icon btn-scan-ico ico-scan" aria-hidden="true">
                     <svg viewBox="0 0 24 24" width="22" height="22" focusable="false">
-                        <!-- Barras -->
                         <path fill="currentColor" d="M2 7h1.5v10H2V7zm2.5 0H6v10H4.5V7zM7 7h1.2v10H7V7zm2.2 0h2v10h-2V7zm3 0h1.2v10H12.2V7z"/>
-                        <!-- QR -->
                         <path fill="currentColor" d="M15 7h3.5v3.5H15V7zm1 1v1.5h1.5V8H16zm2.5 4.5H22V15h-1.5v1.5H18v-1.5h-.5v-1.5H18v-1.5h-.5zM15 15h2v2h-2v-2z"/>
-                        <!-- Marco de escaneo -->
                         <path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M3 5h3M3 5v3M21 5h-3M21 5v3M3 19h3M3 19v-3M21 19h-3M21 19v-3"/>
                     </svg>
                 </span>
                 <span class="btn-label"> Escanear código</span>
             </button>
             <button class="btn btn-outline" id="refreshDriveBtn" title="Actualizar productos" aria-label="Actualizar"><span class="btn-icon">↻</span><span class="btn-label"> Actualizar</span></button>
-        </div>
-        <!-- Sugerencias pegadas a la barra de búsqueda (móvil y escritorio) -->
-        <div class="search-suggest-wrap" id="searchSuggestWrap">
-            <div id="resultList" role="listbox" aria-label="Resultados de búsqueda" class="result-list result-list-collapsed"></div>
         </div>
         <div class="vincular-barras-row" id="vincularBarrasRow" style="display:none;">
             <button type="button" class="btn btn-outline btn-sm" id="btnVincularBarras">
@@ -707,14 +706,14 @@ else document.body.classList.remove('light-theme');
         </div>
     </div>
 
-<script src="config.js?v=4.5.10"></script>
-<script src="iem-core.js?v=4.5.10"></script>
-<script src="app.js?v=4.5.10"></script>
+<script src="config.js?v=4.5.11"></script>
+<script src="iem-core.js?v=4.5.11"></script>
+<script src="app.js?v=4.5.11"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('./sw.js?v=4.5.10').then(function (reg) {
+    navigator.serviceWorker.register('./sw.js?v=4.5.11').then(function (reg) {
       console.log('[PWA] Service Worker OK', reg.scope);
       try { reg.update(); } catch (e) {}
       if (reg.waiting) {
