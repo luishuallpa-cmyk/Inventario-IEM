@@ -1520,27 +1520,64 @@
                 const fabrica = escapeHtml(getCodigoFabrica(item));
                 const desc = escapeHtml(getDescripcion(item));
                 const unidad = escapeHtml(getUnidadRef(item));
+                const linea = escapeHtml((typeof getLinea === 'function' ? getLinea(item) : '') || '');
+                const marca = escapeHtml((typeof getMarca === 'function' ? getMarca(item) : '') || '');
                 const cantidad = getCantidad(item);
                 const factor = getFactorFinal(item);
                 const cajasStock = factor === 1 ? 0 : Math.floor(cantidad / factor);
                 const unidadesStock = factor === 1 ? cantidad : cantidad % factor;
+                const stockLabel = factor === 1
+                    ? (unidadesStock + ' und')
+                    : (cajasStock + ' cj · ' + unidadesStock + ' und');
                 const selectedClass = (idx === selectedIndex) ? ' selected' : '';
+                var yaContadoDesk = false;
+                try {
+                    var codRawDesk = getCodigo(item);
+                    if (typeof inventarioFisico !== 'undefined' && Array.isArray(inventarioFisico) && codRawDesk) {
+                        yaContadoDesk = inventarioFisico.some(function (r) {
+                            return r && String(r.codigo || '') === String(codRawDesk);
+                        });
+                    }
+                } catch (eYCD) {}
                 const imgUrl = safeImageUrl(getImagenUrl(item));
                 const imgHtml = imgUrl
                     ? `<img class="prod-img" src="${escapeHtml(imgUrl)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.classList.add('img-broken');this.removeAttribute('src');this.outerHTML='<span class=\\'prod-img prod-img-placeholder\\' aria-hidden=\\'true\\'>📦</span>';">`
                     : `<span class="prod-img prod-img-placeholder" aria-hidden="true">📦</span>`;
 
-                // Móvil: una sola imagen + código + nombre (sin icono extra)
+                // Móvil / lista compacta: imagen grande + código + nombre + meta (stock, línea)
                 if (isMobileList) {
                     const imgSuggest = imgUrl
                         ? `<img class="suggest-img" src="${escapeHtml(imgUrl)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='';this.classList.add('suggest-img-ph');this.alt='';">`
                         : `<span class="suggest-img suggest-img-ph" aria-hidden="true">📦</span>`;
-                    html += `<div class="result-item result-item-suggest${selectedClass}" data-index="${idx}" role="option" aria-selected="${idx === selectedIndex ? 'true' : 'false'}">
+                    const metaBits = [];
+                    if (fabrica) metaBits.push('Fáb ' + fabrica);
+                    if (linea) metaBits.push(linea);
+                    if (unidad) metaBits.push(unidad);
+                    metaBits.push(stockLabel);
+                    var yaContado = false;
+                    try {
+                        var codRaw = getCodigo(item);
+                        if (typeof inventarioFisico !== 'undefined' && Array.isArray(inventarioFisico) && codRaw) {
+                            yaContado = inventarioFisico.some(function (r) {
+                                return r && String(r.codigo || '') === String(codRaw);
+                            });
+                        }
+                    } catch (eYC) {}
+                    var badgeContado = yaContado
+                        ? '<span class="suggest-badge-contado" title="Ya en conteo físico">Contado</span>'
+                        : '';
+                    html += `<div class="result-item result-item-suggest${selectedClass}${yaContado ? ' is-contado' : ''}" data-index="${idx}" role="option" aria-selected="${idx === selectedIndex ? 'true' : 'false'}">
                         ${imgSuggest}
                         <div class="suggest-main">
-                            <span class="suggest-code">${codigo}</span>
+                            <div class="suggest-top">
+                                <span class="suggest-code">${codigo}</span>
+                                ${marca ? '<span class="suggest-marca">' + marca + '</span>' : ''}
+                                ${badgeContado}
+                            </div>
                             <span class="suggest-text">${desc}</span>
+                            <span class="suggest-meta">${metaBits.join(' · ')}</span>
                         </div>
+                        <span class="suggest-chevron" aria-hidden="true">›</span>
                     </div>`;
                     return;
                 }
@@ -1554,11 +1591,13 @@
                     <span class="stock-cajas">${cajasStock}</span>
                     <span class="stock-unidades">${unidadesStock}</span>
                     <div class="result-body">
-                        <div class="ri-title">${desc}</div>
+                        <div class="ri-title">${desc}${yaContadoDesk ? ' <span class="suggest-badge-contado">Contado</span>' : ''}</div>
                         <div class="ri-meta">
                             <span class="codigo">Cód: ${codigo}</span>
                             <span class="fabrica">Fáb: ${fabrica || '—'}</span>
                             <span class="unidad">${unidad}</span>
+                            ${linea ? '<span class="ri-linea">' + linea + '</span>' : ''}
+                            ${marca ? '<span class="ri-marca">' + marca + '</span>' : ''}
                         </div>
                         <div class="ri-stock">
                             <span class="cajas">${cajasStock} cajas</span>
@@ -1747,7 +1786,7 @@
             resetVencimientoAHoy();
             renderFechasRegistradas(getCodigo(item), getUnidadRef(item));
 
-            // Datos de la tarjeta de producto seleccionado (modo móvil)
+            // Datos de la tarjeta de producto seleccionado (vista ampliada)
             document.body.classList.add('modo-seleccion');
             paDescripcion.textContent = getDescripcion(item);
             const codFab = getCodigoFabrica(item);
@@ -1758,8 +1797,28 @@
                 ? `${unidadesStock} unidades`
                 : `${cajasStock} cajas, ${unidadesStock} unidades`;
             paTotalUnidad.textContent = getUnidadRef(item) || '';
+
+            // Datos adicionales en vista ampliada
+            try {
+                var lin = (typeof getLinea === 'function' ? getLinea(item) : '') || '';
+                var mar = (typeof getMarca === 'function' ? getMarca(item) : '') || '';
+                var bar = (typeof getCodigoBarras === 'function' ? getCodigoBarras(item) : '') || '';
+                var elLin = document.getElementById('paLinea');
+                var elMar = document.getElementById('paMarca');
+                var elBar = document.getElementById('paBarras');
+                var wLin = document.getElementById('paLineaWrap');
+                var wMar = document.getElementById('paMarcaWrap');
+                var wBar = document.getElementById('paBarrasWrap');
+                if (elLin) elLin.textContent = lin || '-';
+                if (elMar) elMar.textContent = mar || '-';
+                if (elBar) elBar.textContent = bar || '-';
+                if (wLin) wLin.hidden = !lin;
+                if (wMar) wMar.hidden = !mar;
+                if (wBar) wBar.hidden = !bar;
+            } catch (eExtra) {}
+
             if (paImg) {
-                const url = getImagenUrl(item);
+                const url = safeImageUrl(getImagenUrl(item));
                 if (url) {
                     paImg.src = url;
                     paImg.style.display = '';
@@ -3188,18 +3247,32 @@
                     ts: new Date().toISOString()
                 }
             };
+            const ahora = new Date();
+            const fechaMes = ahora.getFullYear() + '-' + String(ahora.getMonth() + 1).padStart(2, '0');
             const row = {
                 usuario: usuarioActual || '',
                 total_productos: productosCount || 0,
                 total_lotes: (filas && filas.length) || 0,
                 payload: payload,
-                enviado_en: new Date().toISOString()
+                enviado_en: ahora.toISOString(),
+                // Clave por mes para consultas y respaldos mensuales (si la columna existe)
+                fecha_mes: fechaMes
             };
-            const { data, error } = await supabaseClient
+            let data, error;
+            // Primero intentar con fecha_mes; si la columna no existe, reintentar sin ella
+            ({ data, error } = await supabaseClient
                 .from('inventarios_enviados')
                 .insert([row])
                 .select('id, enviado_en')
-                .maybeSingle();
+                .maybeSingle());
+            if (error && /fecha_mes|column|schema/i.test(String(error.message || error))) {
+                delete row.fecha_mes;
+                ({ data, error } = await supabaseClient
+                    .from('inventarios_enviados')
+                    .insert([row])
+                    .select('id, enviado_en')
+                    .maybeSingle());
+            }
             if (error) throw error;
             return data;
         }
@@ -3273,8 +3346,11 @@
                             '  usuario text,\n' +
                             '  total_productos int,\n' +
                             '  total_lotes int,\n' +
-                            '  payload jsonb not null\n' +
+                            '  payload jsonb not null,\n' +
+                            '  fecha_mes text\n' +
                             ');\n' +
+                            'create index if not exists inventarios_enviados_fecha_mes_idx on inventarios_enviados (fecha_mes);\n' +
+                            'create index if not exists inventarios_enviados_enviado_en_idx on inventarios_enviados (enviado_en);\n' +
                             'alter table inventarios_enviados enable row level security;\n' +
                             'create policy "auth all inventarios_enviados" on inventarios_enviados for all to authenticated using (true) with check (true);'
                         );
@@ -3342,10 +3418,17 @@
                     }));
                 } catch (e) {}
 
+                // 5) Depuración: respaldos mensuales + borrar inventarios_enviados > 1 año
+                try {
+                    if (typeof depurarInventariosEnviadosAnuales === 'function') {
+                        depurarInventariosEnviadosAnuales().catch(function () {});
+                    }
+                } catch (eDep) {}
+
                 showToast(
-                    '✅ Conteo archivado en Supabase (' + filas.length + ' lotes)' +
+                    '✅ Conteo archivado en Supabase por fecha (' + filas.length + ' lotes)' +
                     (archivoId ? ' · id ' + String(archivoId).slice(0, 8) + '…' : '') +
-                    '. Conteo en vivo limpio.',
+                    '. Conteo en vivo limpio. Respaldo mensual listo.',
                     'success'
                 );
             } catch (err) {
@@ -3359,6 +3442,57 @@
             }
         }
 
+        /**
+         * Mantiene inventarios_enviados por fechas hasta 1 año.
+         * Genera/asegura respaldo mensual local y elimina de Supabase
+         * los envíos con más de 365 días para depurar el sistema.
+         */
+        async function depurarInventariosEnviadosAnuales() {
+            if (!supabaseClient) return { ok: false };
+            var unAnoMs = 365 * 24 * 60 * 60 * 1000;
+            var corte = new Date(Date.now() - unAnoMs).toISOString();
+            var n = 0;
+            try {
+                // Intento directo por enviado_en
+                var { data, error } = await supabaseClient
+                    .from('inventarios_enviados')
+                    .delete()
+                    .lt('enviado_en', corte)
+                    .select('id');
+                if (!error && Array.isArray(data)) {
+                    n = data.length;
+                } else {
+                    // Fallback: listar y borrar por lotes
+                    var { data: all, error: e2 } = await supabaseClient
+                        .from('inventarios_enviados')
+                        .select('id, enviado_en')
+                        .limit(2000);
+                    if (e2) throw e2;
+                    var ids = (all || []).filter(function (r) {
+                        return r.enviado_en && new Date(r.enviado_en).getTime() < (Date.now() - unAnoMs);
+                    }).map(function (r) { return r.id; });
+                    for (var i = 0; i < ids.length; i += 50) {
+                        var chunk = ids.slice(i, i + 50);
+                        var { error: e3 } = await supabaseClient
+                            .from('inventarios_enviados')
+                            .delete()
+                            .in('id', chunk);
+                        if (!e3) n += chunk.length;
+                    }
+                }
+            } catch (e) {
+                console.warn('depurarInventariosEnviadosAnuales', e);
+                return { ok: false, error: e };
+            }
+            // También limpiar lotes_conteo de meses anteriores (ya existe)
+            try {
+                if (typeof limpiarConteosMesesAnterioresAuto === 'function') {
+                    await limpiarConteosMesesAnterioresAuto();
+                }
+            } catch (e2) {}
+            return { ok: true, n: n };
+        }
+
         async function listarInventariosEnviados() {
             if (!esAdmin()) {
                 showToast('Solo el administrador puede ver los envíos archivados.', 'error');
@@ -3366,28 +3500,53 @@
             }
             const box = document.getElementById('adminListaEnviados');
             if (box) box.innerHTML = '<p class="admin-lead">Cargando envíos…</p>';
+            // Depurar en segundo plano (>1 año + lotes de meses anteriores)
             try {
+                if (typeof depurarInventariosEnviadosAnuales === 'function') {
+                    depurarInventariosEnviadosAnuales().catch(function () {});
+                }
+            } catch (eDep) {}
+            try {
+                // Hasta 1 año de historial por fechas; se depuran automáticamente los >365 días
                 const { data, error } = await supabaseClient
                     .from('inventarios_enviados')
                     .select('id, enviado_en, usuario, total_productos, total_lotes')
                     .order('enviado_en', { ascending: false })
-                    .limit(30);
+                    .limit(100);
                 if (error) throw error;
                 if (!data || !data.length) {
                     if (box) box.innerHTML = '<p class="admin-lead">Aún no hay envíos archivados. Usa <strong>Enviar inventario</strong> en el conteo.</p>';
                     return;
                 }
+                // Agrupar por mes (YYYY-MM) para lectura por fechas
+                var porMes = {};
+                data.forEach(function (r) {
+                    var key = '-';
+                    if (r.enviado_en) {
+                        var d = new Date(r.enviado_en);
+                        key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+                    }
+                    if (!porMes[key]) porMes[key] = [];
+                    porMes[key].push(r);
+                });
+                var meses = Object.keys(porMes).sort().reverse();
                 if (box) {
-                    box.innerHTML = '<ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:0.4rem;">' +
-                        data.map(function (r) {
+                    var html = '<p class="admin-lead" style="margin-bottom:0.5rem;">Archivados por fecha (retención 1 año). Respaldo mensual al enviar.</p>';
+                    meses.forEach(function (mes) {
+                        html += '<div style="margin:0.6rem 0 0.25rem;font-weight:600;font-size:0.9rem;color:var(--text-muted);">📦 ' + mes + '</div>';
+                        html += '<ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:0.4rem;">';
+                        porMes[mes].forEach(function (r) {
                             const f = r.enviado_en ? new Date(r.enviado_en).toLocaleString('es-PE') : '-';
-                            return '<li style="display:flex;flex-wrap:wrap;align-items:center;gap:0.4rem;padding:0.5rem 0.65rem;border:1px solid var(--card-border);border-radius:10px;background:var(--input-bg);">' +
+                            html += '<li style="display:flex;flex-wrap:wrap;align-items:center;gap:0.4rem;padding:0.5rem 0.65rem;border:1px solid var(--card-border);border-radius:10px;background:var(--input-bg);">' +
                                 '<span style="flex:1;min-width:140px;font-size:0.85rem;">📅 ' + f +
                                 '<br><span style="color:var(--text-muted);font-size:0.78rem;">👤 ' + (r.usuario || '-') +
                                 ' · ' + (r.total_productos || 0) + ' prod · ' + (r.total_lotes || 0) + ' lotes</span></span>' +
                                 '<button type="button" class="btn btn-sm btn-primary btn-descarga-envio" data-id="' + r.id + '">⬇️ Excel</button>' +
                                 '</li>';
-                        }).join('') + '</ul>';
+                        });
+                        html += '</ul>';
+                    });
+                    box.innerHTML = html;
                     box.querySelectorAll('.btn-descarga-envio').forEach(function (b) {
                         b.addEventListener('click', function () {
                             descargarInventarioEnviadoExcel(b.getAttribute('data-id'));
@@ -7381,7 +7540,7 @@
         function mostrarLogin() {
             try {
                 var lv = document.getElementById('loginVersion');
-                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.5.2');
+                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.5.13');
             } catch (eVer) {}
 
             try {
@@ -7537,20 +7696,58 @@
                 }
             };
 
-            /** Cierra la capa superior. true = había algo que cerrar. */
+            /** Cierra la capa superior. true = había algo que cerrar.
+             * Orden: producto seleccionado → búsqueda abierta → menú → alerta → admin.
+             * Solo cuando no queda nada se pide cerrar sesión. */
             function cerrarCapaSuperior() {
-                // 0) Sugerencias de búsqueda abiertas
+                // 0) Producto seleccionado → volver a la lista / menú de búsqueda
                 try {
-                    if (document.body.classList.contains('search-open') ||
-                        (resultList && resultList.classList.contains('result-list-open'))) {
-                        if (typeof cerrarSugerenciasBusqueda === 'function') {
-                            cerrarSugerenciasBusqueda();
+                    if (typeof selectedIndex !== 'undefined' && selectedIndex !== -1) {
+                        if (typeof volverABuscar === 'function') {
+                            volverABuscar();
                             return true;
                         }
                     }
+                    if (document.body.classList.contains('modo-seleccion')) {
+                        if (typeof volverABuscar === 'function') {
+                            volverABuscar();
+                            return true;
+                        }
+                    }
+                } catch (eSel) {}
+
+                // 1) Sugerencias de búsqueda abiertas o texto en el buscador
+                try {
+                    var haySugerencias = document.body.classList.contains('search-open') ||
+                        (resultList && resultList.classList.contains('result-list-open')) ||
+                        (resultList && resultList.innerHTML && resultList.innerHTML.trim());
+                    var inp = (typeof searchInput !== 'undefined' && searchInput) ? searchInput : document.getElementById('searchInput');
+                    var hayTexto = inp && String(inp.value || '').trim().length > 0;
+                    if (haySugerencias || hayTexto) {
+                        if (typeof cerrarSugerenciasBusqueda === 'function') {
+                            cerrarSugerenciasBusqueda();
+                        }
+                        if (inp && hayTexto) {
+                            inp.value = '';
+                            try {
+                                if (typeof filteredData !== 'undefined') filteredData = [];
+                            } catch (eF) {}
+                            try {
+                                var rs = document.getElementById('resultsSection');
+                                if (rs) rs.classList.remove('has-results');
+                            } catch (eR) {}
+                            try {
+                                if (typeof selectedIndex !== 'undefined') selectedIndex = -1;
+                            } catch (eS) {}
+                        }
+                        try {
+                            if (inp) inp.blur();
+                        } catch (eBlur) {}
+                        return true;
+                    }
                 } catch (eSug) {}
 
-                // 1) Menú ☰
+                // 2) Menú ☰
                 var menu = document.getElementById('headerMenuDropdown');
                 if (menu && !menu.hidden) {
                     try {
@@ -7563,7 +7760,7 @@
                     return true;
                 }
 
-                // 2) Panel alerta vencidos
+                // 3) Panel alerta vencidos
                 var alerta = document.getElementById('panelAlertaVenc');
                 if (alerta && alerta.hidden === false) {
                     alerta.hidden = true;
@@ -7572,7 +7769,7 @@
                     return true;
                 }
 
-                // 3) Admin abierto → solo cerrar admin (no sesión)
+                // 4) Admin abierto → solo cerrar admin (regresar al menú principal, no sesión)
                 var adminAbierto = false;
                 try {
                     if (typeof adminEstaAbierto === 'function') adminAbierto = adminEstaAbierto();
@@ -7606,6 +7803,15 @@
                     } catch (e3) {}
                     return true;
                 }
+
+                // 5) Overlay de confirmación abierto
+                try {
+                    var conf = document.getElementById('confirmOverlay');
+                    if (conf && !conf.classList.contains('hidden') && conf.style.display !== 'none') {
+                        if (typeof cerrarConfirmacion === 'function') cerrarConfirmacion(false);
+                        return true;
+                    }
+                } catch (eConf) {}
 
                 return false;
             }
