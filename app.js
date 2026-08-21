@@ -221,6 +221,8 @@
         }
         let filteredData = [];
         let selectedIndex = -1;
+        /** true = Guardar reemplaza lotes del producto (lápiz editar), no suma */
+        let iemModoEdicion = false;
         let pedido = [];
         let inventarioFisico = [];
         let currentFactor = 1;
@@ -1907,6 +1909,14 @@
         }
 
         function limpiarCantidades() {
+            iemModoEdicion = false;
+            try {
+                var btnGx = document.getElementById('btnRegistrarFisico');
+                if (btnGx && btnGx.dataset.editLabel) {
+                    btnGx.innerHTML = btnGx.dataset.editLabel;
+                    delete btnGx.dataset.editLabel;
+                }
+            } catch (eGx) {}
             cajasGroup.classList.remove('hidden');
             txtCajas.value = '0';
             txtUnidades.value = '0';
@@ -2773,21 +2783,18 @@
 
             const idCanonico = idLotePorProductoYVencimiento(codigo, vencimiento);
             const vencKey = normalizarVencimiento(vencimiento);
-            let loteExistente = record.lotes.find(l =>
-                l.id === idCanonico || normalizarVencimiento(l.vencimiento) === vencKey
-            );
-
             let loteParaSync;
-            if (loteExistente) {
-                // Mismo producto + misma fecha → SUMAR, no crear otra fila
-                loteExistente.cantidad = (Number(loteExistente.cantidad) || 0) + cantidadLote;
-                loteExistente.id = idCanonico;
-                loteExistente.fecha = fechaStr;
-                loteExistente.fechaISO = ahora.toISOString();
-                loteExistente.usuario = usuarioActual || loteExistente.usuario || '';
-                loteExistente.vencimiento = vencimiento;
-                loteParaSync = loteExistente;
-            } else {
+
+            // Modo edición (lápiz): reemplaza todos los lotes por este conteo
+            if (iemModoEdicion) {
+                try {
+                    (record.lotes || []).forEach(function (l) {
+                        if (l && l.id && typeof eliminarLoteDelServidor === 'function') {
+                            eliminarLoteDelServidor(l.id);
+                        }
+                    });
+                } catch (eDel) {}
+                record.lotes = [];
                 loteParaSync = {
                     id: idCanonico,
                     vencimiento: vencimiento,
@@ -2797,6 +2804,38 @@
                     usuario: usuarioActual || ''
                 };
                 record.lotes.push(loteParaSync);
+                iemModoEdicion = false;
+                try {
+                    var btnG2 = document.getElementById('btnRegistrarFisico');
+                    if (btnG2 && btnG2.dataset.editLabel) {
+                        btnG2.innerHTML = btnG2.dataset.editLabel;
+                        delete btnG2.dataset.editLabel;
+                    }
+                } catch (eB2) {}
+            } else {
+                let loteExistente = record.lotes.find(l =>
+                    l.id === idCanonico || normalizarVencimiento(l.vencimiento) === vencKey
+                );
+                if (loteExistente) {
+                    // Mismo producto + misma fecha → SUMAR, no crear otra fila
+                    loteExistente.cantidad = (Number(loteExistente.cantidad) || 0) + cantidadLote;
+                    loteExistente.id = idCanonico;
+                    loteExistente.fecha = fechaStr;
+                    loteExistente.fechaISO = ahora.toISOString();
+                    loteExistente.usuario = usuarioActual || loteExistente.usuario || '';
+                    loteExistente.vencimiento = vencimiento;
+                    loteParaSync = loteExistente;
+                } else {
+                    loteParaSync = {
+                        id: idCanonico,
+                        vencimiento: vencimiento,
+                        cantidad: cantidadLote,
+                        fecha: fechaStr,
+                        fechaISO: ahora.toISOString(),
+                        usuario: usuarioActual || ''
+                    };
+                    record.lotes.push(loteParaSync);
+                }
             }
 
             record.stockTeorico = stockTeorico;
@@ -2814,7 +2853,7 @@
             txtUnidades.value = '0';
             const totalLotes = record.lotes.length;
             const msgLote = totalLotes > 1 ? ` (${totalLotes} fechas, total físico ${record.stockFisico})` : ` (total físico ${record.stockFisico})`;
-            showToast(`✅ +${cantidadLote} (vence ${vencimiento || 's/f'})${msgLote}. Dif: ${record.diferencia}`, 'success');
+            showToast((loteParaSync && record.lotes.length === 1 && msgLote.indexOf('fechas') < 0 ? '✅ Conteo actualizado: ' : '✅ +') + cantidadLote + ' (vence ' + (vencimiento || 's/f') + ')' + msgLote + '. Dif: ' + record.diferencia, 'success');
             // Vuelve a la lista de resultados para seguir contando el
             // siguiente producto, en vez de quedarse en el mismo.
             volverABuscar();
@@ -3293,12 +3332,12 @@
                     showToast('Producto ' + cod + ' no está en el catálogo cargado', 'error');
                     return;
                 }
+                iemModoEdicion = true;
                 filteredData = [item];
                 selectedIndex = 0;
                 try { if (searchInput) searchInput.value = cod; } catch (e0) {}
                 try { renderResults(filteredData); } catch (e1) {}
                 actualizarCantidades(item);
-                // Prefill cantidades desde el físico contado
                 try {
                     const factor = getFactorFinal(item) || 1;
                     const fisico = Number(registro.stockFisico) || 0;
@@ -3309,17 +3348,42 @@
                         if (txtCajas) txtCajas.value = '0';
                         txtUnidades.value = String(fisico);
                     }
+                    // Prefill fecha del último lote (o el primero)
+                    var lotes = registro.lotes || [];
+                    var loteRef = lotes.length ? lotes[lotes.length - 1] : null;
+                    if (loteRef && loteRef.vencimiento && typeof selDia !== 'undefined') {
+                        try {
+                            var parts = String(loteRef.vencimiento).split(/[-/]/);
+                            if (parts.length >= 3) {
+                                var d = parseInt(parts[0], 10), m = parseInt(parts[1], 10), y = parseInt(parts[2], 10);
+                                if (d >= 1 && d <= 31) selDia.value = d;
+                                if (m >= 1 && m <= 12) selMes.value = m;
+                                if (y >= 2000) {
+                                    anioSeleccionado = y;
+                                    document.querySelectorAll('.year-tab').forEach(function (t) {
+                                        t.classList.toggle('active', parseInt(t.dataset.year) === y);
+                                    });
+                                }
+                            }
+                        } catch (eV) {}
+                    }
                     if (typeof actualizarTotalCalculado === 'function') actualizarTotalCalculado();
-                    else if (typeof actualizarCantidades === 'function') { /* total se recalcula al input */ }
                 } catch (ePref) {}
-                // Scroll al panel de conteo
+                try {
+                    var btnG = document.getElementById('btnRegistrarFisico');
+                    if (btnG) {
+                        btnG.dataset.editLabel = btnG.innerHTML;
+                        btnG.innerHTML = '<span class="btn-icon">💾</span><span class="btn-label"> GUARDAR CAMBIOS</span>';
+                    }
+                } catch (eBtn) {}
                 try {
                     const card = document.getElementById('productoActivoCard') || document.getElementById('resultsSection');
                     if (card && card.scrollIntoView) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 } catch (eSc) {}
-                showToast('Edita fecha o cantidad y pulsa Guardar conteo', 'info');
+                showToast('Modo edición: al guardar se REEMPLAZA el conteo (no se suma)', 'info');
             } catch (eEdit) {
                 console.warn('editarRegistroInventario', eEdit);
+                iemModoEdicion = false;
                 showToast('No se pudo abrir para editar', 'error');
             }
         }
@@ -7652,7 +7716,7 @@
         function mostrarLogin() {
             try {
                 var lv = document.getElementById('loginVersion');
-                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.6.8');
+                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.6.9');
             } catch (eVer) {}
 
             try {

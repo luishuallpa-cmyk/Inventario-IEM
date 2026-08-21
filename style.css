@@ -4094,7 +4094,7 @@ body:not(.light-theme) #iemPullRefresh {
 
 
 /* ============================================================
-   v4.6.8 — nombres completos + chips con cajas/unidades
+   v4.6.9 — nombres completos + chips con cajas/unidades
    ============================================================ */
 @media (max-width: 959px) {
   .result-item-suggest {
@@ -4161,7 +4161,7 @@ body:not(.light-theme) #iemPullRefresh {
 
 
 /* ============================================================
-   v4.6.8/6 — Cajas|Unidades: móvil en grid; PC en fila compacta
+   v4.6.9/6 — Cajas|Unidades: móvil en grid; PC en fila compacta
    ============================================================ */
 @media (max-width: 959px) {
   .cantidad-row {
@@ -4225,7 +4225,7 @@ body:not(.light-theme) #iemPullRefresh {
 
 
 /* ============================================================
-   v4.6.8 — móvil: sin icono alerta header, sin bloque Resultados,
+   v4.6.9 — móvil: sin icono alerta header, sin bloque Resultados,
    filtros visibles, cantidades solo con producto
    ============================================================ */
 
@@ -4314,7 +4314,7 @@ button.btn-alerta-venc {
 
 
 /* ============================================================
-   v4.6.8 RELEASE — PC profesional: lista | panel al lado
+   v4.6.9 RELEASE — PC profesional: lista | panel al lado
    ============================================================ */
 @media (min-width: 960px) {
   /* Layout principal 2 columnas al seleccionar */
@@ -4482,7 +4482,7 @@ button.btn-alerta-venc {
 
 
 /* ============================================================
-   v4.6.8 — lista con altura controlada + Cambiar producto sin cuadro
+   v4.6.9 — lista con altura controlada + Cambiar producto sin cuadro
    ============================================================ */
 @media (min-width: 960px) {
   /* No desplegar toda la página: lista con scroll interno acotado */
@@ -4546,7 +4546,7 @@ button.btn-alerta-venc {
 
 
 /* ============================================================
-   v4.6.8 — móvil menos cargado + editar inventario
+   v4.6.9 — móvil menos cargado + editar inventario
    ============================================================ */
 @media (max-width: 959px) {
   /* Buscar: oculto (búsqueda al escribir / Enter) */
@@ -4610,4 +4610,22 @@ button.btn-alerta-venc {
 }
 .btn-edit-diff:hover {
   background: rgba(10, 120, 76, 0.1);
+}
+
+
+/* v4.6.9 — ocultar Buscar en móvil (más específico) */
+@media (max-width: 959px) {
+  #searchSection #searchButton,
+  #searchSection .search-row #searchButton,
+  .search-row #searchButton,
+  button#searchButton {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+  }
 }
