@@ -1744,12 +1744,25 @@
                 return;
             }
 
-            vencChips.innerHTML = recientes.map(l => `
-                <span class="venc-chip">
-                    ${l.vencimiento || 'S/F'} · ${l.cantidad} ${unidadRef || ''}
-                    <button type="button" class="venc-chip-del" data-codigo="${codigo}" data-idx="${l.idx}" title="Eliminar este lote">✕</button>
-                </span>
-            `).join('');
+            var factorChip = 1;
+            try {
+                if (record && record.factor) factorChip = Number(record.factor) || 1;
+            } catch (eF) { factorChip = 1; }
+            if (factorChip < 1) factorChip = 1;
+
+            vencChips.innerHTML = recientes.map(function (l) {
+                var cant = Number(l.cantidad) || 0;
+                var cajasL = factorChip > 1 ? Math.floor(cant / factorChip) : 0;
+                var undL = factorChip > 1 ? (cant % factorChip) : cant;
+                var qtyTxt = factorChip > 1
+                    ? (cajasL + ' cj · ' + undL + ' und')
+                    : (undL + ' und');
+                return '<span class="venc-chip">' +
+                    (l.vencimiento || 'S/F') + ' · ' + qtyTxt +
+                    (unidadRef ? ' <span class="venc-chip-um">' + escapeHtml(String(unidadRef)) + '</span>' : '') +
+                    '<button type="button" class="venc-chip-del" data-codigo="' + codigo +
+                    '" data-idx="' + l.idx + '" title="Eliminar este lote">✕</button></span>';
+            }).join('');
 
             document.querySelectorAll('.venc-chip-del').forEach(btn => {
                 btn.addEventListener('click', function(e) {
@@ -7572,7 +7585,7 @@
         function mostrarLogin() {
             try {
                 var lv = document.getElementById('loginVersion');
-                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.6.2');
+                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.6.3');
             } catch (eVer) {}
 
             try {

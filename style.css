@@ -4091,3 +4091,70 @@ body:not(.light-theme) #iemPullRefresh {
   /* En móvil la lista vive bajo el input; ocultar hueco vacío en results */
   body.search-open #resultsSection .results-header { margin-bottom: 0.25rem; }
 }
+
+
+/* ============================================================
+   v4.6.3 — nombres completos + chips con cajas/unidades
+   ============================================================ */
+@media (max-width: 959px) {
+  .result-item-suggest {
+    align-items: center !important;
+    gap: 0.65rem !important;
+    padding: 0.75rem 0.9rem !important;
+    min-height: 84px !important;
+  }
+  .result-item-suggest .suggest-img,
+  .result-item-suggest .suggest-img-ph {
+    width: 72px !important;
+    height: 72px !important;
+  }
+  .result-item-suggest .suggest-text {
+    -webkit-line-clamp: 4 !important;
+    font-size: 0.92rem !important;
+    line-height: 1.32 !important;
+    max-height: none !important;
+  }
+  .result-item-suggest .suggest-meta {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+    -webkit-line-clamp: 2 !important;
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    word-break: break-word !important;
+    line-height: 1.25 !important;
+  }
+  .result-item-suggest .suggest-chevron {
+    display: none !important; /* más espacio horizontal para el nombre */
+  }
+}
+
+/* Chips de lotes: más anchos, cajas + unidades legibles */
+.venc-chips {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 0.4rem !important;
+  align-items: stretch !important;
+}
+.venc-chip {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  max-width: 100% !important;
+  white-space: normal !important;
+  word-break: break-word !important;
+  padding: 0.4rem 0.55rem !important;
+  font-size: 0.8rem !important;
+  line-height: 1.25 !important;
+  flex: 1 1 auto !important;
+  min-width: min(100%, 11rem) !important;
+}
+.venc-chip-um {
+  opacity: 0.65;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.venc-chip-del {
+  flex-shrink: 0 !important;
+  margin-left: auto !important;
+}
