@@ -221,8 +221,6 @@
         }
         let filteredData = [];
         let selectedIndex = -1;
-        /** true = Guardar reemplaza lotes del producto (lápiz editar), no suma */
-        let iemModoEdicion = false;
         let pedido = [];
         let inventarioFisico = [];
         let currentFactor = 1;
@@ -335,74 +333,6 @@
             if (/^https?:\/\//i.test(u)) return u;
             if (/^\//.test(u) || /^\.\//.test(u)) return u;
             return '';
-        }
-
-        /** URLs que fallaron: no reintentar en esta sesión. */
-        var _iemImgBroken = Object.create(null);
-        function markImageBroken(url) {
-            if (url) _iemImgBroken[String(url)] = 1;
-        }
-        try { window.markImageBroken = markImageBroken; } catch (eW) {}
-        function isImageBroken(url) {
-            return !!(url && _iemImgBroken[String(url)]);
-        }
-
-        /**
-         * HTML de <img> optimizado: lazy, async decode, tamaño fijo (menos CLS),
-         * fetchpriority bajo salvo las primeras filas visibles.
-         */
-        function buildProductImgHtml(url, className, idx) {
-            var safe = safeImageUrl(url);
-            if (!safe || isImageBroken(safe)) {
-                return '<span class="' + className + ' prod-img-placeholder" aria-hidden="true">📦</span>';
-            }
-            var eager = (typeof idx === 'number' && idx < 4);
-            var loading = eager ? 'eager' : 'lazy';
-            var prio = eager ? 'high' : 'low';
-            var esc = escapeHtml(safe);
-            return '<img class="' + className + '" src="' + esc + '" alt="" width="72" height="72"'
-                + ' loading="' + loading + '" decoding="async" fetchpriority="' + prio + '"'
-                + ' referrerpolicy="no-referrer"'
-                + ' onerror="window.__iemImgErr&&window.__iemImgErr(this)">'
-                ;
-        }
-        window.__iemImgErr = function (el) {
-            try {
-                if (!el) return;
-                markImageBroken(el.getAttribute('src') || el.src);
-                el.onerror = null;
-                var ph = document.createElement('span');
-                ph.className = (el.className || 'prod-img') + ' prod-img-placeholder';
-                ph.setAttribute('aria-hidden', 'true');
-                ph.textContent = '📦';
-                if (el.parentNode) el.parentNode.replaceChild(ph, el);
-            } catch (e) {}
-        };
-
-        /** Precarga la imagen del producto seleccionado (panel). */
-        function setProductActiveImage(url) {
-            if (!paImg) return;
-            var safe = safeImageUrl(url);
-            if (!safe || isImageBroken(safe)) {
-                paImg.removeAttribute('src');
-                paImg.style.display = 'none';
-                return;
-            }
-            paImg.loading = 'eager';
-            try { paImg.fetchPriority = 'high'; } catch (e) {}
-            paImg.decoding = 'async';
-            paImg.referrerPolicy = 'no-referrer';
-            paImg.onerror = function () {
-                markImageBroken(safe);
-                paImg.style.display = 'none';
-                paImg.removeAttribute('src');
-            };
-            if (paImg.src === safe) {
-                paImg.style.display = '';
-                return;
-            }
-            paImg.src = safe;
-            paImg.style.display = '';
         }
 
         async function cargarSesionesActivas() {
@@ -1541,39 +1471,7 @@
             renderResults(filteredData);
         }
 
-
-        // PC = lista en resultsSection (estilo 4.5.3). Móvil = desplegable bajo el input.
-        function iemPlaceResultList() {
-            var list = document.getElementById('resultList');
-            if (!list) return;
-            var suggest = document.getElementById('searchSuggestWrap');
-            var panel = document.getElementById('pcPanelLista') || document.getElementById('resultsSection');
-            var mobile = false;
-            try { mobile = window.matchMedia && window.matchMedia('(max-width: 959px)').matches; } catch (e) {}
-            if (mobile && suggest) {
-                if (list.parentElement !== suggest) suggest.appendChild(list);
-            } else if (panel) {
-                // Insertar después del results-header si existe
-                var header = panel.querySelector('.results-header');
-                if (header && header.nextSibling !== list) {
-                    if (header.nextSibling) panel.insertBefore(list, header.nextSibling);
-                    else panel.appendChild(list);
-                } else if (list.parentElement !== panel) {
-                    panel.appendChild(list);
-                }
-            }
-        }
-        try {
-            iemPlaceResultList();
-            window.addEventListener('resize', function () {
-                clearTimeout(window.__iemPlaceListT);
-                window.__iemPlaceListT = setTimeout(iemPlaceResultList, 120);
-            });
-            document.addEventListener('DOMContentLoaded', iemPlaceResultList);
-        } catch (ePlace) {}
-
         function renderResults(items) {
-            try { if (typeof iemPlaceResultList === 'function') iemPlaceResultList(); } catch (ePL) {}
             const MAX_SHOW = 60;
             const totalHit = items ? items.length : 0;
             if (items && items.length > MAX_SHOW) items = items.slice(0, MAX_SHOW);
@@ -1611,10 +1509,10 @@
                 document.body.classList.add('search-open');
             } catch (eRs2) {}
 
-            // En móvil: lista de sugerencias con más resultados y scroll (nombres completos + imagen más grande)
+            // En móvil: lista corta tipo sugerencias (menos datos, más fácil de tocar)
             var isMobileList = false;
             try { isMobileList = window.matchMedia && window.matchMedia('(max-width: 640px)').matches; } catch (eM) {}
-            if (isMobileList && items.length > 30) items = items.slice(0, 30);
+            if (isMobileList && items.length > 12) items = items.slice(0, 12);
 
             let html = '';
             items.forEach((item, idx) => {
@@ -1641,12 +1539,16 @@
                         });
                     }
                 } catch (eYCD) {}
-                const imgUrl = getImagenUrl(item);
-                const imgHtml = buildProductImgHtml(imgUrl, 'prod-img', idx);
+                const imgUrl = safeImageUrl(getImagenUrl(item));
+                const imgHtml = imgUrl
+                    ? `<img class="prod-img" src="${escapeHtml(imgUrl)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.classList.add('img-broken');this.removeAttribute('src');this.outerHTML='<span class=\\'prod-img prod-img-placeholder\\' aria-hidden=\\'true\\'>📦</span>';">`
+                    : `<span class="prod-img prod-img-placeholder" aria-hidden="true">📦</span>`;
 
                 // Móvil / lista compacta: imagen grande + código + nombre + meta (stock, línea)
                 if (isMobileList) {
-                    const imgSuggest = buildProductImgHtml(imgUrl, 'suggest-img', idx);
+                    const imgSuggest = imgUrl
+                        ? `<img class="suggest-img" src="${escapeHtml(imgUrl)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='';this.classList.add('suggest-img-ph');this.alt='';">`
+                        : `<span class="suggest-img suggest-img-ph" aria-hidden="true">📦</span>`;
                     const metaBits = [];
                     if (fabrica) metaBits.push('Fáb ' + fabrica);
                     if (linea) metaBits.push(linea);
@@ -1810,53 +1712,27 @@
                 return;
             }
 
-            var factorChip = 1;
-            try {
-                if (record && record.factor) factorChip = Number(record.factor) || 1;
-            } catch (eF) { factorChip = 1; }
-            if (factorChip < 1) factorChip = 1;
+            vencChips.innerHTML = recientes.map(l => `
+                <span class="venc-chip">
+                    ${l.vencimiento || 'S/F'} · ${l.cantidad} ${unidadRef || ''}
+                    <button type="button" class="venc-chip-del" data-codigo="${codigo}" data-idx="${l.idx}" title="Eliminar este lote">✕</button>
+                </span>
+            `).join('');
 
-            // Solo admin puede eliminar lotes; usuarios de almacén solo ven el registro
-            var puedeEliminarLote = (typeof esAdmin === 'function') ? esAdmin() : false;
-
-            vencChips.innerHTML = recientes.map(function (l) {
-                var cant = Number(l.cantidad) || 0;
-                var cajasL = factorChip > 1 ? Math.floor(cant / factorChip) : 0;
-                var undL = factorChip > 1 ? (cant % factorChip) : cant;
-                // Solo cajas/unidades; el factor (CJ*24/UND) no se muestra (va en el reporte)
-                var qtyTxt = factorChip > 1
-                    ? (cajasL + ' cj · ' + undL + ' und')
-                    : (undL + ' und');
-                var delBtn = puedeEliminarLote
-                    ? ('<button type="button" class="venc-chip-del" data-codigo="' + codigo +
-                       '" data-idx="' + l.idx + '" title="Eliminar este lote">✕</button>')
-                    : '';
-                return '<span class="venc-chip">' +
-                    '<span class="venc-chip-date">' + (l.vencimiento || 'S/F') + '</span>' +
-                    '<span class="venc-chip-qty">' + qtyTxt + '</span>' +
-                    delBtn + '</span>';
-            }).join('');
-
-            if (puedeEliminarLote) {
-                document.querySelectorAll('.venc-chip-del').forEach(btn => {
-                    btn.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        eliminarLote(this.dataset.codigo, parseInt(this.dataset.idx));
-                    });
+            document.querySelectorAll('.venc-chip-del').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    eliminarLote(this.dataset.codigo, parseInt(this.dataset.idx));
                 });
-            }
+            });
         }
 
         // Elimina un lote puntual (una cantidad con su fecha) de un producto
         // ya contado, y recalcula el total físico y la diferencia. Si era el
         // único lote, se elimina la fila completa del inventario físico.
         // También avisa al servidor para que el borrado se refleje en los
-        // demás celulares/PC. Solo administrador.
+        // demás celulares/PC.
         function eliminarLote(codigo, idx) {
-            if (typeof esAdmin === 'function' && !esAdmin()) {
-                try { showToast('Solo el administrador puede eliminar lotes.', 'error'); } catch (e) {}
-                return;
-            }
             const record = inventarioFisico.find(d => d.codigo === codigo);
             if (!record || !record.lotes) return;
             const [loteEliminado] = record.lotes.splice(idx, 1);
@@ -1912,13 +1788,6 @@
 
             // Datos de la tarjeta de producto seleccionado (vista ampliada)
             document.body.classList.add('modo-seleccion');
-            try {
-                if (typeof iemPlaceResultList === 'function') iemPlaceResultList();
-                if (resultList) {
-                    resultList.classList.remove('result-list-collapsed');
-                    resultList.classList.add('result-list-open');
-                }
-            } catch (eMS) {}
             paDescripcion.textContent = getDescripcion(item);
             const codFab = getCodigoFabrica(item);
             paCodigo.textContent = codFab ? `Cód: ${getCodigo(item)} | Cód. Fábrica: ${codFab}` : `Cód: ${getCodigo(item)}`;
@@ -1949,7 +1818,15 @@
             } catch (eExtra) {}
 
             if (paImg) {
-                setProductActiveImage(getImagenUrl(item));
+                const url = safeImageUrl(getImagenUrl(item));
+                if (url) {
+                    paImg.src = url;
+                    paImg.style.display = '';
+                    paImg.onerror = function () { paImg.style.display = 'none'; };
+                } else {
+                    paImg.removeAttribute('src');
+                    paImg.style.display = 'none';
+                }
             }
             actualizarTotalCalculado();
         }
@@ -1977,14 +1854,6 @@
         }
 
         function limpiarCantidades() {
-            iemModoEdicion = false;
-            try {
-                var btnGx = document.getElementById('btnRegistrarFisico');
-                if (btnGx && btnGx.dataset.editLabel) {
-                    btnGx.innerHTML = btnGx.dataset.editLabel;
-                    delete btnGx.dataset.editLabel;
-                }
-            } catch (eGx) {}
             cajasGroup.classList.remove('hidden');
             txtCajas.value = '0';
             txtUnidades.value = '0';
@@ -2369,8 +2238,6 @@
         // reaparecía en los demás.
         function eliminarLoteDelServidor(id) {
             if (!id) return;
-            if (typeof esAdmin === 'function' && !esAdmin()) return;
-            if (!supabaseClient) return;
             supabaseClient.from('lotes_conteo').delete().eq('id', id)
                 .then(({ error }) => { if (error) console.warn('No se pudo borrar lote:', error); });
         }
@@ -2853,18 +2720,21 @@
 
             const idCanonico = idLotePorProductoYVencimiento(codigo, vencimiento);
             const vencKey = normalizarVencimiento(vencimiento);
-            let loteParaSync;
+            let loteExistente = record.lotes.find(l =>
+                l.id === idCanonico || normalizarVencimiento(l.vencimiento) === vencKey
+            );
 
-            // Modo edición (lápiz): reemplaza todos los lotes por este conteo
-            if (iemModoEdicion) {
-                try {
-                    (record.lotes || []).forEach(function (l) {
-                        if (l && l.id && typeof eliminarLoteDelServidor === 'function') {
-                            eliminarLoteDelServidor(l.id);
-                        }
-                    });
-                } catch (eDel) {}
-                record.lotes = [];
+            let loteParaSync;
+            if (loteExistente) {
+                // Mismo producto + misma fecha → SUMAR, no crear otra fila
+                loteExistente.cantidad = (Number(loteExistente.cantidad) || 0) + cantidadLote;
+                loteExistente.id = idCanonico;
+                loteExistente.fecha = fechaStr;
+                loteExistente.fechaISO = ahora.toISOString();
+                loteExistente.usuario = usuarioActual || loteExistente.usuario || '';
+                loteExistente.vencimiento = vencimiento;
+                loteParaSync = loteExistente;
+            } else {
                 loteParaSync = {
                     id: idCanonico,
                     vencimiento: vencimiento,
@@ -2874,38 +2744,6 @@
                     usuario: usuarioActual || ''
                 };
                 record.lotes.push(loteParaSync);
-                iemModoEdicion = false;
-                try {
-                    var btnG2 = document.getElementById('btnRegistrarFisico');
-                    if (btnG2 && btnG2.dataset.editLabel) {
-                        btnG2.innerHTML = btnG2.dataset.editLabel;
-                        delete btnG2.dataset.editLabel;
-                    }
-                } catch (eB2) {}
-            } else {
-                let loteExistente = record.lotes.find(l =>
-                    l.id === idCanonico || normalizarVencimiento(l.vencimiento) === vencKey
-                );
-                if (loteExistente) {
-                    // Mismo producto + misma fecha → SUMAR, no crear otra fila
-                    loteExistente.cantidad = (Number(loteExistente.cantidad) || 0) + cantidadLote;
-                    loteExistente.id = idCanonico;
-                    loteExistente.fecha = fechaStr;
-                    loteExistente.fechaISO = ahora.toISOString();
-                    loteExistente.usuario = usuarioActual || loteExistente.usuario || '';
-                    loteExistente.vencimiento = vencimiento;
-                    loteParaSync = loteExistente;
-                } else {
-                    loteParaSync = {
-                        id: idCanonico,
-                        vencimiento: vencimiento,
-                        cantidad: cantidadLote,
-                        fecha: fechaStr,
-                        fechaISO: ahora.toISOString(),
-                        usuario: usuarioActual || ''
-                    };
-                    record.lotes.push(loteParaSync);
-                }
             }
 
             record.stockTeorico = stockTeorico;
@@ -2923,7 +2761,7 @@
             txtUnidades.value = '0';
             const totalLotes = record.lotes.length;
             const msgLote = totalLotes > 1 ? ` (${totalLotes} fechas, total físico ${record.stockFisico})` : ` (total físico ${record.stockFisico})`;
-            showToast((loteParaSync && record.lotes.length === 1 && msgLote.indexOf('fechas') < 0 ? '✅ Conteo actualizado: ' : '✅ +') + cantidadLote + ' (vence ' + (vencimiento || 's/f') + ')' + msgLote + '. Dif: ' + record.diferencia, 'success');
+            showToast(`✅ +${cantidadLote} (vence ${vencimiento || 's/f'})${msgLote}. Dif: ${record.diferencia}`, 'success');
             // Vuelve a la lista de resultados para seguir contando el
             // siguiente producto, en vez de quedarse en el mismo.
             volverABuscar();
@@ -3313,7 +3151,7 @@
                     <td style="color:var(--heading-color);" title="${vencTitulo}">${vencTexto}</td>
                     <td style="color:var(--text-muted);">${d.fecha}</td>
                     <td style="color:${usuarioColor}; font-weight:${usuarioDuplicado ? '700' : '400'};" title="${usuarioTitulo}">${usuarioCelda}</td>
-                    <td class="acciones-cell"><button type="button" class="btn-edit-diff editar-diff" data-index="${idx}" title="Editar">✏️</button><button class="eliminar-diff" data-index="${idx}" title="Eliminar">✕</button></td>
+                    <td class="acciones-cell"><button class="eliminar-diff" data-index="${idx}">✕</button></td>
                 </tr>`;
                 mobileHtml += `<div class="mi-card">
                     <div class="mi-card-head">
@@ -3325,10 +3163,7 @@
                             </div>
                             <div class="mi-card-desc">${d.descripcion}</div>
                         </div>
-                        <div class="mi-card-actions">
-                            <button type="button" class="mi-card-edit editar-diff-movil" data-index="${idx}" title="Editar fecha o cantidad">✏️</button>
-                            <button type="button" class="mi-card-del eliminar-diff-movil" data-index="${idx}" title="Eliminar registro">🗑️</button>
-                        </div>
+                        <button class="mi-card-del eliminar-diff-movil" data-index="${idx}" title="Eliminar registro">🗑️</button>
                     </div>
                     <div class="mi-card-stats">
                         <div><span class="mi-stat-label">Teórico</span><span class="mi-stat-value">${teoricoTexto}</span></div>
@@ -3375,87 +3210,6 @@
                     });
                 });
             });
-            document.querySelectorAll('.editar-diff, .editar-diff-movil').forEach(btn => {
-                btn.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const idx = parseInt(this.dataset.index, 10);
-                    if (typeof editarRegistroInventario === 'function') editarRegistroInventario(idx);
-                });
-            });
-        }
-
-        /** Abre el producto contado para corregir fecha/cantidad sin borrar. */
-        function editarRegistroInventario(idx) {
-            try {
-                const registro = inventarioFisico[idx];
-                if (!registro) return;
-                const cod = String(registro.codigo || '').trim();
-                if (!cod) return;
-                let item = null;
-                if (Array.isArray(currentData)) {
-                    item = currentData.find(function (p) {
-                        return String(getCodigo(p) || '').trim() === cod;
-                    }) || null;
-                }
-                if (!item) {
-                    showToast('Producto ' + cod + ' no está en el catálogo cargado', 'error');
-                    return;
-                }
-                iemModoEdicion = true;
-                filteredData = [item];
-                selectedIndex = 0;
-                try { if (searchInput) searchInput.value = cod; } catch (e0) {}
-                try { renderResults(filteredData); } catch (e1) {}
-                actualizarCantidades(item);
-                try {
-                    const factor = getFactorFinal(item) || 1;
-                    const fisico = Number(registro.stockFisico) || 0;
-                    if (factor > 1) {
-                        txtCajas.value = String(Math.floor(fisico / factor));
-                        txtUnidades.value = String(fisico % factor);
-                    } else {
-                        if (txtCajas) txtCajas.value = '0';
-                        txtUnidades.value = String(fisico);
-                    }
-                    // Prefill fecha del último lote (o el primero)
-                    var lotes = registro.lotes || [];
-                    var loteRef = lotes.length ? lotes[lotes.length - 1] : null;
-                    if (loteRef && loteRef.vencimiento && typeof selDia !== 'undefined') {
-                        try {
-                            var parts = String(loteRef.vencimiento).split(/[-/]/);
-                            if (parts.length >= 3) {
-                                var d = parseInt(parts[0], 10), m = parseInt(parts[1], 10), y = parseInt(parts[2], 10);
-                                if (d >= 1 && d <= 31) selDia.value = d;
-                                if (m >= 1 && m <= 12) selMes.value = m;
-                                if (y >= 2000) {
-                                    anioSeleccionado = y;
-                                    document.querySelectorAll('.year-tab').forEach(function (t) {
-                                        t.classList.toggle('active', parseInt(t.dataset.year) === y);
-                                    });
-                                }
-                            }
-                        } catch (eV) {}
-                    }
-                    if (typeof actualizarTotalCalculado === 'function') actualizarTotalCalculado();
-                } catch (ePref) {}
-                try {
-                    var btnG = document.getElementById('btnRegistrarFisico');
-                    if (btnG) {
-                        btnG.dataset.editLabel = btnG.innerHTML;
-                        btnG.innerHTML = '<span class="btn-icon">💾</span><span class="btn-label"> GUARDAR CAMBIOS</span>';
-                    }
-                } catch (eBtn) {}
-                try {
-                    const card = document.getElementById('productoActivoCard') || document.getElementById('resultsSection');
-                    if (card && card.scrollIntoView) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                } catch (eSc) {}
-                showToast('Modo edición: al guardar se REEMPLAZA el conteo (no se suma)', 'info');
-            } catch (eEdit) {
-                console.warn('editarRegistroInventario', eEdit);
-                iemModoEdicion = false;
-                showToast('No se pudo abrir para editar', 'error');
-            }
         }
 
         // ============================================================
@@ -4524,7 +4278,7 @@
             const stockClass = cant <= 0 ? ' stock-cero' : '';
             const estado = activoItem ? '' : ' · <span style="color:#f59e0b">Inactivo</span>';
             const imgHtml = imgUrl
-                ? '<img class="aci-img" src="' + escapeHtmlSes(imgUrl) + '" alt="" width="48" height="48" loading="lazy" decoding="async" fetchpriority="low" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">'
+                ? '<img class="aci-img" src="' + escapeHtmlSes(imgUrl) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">'
                 : '<span class="aci-img aci-img-ph" aria-hidden="true">📦</span>';
             return '<div class="admin-catalog-item' + stockClass + '" data-codigo="' + cod + '">' +
                 imgHtml +
@@ -5085,6 +4839,19 @@
             if (themeToggleBtn) themeToggleBtn.textContent = icono;
             var loginThemeBtn = document.getElementById('loginThemeToggleBtn');
             if (loginThemeBtn) loginThemeBtn.textContent = icono;
+            // Barra de estado del celular (Android/Chrome PWA): mismo color del tema
+            try {
+                var colorBarra = esClaro ? '#0A784C' : '#0c1220';
+                var metas = document.querySelectorAll('meta[name="theme-color"]');
+                if (metas && metas.length) {
+                    metas.forEach(function (m) { m.setAttribute('content', colorBarra); });
+                } else {
+                    var m = document.createElement('meta');
+                    m.setAttribute('name', 'theme-color');
+                    m.setAttribute('content', colorBarra);
+                    document.head.appendChild(m);
+                }
+            } catch (eMeta) {}
             // Forzar repaint del overlay de login (fondo malla)
             var ov = document.getElementById('loginOverlay');
             if (ov) {
@@ -6730,16 +6497,9 @@
             const headerMenuBtn = document.getElementById('headerMenuBtn');
             if (headerMenuBtn) {
                 headerMenuBtn.addEventListener('click', function (e) {
-                    e.preventDefault();
                     e.stopPropagation();
                     if (typeof cerrarSugerenciasBusqueda === 'function') cerrarSugerenciasBusqueda();
                     toggleHeaderMenu();
-                });
-                // Acceso rápido: doble toque abre admin directo (por si el desplegable falla)
-                headerMenuBtn.addEventListener('dblclick', function (e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (typeof abrirAdminEnSeccion === 'function') abrirAdminEnSeccion('subir');
                 });
             }
             const headerMenuDropdown = document.getElementById('headerMenuDropdown');
@@ -6759,12 +6519,12 @@
                             const b = document.getElementById('logoutBtn');
                             if (b) b.click();
                         } else if (act === 'alerta') {
-                            // No usar icono del header; ir a listado admin o FAB
-                            if (typeof abrirAdminEnSeccion === 'function') {
+                            const a = document.getElementById('btnAlertaVenc');
+                            if (a) {
+                                a.hidden = false;
+                                a.click();
+                            } else if (typeof abrirAdminEnSeccion === 'function') {
                                 abrirAdminEnSeccion('vencimientos');
-                            } else {
-                                const fab = document.getElementById('fabAlertaVenc');
-                                if (fab) fab.click();
                             }
                         }
                         return;
@@ -7485,12 +7245,8 @@
             }
         }
 
-        /** Usuarios con acceso admin forzado (además del rol en tabla perfiles).
-         * Preferir rol=admin en public.perfiles. Esta lista es respaldo operativo.
-         * Se puede ampliar con window.IEM_CONFIG.ADMIN_USUARIOS = ['...'] en config.js */
-        var ADMIN_USUARIOS = (window.IEM_CONFIG && Array.isArray(window.IEM_CONFIG.ADMIN_USUARIOS) && window.IEM_CONFIG.ADMIN_USUARIOS.length)
-            ? window.IEM_CONFIG.ADMIN_USUARIOS.slice()
-            : ['luis', 'andric'];
+        /** Usuarios con acceso admin forzado (además del rol en tabla perfiles). */
+        var ADMIN_USUARIOS = ['luis', 'andric'];
 
         function esUsuarioAdminForzado(nombre) {
             var u = String(nombre || usuarioActual || '').toLowerCase().trim();
@@ -7540,7 +7296,7 @@
             const exportBtn = document.getElementById('exportDiffBtn');
             if (exportBtn) exportBtn.style.display = (es || !vend) ? '' : 'none';
             // Limpiar, Nube y Pedido: solo admin
-            ['clearDiffBtn', 'exportPedidoBtn'].forEach(id => {
+            ['clearDiffBtn', 'guardarDriveBtn', 'exportPedidoBtn'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.style.display = es ? '' : 'none';
             });
@@ -7657,11 +7413,7 @@
                 return;
             }
             ov.classList.add('visible');
-            ov.style.setProperty('display', 'flex', 'important');
-            ov.style.setProperty('visibility', 'visible', 'important');
-            ov.style.setProperty('opacity', '1', 'important');
-            ov.style.setProperty('z-index', '9500', 'important');
-            ov.style.setProperty('pointer-events', 'auto', 'important');
+            ov.style.display = 'flex';
             ov.setAttribute('aria-hidden', 'false');
             document.body.classList.add('admin-open');
             document.body.style.overflow = 'hidden';
@@ -7801,7 +7553,7 @@
         function mostrarLogin() {
             try {
                 var lv = document.getElementById('loginVersion');
-                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.8.1');
+                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.5.14');
             } catch (eVer) {}
 
             try {
