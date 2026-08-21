@@ -5088,7 +5088,7 @@
             // Actualizar color de la barra de estado (status bar)
             try {
                 var meta = document.getElementById('metaThemeColor') || document.querySelector('meta[name="theme-color"]');
-                if (meta) meta.setAttribute('content', esClaro ? '#0A784C' : '#0f172a');
+                if (meta) meta.setAttribute('content', esClaro ? '#3B6EA5' : '#0f172a');
             } catch (e) {}
             // Forzar repaint del overlay de login (fondo malla)
             var ov = document.getElementById('loginOverlay');
@@ -7806,7 +7806,7 @@
         function mostrarLogin() {
             try {
                 var lv = document.getElementById('loginVersion');
-                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.8.5');
+                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.8.7');
             } catch (eVer) {}
 
             try {
