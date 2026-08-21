@@ -2636,17 +2636,32 @@ body.light-theme .btn:hover {
   border-color: #64748b !important;
 }
 
-/* Primary = acción principal (verde marca) */
-.btn-primary,
+/* Primary = azul en oscuro, verde marca en claro */
+body:not(.light-theme) .btn-primary,
+body:not(.light-theme) .btn.btn-primary,
+body:not(.light-theme) .login-btn.btn-primary,
+body:not(.light-theme) #loginBtn {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #1d4ed8 !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+}
+body:not(.light-theme) .btn-primary:hover,
+body:not(.light-theme) .login-btn.btn-primary:hover,
+body:not(.light-theme) #loginBtn:hover {
+  background: #1d4ed8 !important;
+  color: #ffffff !important;
+  filter: none !important;
+}
 body.light-theme .btn-primary,
 body.light-theme .btn.btn-primary,
-body.light-theme #enviarInventarioBtn.btn-primary {
+body.light-theme #enviarInventarioBtn.btn-primary,
+body.light-theme .login-btn {
   background: #0A784C !important;
   color: #ffffff !important;
   border-color: #08663f !important;
   box-shadow: 0 2px 8px rgba(10, 120, 76, 0.25);
 }
-.btn-primary:hover,
 body.light-theme .btn-primary:hover {
   background: #08663f !important;
   color: #ffffff !important;
@@ -3585,9 +3600,9 @@ body.light-theme .login-field input:focus {
   background-position: center !important;
 }
 body:not(.light-theme) .login-overlay {
-  /* mesh oscuro navy/teal como pedidos vendedor */
-  background-color: #0f1419 !important;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 800' preserveAspectRatio='xMidYMid slice'%3E%3Crect fill='%230f1419' width='1200' height='800'/%3E%3Cg fill='none' stroke='%2314b8a6' stroke-opacity='0.32' stroke-width='1'%3E%3Cpath d='M0 400 L150 200 L300 350 L200 500 Z' fill='%230f766e' fill-opacity='0.22'/%3E%3Cpath d='M150 200 L350 80 L450 220 L300 350 Z' fill='%230d9488' fill-opacity='0.18'/%3E%3Cpath d='M350 80 L550 40 L650 180 L450 220 Z' fill='%2314b8a6' fill-opacity='0.12'/%3E%3Cpath d='M200 500 L300 350 L450 450 L320 620 Z' fill='%230f766e' fill-opacity='0.2'/%3E%3Cpath d='M320 620 L450 450 L600 550 L480 720 Z' fill='%230d9488' fill-opacity='0.16'/%3E%3Cpath d='M900 100 L1100 50 L1200 200 L1000 280 Z' fill='%230f766e' fill-opacity='0.25'/%3E%3Cpath d='M1000 280 L1200 200 L1200 400 L1050 450 Z' fill='%2314b8a6' fill-opacity='0.18'/%3E%3Cpath d='M850 500 L1050 450 L1200 600 L950 680 Z' fill='%230d9488' fill-opacity='0.2'/%3E%3Cpath d='M0 600 L180 550 L250 700 L50 750 Z' fill='%230f766e' fill-opacity='0.18'/%3E%3Cpath d='M600 0 L750 60 L700 200 L520 120 Z' fill='%2314b8a6' fill-opacity='0.1'/%3E%3Cpath d='M700 350 L900 300 L980 480 L780 520 Z' fill='%230f766e' fill-opacity='0.14'/%3E%3C/g%3E%3Cg fill='%235eead4' fill-opacity='0.45'%3E%3Ccircle cx='150' cy='200' r='2'/%3E%3Ccircle cx='300' cy='350' r='2'/%3E%3Ccircle cx='450' cy='220' r='2'/%3E%3Ccircle cx='900' cy='100' r='2'/%3E%3Ccircle cx='1000' cy='280' r='2'/%3E%3Ccircle cx='450' cy='450' r='2'/%3E%3C/g%3E%3C/svg%3E") !important;
+  /* mesh oscuro azul acero */
+  background-color: #0f172a !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 800' preserveAspectRatio='xMidYMid slice'%3E%3Crect fill='%230f172a' width='1200' height='800'/%3E%3Cg fill='none' stroke='%233b82f6' stroke-opacity='0.35' stroke-width='1'%3E%3Cpath d='M0 400 L150 200 L300 350 L200 500 Z' fill='%231e3a5f' fill-opacity='0.28'/%3E%3Cpath d='M150 200 L350 80 L450 220 L300 350 Z' fill='%231e40af' fill-opacity='0.22'/%3E%3Cpath d='M350 80 L550 40 L650 180 L450 220 Z' fill='%232563eb' fill-opacity='0.15'/%3E%3Cpath d='M200 500 L300 350 L450 450 L320 620 Z' fill='%231e3a5f' fill-opacity='0.25'/%3E%3Cpath d='M320 620 L450 450 L600 550 L480 720 Z' fill='%231e40af' fill-opacity='0.2'/%3E%3Cpath d='M900 100 L1100 50 L1200 200 L1000 280 Z' fill='%231e3a5f' fill-opacity='0.3'/%3E%3Cpath d='M1000 280 L1200 200 L1200 400 L1050 450 Z' fill='%232563eb' fill-opacity='0.2'/%3E%3Cpath d='M850 500 L1050 450 L1200 600 L950 680 Z' fill='%231e40af' fill-opacity='0.24'/%3E%3Cpath d='M0 600 L180 550 L250 700 L50 750 Z' fill='%231e3a5f' fill-opacity='0.22'/%3E%3Cpath d='M600 0 L750 60 L700 200 L520 120 Z' fill='%232563eb' fill-opacity='0.12'/%3E%3Cpath d='M700 350 L900 300 L980 480 L780 520 Z' fill='%231e3a5f' fill-opacity='0.18'/%3E%3C/g%3E%3Cg fill='%2393c5fd' fill-opacity='0.5'%3E%3Ccircle cx='150' cy='200' r='2'/%3E%3Ccircle cx='300' cy='350' r='2'/%3E%3Ccircle cx='450' cy='220' r='2'/%3E%3Ccircle cx='900' cy='100' r='2'/%3E%3Ccircle cx='1000' cy='280' r='2'/%3E%3Ccircle cx='450' cy='450' r='2'/%3E%3C/g%3E%3C/svg%3E") !important;
 }
 body.light-theme .login-overlay {
   /* mesh verde Laive con polígonos visibles */
