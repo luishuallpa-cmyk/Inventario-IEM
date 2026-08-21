@@ -1500,6 +1500,11 @@
                 if (rs2) rs2.classList.add('has-results');
             } catch (eRs2) {}
 
+            // En móvil: lista corta tipo sugerencias (menos datos, más fácil de tocar)
+            var isMobileList = false;
+            try { isMobileList = window.matchMedia && window.matchMedia('(max-width: 640px)').matches; } catch (eM) {}
+            if (isMobileList && items.length > 12) items = items.slice(0, 12);
+
             let html = '';
             items.forEach((item, idx) => {
                 const codigo = escapeHtml(getCodigo(item));
@@ -1515,6 +1520,20 @@
                 const imgHtml = imgUrl
                     ? `<img class="prod-img" src="${escapeHtml(imgUrl)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.classList.add('img-broken');this.removeAttribute('src');this.outerHTML='<span class=\\'prod-img prod-img-placeholder\\' aria-hidden=\\'true\\'>📦</span>';">`
                     : `<span class="prod-img prod-img-placeholder" aria-hidden="true">📦</span>`;
+
+                // Móvil: sugerencia compacta con imagen + código + nombre
+                if (isMobileList) {
+                    const imgSuggest = imgUrl
+                        ? `<img class="suggest-img" src="${escapeHtml(imgUrl)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.style.display='none';var n=this.nextElementSibling;if(n)n.style.display='flex';">`
+                            + `<span class="suggest-img suggest-img-ph" style="display:none" aria-hidden="true">📦</span>`
+                        : `<span class="suggest-img suggest-img-ph" aria-hidden="true">📦</span>`;
+                    html += `<div class="result-item result-item-suggest${selectedClass}" data-index="${idx}" role="option" aria-selected="${idx === selectedIndex ? 'true' : 'false'}">
+                        ${imgSuggest}
+                        <span class="suggest-code">${codigo}</span>
+                        <span class="suggest-text">${desc}</span>
+                    </div>`;
+                    return;
+                }
 
                 html += `<div class="result-item${selectedClass}" data-index="${idx}" role="option" aria-selected="${idx === selectedIndex ? 'true' : 'false'}">
                     ${imgHtml}

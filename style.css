@@ -1315,18 +1315,27 @@
             .search-row #refreshDriveBtn .btn-label { display: none; }
             .search-row #refreshDriveBtn .btn-icon { font-size: 1.05rem; }
 
-            .results-header { flex-direction: column; align-items: stretch; gap: 0.2rem; }
-            .results-header .stats { font-size: 0.7rem; gap: 0.5rem; }
+            /* Cabecera de resultados: mínima en móvil (la lista es el foco) */
+            .results-header {
+                display: none !important;
+            }
 
-            /* Lista tipo sugerencias (autocomplete): sin min-height que bloquee el touch */
+            /* Lista tipo Google/autocomplete: recuadro compacto */
             .result-list {
-                max-height: min(48vh, 320px);
+                max-height: min(42vh, 280px);
                 min-height: 0;
                 gap: 0;
-                border-radius: 12px;
-                border: 1px solid var(--card-border);
-                background: var(--card-bg, var(--input-bg));
-                box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+                border-radius: 10px;
+                border: 1px solid rgba(148, 163, 184, 0.35);
+                background: var(--card-bg, #0f172a);
+                box-shadow: 0 10px 28px rgba(0,0,0,0.28);
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            body.light-theme .result-list {
+                background: #fff;
+                border-color: #d1d5db;
+                box-shadow: 0 8px 20px rgba(0,0,0,0.12);
             }
             .result-list.result-list-collapsed {
                 border: none !important;
@@ -1334,11 +1343,7 @@
                 background: transparent !important;
             }
             .result-list.result-list-open {
-                margin-top: 0.35rem;
-            }
-            /* Sin resultados: no ocupar espacio muerto */
-            #resultsSection:not(.has-results) .results-header {
-                opacity: 0.55;
+                margin-top: 0.25rem;
             }
             #resultsSection:not(.has-results) .result-list {
                 max-height: 0 !important;
@@ -1348,62 +1353,70 @@
                 pointer-events: none;
             }
 
-            /* --- Vista móvil: filas compactas tipo sugerencia --- */
-            .result-item {
-                display: flex;
+            /* Filas sugerencia: solo código + nombre */
+            .result-item,
+            .result-item-suggest {
+                display: flex !important;
                 flex-direction: row;
                 align-items: center;
-                padding: 0.55rem 0.7rem;
-                border-radius: 0;
                 gap: 0.55rem;
-                background: transparent;
+                padding: 0.65rem 0.85rem;
+                margin: 0;
+                min-height: 44px;
                 border: none;
-                border-bottom: 1px solid var(--card-border);
-                margin-bottom: 0;
-                min-height: 48px;
+                border-radius: 0;
+                border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+                background: transparent;
+                box-shadow: none;
                 touch-action: manipulation;
+                cursor: pointer;
             }
-            .result-item:last-child { border-bottom: none; }
+            body.light-theme .result-item-suggest {
+                border-bottom-color: #e5e7eb;
+            }
+            .result-item:last-child,
+            .result-item-suggest:last-child {
+                border-bottom: none;
+            }
             .result-item:active,
-            .result-item.selected {
-                background: rgba(37, 99, 235, 0.12);
+            .result-item.selected,
+            .result-item-suggest:active,
+            .result-item-suggest.selected {
+                background: rgba(37, 99, 235, 0.14);
+            }
+            .suggest-code {
+                flex: 0 0 auto;
+                font-family: ui-monospace, monospace;
+                font-weight: 700;
+                font-size: 0.82rem;
+                color: var(--accent, #3b82f6);
+                min-width: 2.6rem;
+            }
+            .suggest-text {
+                flex: 1 1 auto;
+                min-width: 0;
+                font-size: 0.88rem;
+                line-height: 1.3;
+                color: var(--text-primary, #e2e8f0);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            body.light-theme .suggest-text {
+                color: #111827;
             }
 
+            /* Ocultar layout antiguo (imagen, stock, meta) en móvil */
             .result-item > .prod-img,
-            .result-item > .prod-img-placeholder {
-                width: 56px;
-                height: 56px;
-                border-radius: 10px;
-                flex-shrink: 0;
-                object-fit: contain;
-                background: #fff;
-                border: 1px solid rgba(0,0,0,0.06);
-            }
-            .result-item > .prod-img-placeholder {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 1.35rem;
-                background: rgba(0,0,0,0.05);
-            }
-
-            /* Ocultar columnas de escritorio */
+            .result-item > .prod-img-placeholder,
             .result-item > .codigo,
             .result-item > .fabrica,
             .result-item > .unidad,
             .result-item > .stock-cajas,
             .result-item > .stock-unidades,
-            .result-item > .descripcion {
-                display: none !important;
-            }
-
-            /* Cuerpo de texto a la derecha de la imagen */
+            .result-item > .descripcion,
             .result-item .result-body {
-                display: flex !important;
-                flex-direction: column;
-                gap: 0.12rem;
-                flex: 1 1 auto;
-                min-width: 0;
+                display: none !important;
             }
 
             /* Fila 1: código, fábrica, unidad */
@@ -3413,46 +3426,60 @@ tr.row-sube { background: rgba(10,120,76,0.06); }
   }
 }
 
-/* Móvil: adaptar body nuevo sin romper layout */
-@media (max-width: 959px) {
-  .result-item .ri-title {
-    font-size: 0.84rem;
-    font-weight: 700;
-    color: var(--heading-color);
-    line-height: 1.25;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .result-item .ri-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem 0.4rem;
-    font-size: 0.68rem;
-    color: var(--text-muted);
-  }
-  .result-item .ri-meta .codigo,
-  .result-item .ri-meta .fabrica,
-  .result-item .ri-meta .unidad {
-    display: inline !important;
-  }
-  .result-item .ri-meta .unidad {
-    padding: 0.05rem 0.4rem;
-    border-radius: 12px;
-    background: var(--badge-bg, rgba(148,163,184,0.2));
-    font-size: 0.6rem;
-  }
-  .result-item .ri-stock {
-    display: flex;
-    gap: 0.45rem;
-    font-size: 0.72rem;
-    font-weight: 600;
-  }
-  /* Ocultar filas viejas si aún existen en caché */
+/* Móvil: lista sugerencias (override final) */
+@media (max-width: 640px) {
+  #resultsSection .results-header { display: none !important; }
+  .result-item > .prod-img,
+  .result-item > .prod-img-placeholder,
+  .result-item .result-body,
+  .result-item .ri-title,
+  .result-item .ri-meta,
+  .result-item .ri-stock,
   .result-item .row1,
   .result-item .row2 {
     display: none !important;
+  }
+  .result-item-suggest {
+    display: flex !important;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    min-height: 48px;
+  }
+  .result-item-suggest .suggest-img {
+    display: block !important;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    object-fit: contain;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+  .result-item-suggest .suggest-img-ph {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    background: rgba(148,163,184,0.15);
+  }
+  .result-item-suggest .suggest-code {
+    display: inline !important;
+    font-family: ui-monospace, monospace;
+    font-weight: 700;
+    font-size: 0.78rem;
+    color: #60a5fa;
+    flex-shrink: 0;
+  }
+  .result-item-suggest .suggest-text {
+    display: block !important;
+    flex: 1;
+    min-width: 0;
+    font-size: 0.86rem;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 
