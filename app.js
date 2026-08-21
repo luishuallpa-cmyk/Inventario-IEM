@@ -1321,9 +1321,15 @@
             const term = searchInput.value.trim();
             if (!term) {
                 filteredData = [];
-                resultList.innerHTML = (typeof modoPedido !== 'undefined' && modoPedido)
-                    ? '<div class="empty-message"><span class="empty-title">Busca un producto</span>Escribe código SAP, interno o parte del nombre.<span class="empty-hint">Catálogo completo (existencias)</span></div>'
-                    : '<div class="empty-message"><span class="empty-title">Busca un producto</span>Prueba código SAP, código interno o parte del nombre.<span class="empty-hint">Solo habilitados Laive · PROM/CMB con stock 0 no se listan</span></div>';
+                // Sin texto: no mostrar mensaje vacío (bloqueaba touch en móvil)
+                resultList.innerHTML = '';
+                resultList.classList.add('result-list-collapsed');
+                resultList.classList.remove('result-list-open');
+                try {
+                    var rs0 = document.getElementById('resultsSection');
+                    if (rs0) rs0.classList.remove('has-results');
+                    document.body.classList.remove('search-open');
+                } catch (e0) {}
                 resultCount.textContent = '0';
                 cajasCount.textContent = '0';
                 unidadesCount.textContent = '0';
@@ -1477,10 +1483,12 @@
                     resultList.innerHTML = '';
                     resultList.classList.add('result-list-collapsed');
                     resultList.classList.remove('result-list-open');
+                    try { document.body.classList.remove('search-open'); } catch (eB) {}
                 } else {
                     resultList.innerHTML = '<div class="empty-message"><span class="empty-title">Sin resultados</span>No hay productos con ese criterio.<span class="empty-hint">Revisa el código o prueba menos letras · PROM/CMB en cero no aparecen</span></div>';
                     resultList.classList.remove('result-list-collapsed');
                     resultList.classList.add('result-list-open');
+                    try { document.body.classList.add('search-open'); } catch (eB2) {}
                 }
                 resultCount.textContent = '0';
                 cajasCount.textContent = '0';
@@ -1498,6 +1506,7 @@
             try {
                 var rs2 = document.getElementById('resultsSection');
                 if (rs2) rs2.classList.add('has-results');
+                document.body.classList.add('search-open');
             } catch (eRs2) {}
 
             // En móvil: lista corta tipo sugerencias (menos datos, más fácil de tocar)
@@ -2473,8 +2482,31 @@
 
         // Consulta la hoja "ConteoVivo" y trae lo que hayan contado otros
         // celulares desde la última vez. Se llama sola cada 10 segundos.
+        function conteoLocalLimpioTrasEnvio() {
+            try {
+                var v = localStorage.getItem('iem_conteo_limpio_tras_envio');
+                if (!v) return false;
+                // Válido hasta medianoche del día siguiente (conteo del día cerrado)
+                var ts = Number(v) || 0;
+                if (!ts) return false;
+                var ahora = Date.now();
+                // 18 horas: evita que el sync vuelva a llenar el listado tras enviar
+                return (ahora - ts) < (18 * 60 * 60 * 1000);
+            } catch (e) { return false; }
+        }
+        function marcarConteoLimpioTrasEnvio() {
+            try { localStorage.setItem('iem_conteo_limpio_tras_envio', String(Date.now())); } catch (e) {}
+        }
+        function quitarMarcaConteoLimpio() {
+            try { localStorage.removeItem('iem_conteo_limpio_tras_envio'); } catch (e) {}
+        }
+
         async function sincronizarDesdeServidor() {
             if (sincronizando) return;
+            // Tras "Enviar y limpiar", no volver a traer lotes de la nube a este dispositivo
+            if (conteoLocalLimpioTrasEnvio() && (!inventarioFisico || inventarioFisico.length === 0)) {
+                return;
+            }
             sincronizando = true;
             try {
                 // Paginar por si hay más de ~1000 lotes de conteo
@@ -2551,6 +2583,8 @@
                 showToast('Seleccione un producto de la lista.', 'error');
                 return;
             }
+            // Nuevo conteo del día: permitir sync de nuevo
+            quitarMarcaConteoLimpio();
             normalizarUnidadesACajas();
             const item = filteredData[selectedIndex];
             const codigo = getCodigo(item);
@@ -3169,6 +3203,7 @@
                 // Limpiar conteo local para que mañana empiecen de cero
                 // (la nube conserva los lotes enviados para descarga admin)
                 inventarioFisico = [];
+                marcarConteoLimpioTrasEnvio(); // evita que el sync cada 10s vuelva a llenar la lista
                 try { if (typeof saveInventario === 'function') saveInventario(); } catch (eClr) {}
                 try { if (typeof renderInventario === 'function') renderInventario(); } catch (eRnd) {}
                 showToast('🧹 Conteo local limpiado. Listo para el próximo conteo.', 'info');

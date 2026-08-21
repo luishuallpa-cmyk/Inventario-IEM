@@ -28,8 +28,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=4.5.8">
-    <link rel="stylesheet" href="admin.css?v=4.5.8">
+    <link rel="stylesheet" href="style.css?v=4.5.10">
+    <link rel="stylesheet" href="admin.css?v=4.5.10">
 <script>
 (function(){try{var t=localStorage.getItem('buscador_tema')||'dark';
 if(t==='light'){document.documentElement.classList.add('light-theme');document.documentElement.setAttribute('data-theme','light');}
@@ -190,6 +190,10 @@ else document.body.classList.remove('light-theme');
             </button>
             <button class="btn btn-outline" id="refreshDriveBtn" title="Actualizar productos" aria-label="Actualizar"><span class="btn-icon">↻</span><span class="btn-label"> Actualizar</span></button>
         </div>
+        <!-- Sugerencias pegadas a la barra de búsqueda (móvil y escritorio) -->
+        <div class="search-suggest-wrap" id="searchSuggestWrap">
+            <div id="resultList" role="listbox" aria-label="Resultados de búsqueda" class="result-list result-list-collapsed"></div>
+        </div>
         <div class="vincular-barras-row" id="vincularBarrasRow" style="display:none;">
             <button type="button" class="btn btn-outline btn-sm" id="btnVincularBarras">
                 <span class="btn-icon">🏷️</span><span class="btn-label"> Vincular código de barras a este producto</span>
@@ -210,9 +214,6 @@ else document.body.classList.remove('light-theme');
                 <span><span class="label">📦 Cajas:</span> <span id="cajasCount">0</span></span>
                 <span><span class="label">🧩 Unidades:</span> <span id="unidadesCount">0</span></span>
             </div>
-        </div>
-        <div id="resultList" role="listbox" aria-label="Resultados de búsqueda" class="result-list">
-            <div class="empty-message">🔎 Escribe algo para buscar.</div>
         </div>
         </div><!-- /.pc-panel-lista -->
 
@@ -706,14 +707,14 @@ else document.body.classList.remove('light-theme');
         </div>
     </div>
 
-<script src="config.js?v=4.5.8"></script>
-<script src="iem-core.js?v=4.5.8"></script>
-<script src="app.js?v=4.5.8"></script>
+<script src="config.js?v=4.5.10"></script>
+<script src="iem-core.js?v=4.5.10"></script>
+<script src="app.js?v=4.5.10"></script>
 <script>
 /* Registrar PWA (solo en HTTPS o localhost) */
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('./sw.js?v=4.5.8').then(function (reg) {
+    navigator.serviceWorker.register('./sw.js?v=4.5.10').then(function (reg) {
       console.log('[PWA] Service Worker OK', reg.scope);
       try { reg.update(); } catch (e) {}
       if (reg.waiting) {

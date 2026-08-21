@@ -606,6 +606,11 @@
         }
         .results-header .stats .label { color: var(--text-muted); }
 
+        .search-suggest-wrap {
+            position: relative;
+            width: 100%;
+            z-index: 40;
+        }
         .result-list {
             display: flex;
             flex-direction: column;
@@ -624,6 +629,18 @@
             padding: 0 !important;
             margin: 0 !important;
             pointer-events: none;
+            border: none !important;
+            box-shadow: none !important;
+        }
+        .result-list.result-list-open {
+            margin-top: 0.4rem;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            background: var(--card-bg, var(--input-bg));
+            box-shadow: 0 10px 28px rgba(0,0,0,0.22);
+            max-height: min(50vh, 340px);
+            padding: 0.15rem 0;
+            gap: 0;
         }
         .result-list::-webkit-scrollbar { width: 4px; }
         .result-list::-webkit-scrollbar-track { background: transparent; }
@@ -1320,37 +1337,43 @@
                 display: none !important;
             }
 
-            /* Lista tipo Google/autocomplete: recuadro compacto */
-            .result-list {
-                max-height: min(42vh, 280px);
+            /* Lista pegada a la barra (autocomplete) */
+            #searchSection {
+                position: relative;
+                z-index: 30;
+                overflow: visible !important;
+            }
+            #searchSection.card {
+                overflow: visible !important;
+            }
+            .search-suggest-wrap {
+                position: relative;
+                z-index: 50;
+            }
+            .result-list.result-list-open {
+                max-height: min(45vh, 300px);
                 min-height: 0;
                 gap: 0;
+                margin-top: 0.35rem;
                 border-radius: 10px;
                 border: 1px solid rgba(148, 163, 184, 0.35);
                 background: var(--card-bg, #0f172a);
-                box-shadow: 0 10px 28px rgba(0,0,0,0.28);
+                box-shadow: 0 12px 32px rgba(0,0,0,0.35);
                 overflow-y: auto;
                 -webkit-overflow-scrolling: touch;
             }
-            body.light-theme .result-list {
+            body.light-theme .result-list.result-list-open {
                 background: #fff;
                 border-color: #d1d5db;
-                box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+                box-shadow: 0 8px 24px rgba(0,0,0,0.14);
             }
-            .result-list.result-list-collapsed {
-                border: none !important;
-                box-shadow: none !important;
-                background: transparent !important;
+            /* Ocultar bloque vacío de resultados debajo */
+            #resultsSection:not(.has-results) {
+                /* sigue mostrando cajas/unidades */
             }
-            .result-list.result-list-open {
-                margin-top: 0.25rem;
-            }
-            #resultsSection:not(.has-results) .result-list {
-                max-height: 0 !important;
-                min-height: 0 !important;
-                border: none;
-                box-shadow: none;
-                pointer-events: none;
+            #resultsSection .pc-panel-lista:empty,
+            #resultsSection .results-header {
+                display: none !important;
             }
 
             /* Filas sugerencia: solo código + nombre */
@@ -3429,6 +3452,15 @@ tr.row-sube { background: rgba(10,120,76,0.06); }
 /* Móvil: lista sugerencias (override final) */
 @media (max-width: 640px) {
   #resultsSection .results-header { display: none !important; }
+  #resultsSection:not(.has-results) .empty-message,
+  #resultsSection:not(.has-results) .pc-panel-lista {
+    display: none !important;
+  }
+  #resultsSection:not(.has-results) {
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
+    min-height: 0;
+  }
   .result-item > .prod-img,
   .result-item > .prod-img-placeholder,
   .result-item .result-body,
