@@ -465,13 +465,16 @@
             top: calc(100% + 0.45rem);
             right: 0;
             min-width: 220px;
+            max-height: min(70vh, 420px);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
             padding: 0.4rem;
             border-radius: 16px;
             border: 1px solid var(--card-border);
             background: var(--card-bg);
             backdrop-filter: blur(16px);
             box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
-            z-index: 50;
+            z-index: 9000;
             display: flex;
             flex-direction: column;
             gap: 0.2rem;
@@ -4094,7 +4097,7 @@ body:not(.light-theme) #iemPullRefresh {
 
 
 /* ============================================================
-   v4.7.0 — nombres completos + chips con cajas/unidades
+   v4.7.2 — nombres completos + chips con cajas/unidades
    ============================================================ */
 @media (max-width: 959px) {
   .result-item-suggest {
@@ -4161,7 +4164,7 @@ body:not(.light-theme) #iemPullRefresh {
 
 
 /* ============================================================
-   v4.7.0/6 — Cajas|Unidades: móvil en grid; PC en fila compacta
+   v4.7.2/6 — Cajas|Unidades: móvil en grid; PC en fila compacta
    ============================================================ */
 @media (max-width: 959px) {
   .cantidad-row {
@@ -4225,7 +4228,7 @@ body:not(.light-theme) #iemPullRefresh {
 
 
 /* ============================================================
-   v4.7.0 — móvil: sin icono alerta header, sin bloque Resultados,
+   v4.7.2 — móvil: sin icono alerta header, sin bloque Resultados,
    filtros visibles, cantidades solo con producto
    ============================================================ */
 
@@ -4293,7 +4296,7 @@ button.btn-alerta-venc {
     visibility: visible !important;
     opacity: 1 !important;
   }
-  /* searchButton no forzado aquí — se oculta en capa 4.7.0 */
+  /* searchButton no forzado aquí — se oculta en capa 4.7.2 */
 
 
   /* fileStatus admin: compacto, no tape botones */
@@ -4315,7 +4318,7 @@ button.btn-alerta-venc {
 
 
 /* ============================================================
-   v4.7.0 RELEASE — PC profesional: lista | panel al lado
+   v4.7.2 RELEASE — PC profesional: lista | panel al lado
    ============================================================ */
 @media (min-width: 960px) {
   /* Layout principal 2 columnas al seleccionar */
@@ -4483,7 +4486,7 @@ button.btn-alerta-venc {
 
 
 /* ============================================================
-   v4.7.0 — lista con altura controlada + Cambiar producto sin cuadro
+   v4.7.2 — lista con altura controlada + Cambiar producto sin cuadro
    ============================================================ */
 @media (min-width: 960px) {
   /* No desplegar toda la página: lista con scroll interno acotado */
@@ -4547,7 +4550,7 @@ button.btn-alerta-venc {
 
 
 /* ============================================================
-   v4.7.0 — móvil menos cargado + editar inventario
+   v4.7.2 — móvil menos cargado + editar inventario
    ============================================================ */
 @media (max-width: 959px) {
   /* Buscar: oculto (búsqueda al escribir / Enter) */
@@ -4614,7 +4617,7 @@ button.btn-alerta-venc {
 }
 
 
-/* v4.7.0 — ocultar Buscar en móvil (más específico) */
+/* v4.7.2 — ocultar Buscar en móvil (más específico) */
 @media (max-width: 959px) {
   #searchSection #searchButton,
   #searchSection .search-row #searchButton,
@@ -4633,7 +4636,7 @@ button.btn-alerta-venc {
 
 
 /* ============================================================
-   v4.7.0 — Optimización móvil profunda (contenidos, sin desbordes)
+   v4.7.2 — Optimización móvil profunda (contenidos, sin desbordes)
    ============================================================ */
 html, body {
   max-width: 100%;
@@ -4885,4 +4888,97 @@ html, body {
   #adminPanel {
     max-width: 100vw !important;
   }
+}
+
+
+/* ============================================================
+   v4.7.2 — Rendimiento de imágenes
+   ============================================================ */
+.result-item,
+.result-item-suggest {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 88px;
+}
+.prod-img,
+.suggest-img,
+.pa-img {
+  object-fit: contain;
+  background: #fff;
+  /* Reserva espacio → menos saltos de layout */
+  aspect-ratio: 1 / 1;
+  content-visibility: auto;
+}
+.prod-img,
+.prod-img-placeholder {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+.suggest-img,
+.suggest-img-placeholder,
+.suggest-img-ph {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  border-radius: 12px;
+}
+.pa-img {
+  width: 88px;
+  height: 88px;
+}
+.img-broken {
+  display: none !important;
+}
+/* No decodificar fuera de pantalla en móvil */
+@media (max-width: 959px) {
+  .result-item-suggest .suggest-img {
+    width: 64px !important;
+    height: 64px !important;
+  }
+}
+
+
+/* ============================================================
+   v4.7.2 — Menú admin funcional (no recortar dropdown)
+   ============================================================ */
+.header-menu-wrap {
+  position: relative !important;
+  z-index: 9001 !important;
+  overflow: visible !important;
+}
+.header-menu-dropdown {
+  z-index: 9002 !important;
+  pointer-events: auto !important;
+}
+.header-menu-dropdown:not([hidden]) {
+  display: flex !important;
+}
+/* Header no debe recortar el menú ☰ */
+.app-header,
+header.header,
+header {
+  overflow: visible !important;
+}
+@media (max-width: 959px) {
+  .app-header,
+  header {
+    overflow: visible !important;
+  }
+  .header-menu-dropdown {
+    position: fixed !important;
+    top: calc(env(safe-area-inset-top, 0px) + 3.6rem) !important;
+    right: 0.5rem !important;
+    left: auto !important;
+    width: min(280px, calc(100vw - 1rem)) !important;
+    max-height: min(75vh, 480px) !important;
+  }
+}
+/* Panel admin siempre por encima */
+#adminOverlay.admin-overlay.visible,
+.admin-overlay.visible {
+  display: flex !important;
+  z-index: 9500 !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }

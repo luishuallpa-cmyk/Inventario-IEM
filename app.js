@@ -337,6 +337,74 @@
             return '';
         }
 
+        /** URLs que fallaron: no reintentar en esta sesión. */
+        var _iemImgBroken = Object.create(null);
+        function markImageBroken(url) {
+            if (url) _iemImgBroken[String(url)] = 1;
+        }
+        try { window.markImageBroken = markImageBroken; } catch (eW) {}
+        function isImageBroken(url) {
+            return !!(url && _iemImgBroken[String(url)]);
+        }
+
+        /**
+         * HTML de <img> optimizado: lazy, async decode, tamaño fijo (menos CLS),
+         * fetchpriority bajo salvo las primeras filas visibles.
+         */
+        function buildProductImgHtml(url, className, idx) {
+            var safe = safeImageUrl(url);
+            if (!safe || isImageBroken(safe)) {
+                return '<span class="' + className + ' prod-img-placeholder" aria-hidden="true">📦</span>';
+            }
+            var eager = (typeof idx === 'number' && idx < 4);
+            var loading = eager ? 'eager' : 'lazy';
+            var prio = eager ? 'high' : 'low';
+            var esc = escapeHtml(safe);
+            return '<img class="' + className + '" src="' + esc + '" alt="" width="72" height="72"'
+                + ' loading="' + loading + '" decoding="async" fetchpriority="' + prio + '"'
+                + ' referrerpolicy="no-referrer"'
+                + ' onerror="window.__iemImgErr&&window.__iemImgErr(this)">'
+                ;
+        }
+        window.__iemImgErr = function (el) {
+            try {
+                if (!el) return;
+                markImageBroken(el.getAttribute('src') || el.src);
+                el.onerror = null;
+                var ph = document.createElement('span');
+                ph.className = (el.className || 'prod-img') + ' prod-img-placeholder';
+                ph.setAttribute('aria-hidden', 'true');
+                ph.textContent = '📦';
+                if (el.parentNode) el.parentNode.replaceChild(ph, el);
+            } catch (e) {}
+        };
+
+        /** Precarga la imagen del producto seleccionado (panel). */
+        function setProductActiveImage(url) {
+            if (!paImg) return;
+            var safe = safeImageUrl(url);
+            if (!safe || isImageBroken(safe)) {
+                paImg.removeAttribute('src');
+                paImg.style.display = 'none';
+                return;
+            }
+            paImg.loading = 'eager';
+            try { paImg.fetchPriority = 'high'; } catch (e) {}
+            paImg.decoding = 'async';
+            paImg.referrerPolicy = 'no-referrer';
+            paImg.onerror = function () {
+                markImageBroken(safe);
+                paImg.style.display = 'none';
+                paImg.removeAttribute('src');
+            };
+            if (paImg.src === safe) {
+                paImg.style.display = '';
+                return;
+            }
+            paImg.src = safe;
+            paImg.style.display = '';
+        }
+
         async function cargarSesionesActivas() {
             window.__cargarSesionesActivas = cargarSesionesActivas;
             const cont = document.getElementById('adminListaSesiones');
@@ -1573,16 +1641,12 @@
                         });
                     }
                 } catch (eYCD) {}
-                const imgUrl = safeImageUrl(getImagenUrl(item));
-                const imgHtml = imgUrl
-                    ? `<img class="prod-img" src="${escapeHtml(imgUrl)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.classList.add('img-broken');this.removeAttribute('src');this.outerHTML='<span class=\\'prod-img prod-img-placeholder\\' aria-hidden=\\'true\\'>📦</span>';">`
-                    : `<span class="prod-img prod-img-placeholder" aria-hidden="true">📦</span>`;
+                const imgUrl = getImagenUrl(item);
+                const imgHtml = buildProductImgHtml(imgUrl, 'prod-img', idx);
 
                 // Móvil / lista compacta: imagen grande + código + nombre + meta (stock, línea)
                 if (isMobileList) {
-                    const imgSuggest = imgUrl
-                        ? `<img class="suggest-img" src="${escapeHtml(imgUrl)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='';this.classList.add('suggest-img-ph');this.alt='';">`
-                        : `<span class="suggest-img suggest-img-ph" aria-hidden="true">📦</span>`;
+                    const imgSuggest = buildProductImgHtml(imgUrl, 'suggest-img', idx);
                     const metaBits = [];
                     if (fabrica) metaBits.push('Fáb ' + fabrica);
                     if (linea) metaBits.push(linea);
@@ -1873,15 +1937,7 @@
             } catch (eExtra) {}
 
             if (paImg) {
-                const url = safeImageUrl(getImagenUrl(item));
-                if (url) {
-                    paImg.src = url;
-                    paImg.style.display = '';
-                    paImg.onerror = function () { paImg.style.display = 'none'; };
-                } else {
-                    paImg.removeAttribute('src');
-                    paImg.style.display = 'none';
-                }
+                setProductActiveImage(getImagenUrl(item));
             }
             actualizarTotalCalculado();
         }
@@ -4454,7 +4510,7 @@
             const stockClass = cant <= 0 ? ' stock-cero' : '';
             const estado = activoItem ? '' : ' · <span style="color:#f59e0b">Inactivo</span>';
             const imgHtml = imgUrl
-                ? '<img class="aci-img" src="' + escapeHtmlSes(imgUrl) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">'
+                ? '<img class="aci-img" src="' + escapeHtmlSes(imgUrl) + '" alt="" width="48" height="48" loading="lazy" decoding="async" fetchpriority="low" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">'
                 : '<span class="aci-img aci-img-ph" aria-hidden="true">📦</span>';
             return '<div class="admin-catalog-item' + stockClass + '" data-codigo="' + cod + '">' +
                 imgHtml +
@@ -6660,9 +6716,16 @@
             const headerMenuBtn = document.getElementById('headerMenuBtn');
             if (headerMenuBtn) {
                 headerMenuBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
                     e.stopPropagation();
                     if (typeof cerrarSugerenciasBusqueda === 'function') cerrarSugerenciasBusqueda();
                     toggleHeaderMenu();
+                });
+                // Acceso rápido: doble toque abre admin directo (por si el desplegable falla)
+                headerMenuBtn.addEventListener('dblclick', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (typeof abrirAdminEnSeccion === 'function') abrirAdminEnSeccion('subir');
                 });
             }
             const headerMenuDropdown = document.getElementById('headerMenuDropdown');
@@ -7576,7 +7639,11 @@
                 return;
             }
             ov.classList.add('visible');
-            ov.style.display = 'flex';
+            ov.style.setProperty('display', 'flex', 'important');
+            ov.style.setProperty('visibility', 'visible', 'important');
+            ov.style.setProperty('opacity', '1', 'important');
+            ov.style.setProperty('z-index', '9500', 'important');
+            ov.style.setProperty('pointer-events', 'auto', 'important');
             ov.setAttribute('aria-hidden', 'false');
             document.body.classList.add('admin-open');
             document.body.style.overflow = 'hidden';
@@ -7716,7 +7783,7 @@
         function mostrarLogin() {
             try {
                 var lv = document.getElementById('loginVersion');
-                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.7.0');
+                if (lv) lv.textContent = 'v' + ((window.IEM && IEM.VERSION) || '4.7.2');
             } catch (eVer) {}
 
             try {
