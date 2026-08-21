@@ -1,11 +1,11 @@
-/* IEM Inventario — Service Worker v4.8.7
+/* IEM Inventario — Service Worker v4.9.0
  * - Precache del shell (HTML/CSS/JS/iconos)
  * - Network-first en HTML/JS/CSS → actualizaciones rápidas
  * - Cache-first en imágenes/iconos
  * - Offline: responde con index.html / assets en caché
  * - No intercepta Supabase ni CDNs
  */
-const SW_VERSION = '4.8.7';
+const SW_VERSION = '4.9.0';
 const CACHE = 'iem-inventario-v' + SW_VERSION;
 
 const PRECACHE = [
