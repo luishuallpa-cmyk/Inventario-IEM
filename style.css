@@ -1306,7 +1306,7 @@
             .results-header { flex-direction: column; align-items: stretch; gap: 0.2rem; }
             .results-header .stats { font-size: 0.7rem; gap: 0.5rem; }
 
-            .result-list { max-height: 55vh; min-height: 150px; }
+            .result-list { max-height: min(78vh, 640px); min-height: 0; }
 
             /* --- Vista móvil: imagen a la izquierda + info a la derecha --- */
             .result-item {
@@ -4039,13 +4039,16 @@ body:not(.light-theme) #iemPullRefresh {
     right: 0;
     top: 0.25rem;
     z-index: 90;
-    max-height: min(55vh, 420px);
+    width: 100%;
+    max-height: min(78vh, 640px);
+    min-height: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     border-radius: 14px;
     border: 1px solid var(--card-border);
     background: var(--card-bg, #0f172a);
-    box-shadow: 0 12px 28px rgba(0,0,0,0.2);
+    box-shadow: 0 16px 36px rgba(0,0,0,0.28);
   }
   .search-suggest-wrap .result-list.result-list-collapsed {
     max-height: 0 !important;
@@ -4097,7 +4100,7 @@ body:not(.light-theme) #iemPullRefresh {
 
 
 /* ============================================================
-   v4.7.2 — nombres completos + chips con cajas/unidades
+   v4.7.3 — nombres completos + chips con cajas/unidades
    ============================================================ */
 @media (max-width: 959px) {
   .result-item-suggest {
@@ -4164,7 +4167,7 @@ body:not(.light-theme) #iemPullRefresh {
 
 
 /* ============================================================
-   v4.7.2/6 — Cajas|Unidades: móvil en grid; PC en fila compacta
+   v4.7.3/6 — Cajas|Unidades: móvil en grid; PC en fila compacta
    ============================================================ */
 @media (max-width: 959px) {
   .cantidad-row {
@@ -4228,7 +4231,7 @@ body:not(.light-theme) #iemPullRefresh {
 
 
 /* ============================================================
-   v4.7.2 — móvil: sin icono alerta header, sin bloque Resultados,
+   v4.7.3 — móvil: sin icono alerta header, sin bloque Resultados,
    filtros visibles, cantidades solo con producto
    ============================================================ */
 
@@ -4296,7 +4299,7 @@ button.btn-alerta-venc {
     visibility: visible !important;
     opacity: 1 !important;
   }
-  /* searchButton no forzado aquí — se oculta en capa 4.7.2 */
+  /* searchButton no forzado aquí — se oculta en capa 4.7.3 */
 
 
   /* fileStatus admin: compacto, no tape botones */
@@ -4318,7 +4321,7 @@ button.btn-alerta-venc {
 
 
 /* ============================================================
-   v4.7.2 RELEASE — PC profesional: lista | panel al lado
+   v4.7.3 RELEASE — PC profesional: lista | panel al lado
    ============================================================ */
 @media (min-width: 960px) {
   /* Layout principal 2 columnas al seleccionar */
@@ -4486,7 +4489,7 @@ button.btn-alerta-venc {
 
 
 /* ============================================================
-   v4.7.2 — lista con altura controlada + Cambiar producto sin cuadro
+   v4.7.3 — lista con altura controlada + Cambiar producto sin cuadro
    ============================================================ */
 @media (min-width: 960px) {
   /* No desplegar toda la página: lista con scroll interno acotado */
@@ -4550,7 +4553,7 @@ button.btn-alerta-venc {
 
 
 /* ============================================================
-   v4.7.2 — móvil menos cargado + editar inventario
+   v4.7.3 — móvil menos cargado + editar inventario
    ============================================================ */
 @media (max-width: 959px) {
   /* Buscar: oculto (búsqueda al escribir / Enter) */
@@ -4617,7 +4620,7 @@ button.btn-alerta-venc {
 }
 
 
-/* v4.7.2 — ocultar Buscar en móvil (más específico) */
+/* v4.7.3 — ocultar Buscar en móvil (más específico) */
 @media (max-width: 959px) {
   #searchSection #searchButton,
   #searchSection .search-row #searchButton,
@@ -4636,7 +4639,7 @@ button.btn-alerta-venc {
 
 
 /* ============================================================
-   v4.7.2 — Optimización móvil profunda (contenidos, sin desbordes)
+   v4.7.3 — Optimización móvil profunda (contenidos, sin desbordes)
    ============================================================ */
 html, body {
   max-width: 100%;
@@ -4892,7 +4895,7 @@ html, body {
 
 
 /* ============================================================
-   v4.7.2 — Rendimiento de imágenes
+   v4.7.3 — Rendimiento de imágenes
    ============================================================ */
 .result-item,
 .result-item-suggest {
@@ -4939,7 +4942,7 @@ html, body {
 
 
 /* ============================================================
-   v4.7.2 — Menú admin funcional (no recortar dropdown)
+   v4.7.3 — Menú admin funcional (no recortar dropdown)
    ============================================================ */
 .header-menu-wrap {
   position: relative !important;
@@ -4981,4 +4984,52 @@ header {
   pointer-events: auto !important;
   visibility: visible !important;
   opacity: 1 !important;
+}
+
+
+/* ============================================================
+   v4.7.3 — Desplegable de sugerencias más amplio
+   ============================================================ */
+@media (max-width: 959px) {
+  #searchSection {
+    position: relative !important;
+    z-index: 100 !important;
+    overflow: visible !important;
+  }
+  .search-suggest-wrap {
+    position: relative !important;
+    width: 100% !important;
+    z-index: 120 !important;
+  }
+  .search-suggest-wrap .result-list.result-list-open,
+  #resultList.result-list-open {
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: min(78vh, 640px) !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    z-index: 130 !important;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.35) !important;
+  }
+  .search-suggest-wrap .result-list.result-list-collapsed,
+  #resultList.result-list-collapsed {
+    max-height: 0 !important;
+    min-height: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  /* Más filas visibles: un poco más compactas */
+  .result-item-suggest {
+    min-height: 64px !important;
+    padding: 0.55rem 0.75rem !important;
+  }
 }
