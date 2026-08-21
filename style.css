@@ -640,7 +640,7 @@
             box-shadow:
                 0 4px 6px rgba(0, 0, 0, 0.08),
                 0 12px 32px rgba(0, 0, 0, 0.18);
-            max-height: min(52vh, 380px);
+            max-height: min(70vh, 520px);
             padding: 0.2rem 0;
             gap: 0;
             overflow-x: hidden;
@@ -1423,7 +1423,7 @@
                 z-index: 80;
             }
             .result-list.result-list-open {
-                max-height: min(52vh, 360px);
+                max-height: min(70vh, 520px);
                 min-height: 0;
                 gap: 0;
                 margin: 0;
@@ -1448,16 +1448,16 @@
                 display: none !important;
             }
 
-            /* Fila sugerencia: imagen grande + datos */
+            /* Fila sugerencia: imagen más grande + nombre completo + datos */
             .result-item,
             .result-item-suggest {
                 display: flex !important;
                 flex-direction: row;
-                align-items: center;
-                gap: 0.7rem;
-                padding: 0.6rem 0.8rem;
+                align-items: flex-start;
+                gap: 0.75rem;
+                padding: 0.7rem 0.85rem;
                 margin: 0;
-                min-height: 64px;
+                min-height: 88px;
                 border: none;
                 border-radius: 0;
                 border-bottom: 1px solid rgba(148, 163, 184, 0.18);
@@ -1481,10 +1481,10 @@
                 background: rgba(37, 99, 235, 0.16);
             }
             .result-item-suggest .suggest-img {
-                width: 56px !important;
-                height: 56px !important;
+                width: 76px !important;
+                height: 76px !important;
                 flex-shrink: 0;
-                border-radius: 12px;
+                border-radius: 14px;
                 object-fit: contain;
                 background: #fff;
                 border: 1px solid rgba(0,0,0,0.08);
@@ -1494,7 +1494,7 @@
                 display: flex !important;
                 align-items: center;
                 justify-content: center;
-                font-size: 1.35rem;
+                font-size: 1.6rem;
                 background: linear-gradient(145deg, rgba(148,163,184,0.22), rgba(148,163,184,0.12));
                 color: var(--text-muted, #94a3b8);
             }
@@ -1539,13 +1539,13 @@
                 flex: 1 1 auto;
                 min-width: 0;
                 font-size: 0.9rem;
-                line-height: 1.3;
+                line-height: 1.35;
                 font-weight: 500;
                 color: var(--text-primary, #e2e8f0);
-                display: -webkit-box;
-                -webkit-line-clamp: 2;
-                -webkit-box-orient: vertical;
-                overflow: hidden;
+                display: block;
+                white-space: normal;
+                overflow: visible;
+                word-break: break-word;
             }
             body.light-theme .suggest-text {
                 color: #111827;
@@ -1563,6 +1563,7 @@
             }
             .suggest-chevron {
                 flex-shrink: 0;
+                align-self: center;
                 font-size: 1.25rem;
                 color: var(--text-muted, #94a3b8);
                 opacity: 0.55;
@@ -1677,8 +1678,9 @@
             .result-item .row2 .stock .cajas { color: var(--heading-color); }
             .result-item .row2 .stock .unidades { color: var(--text-secondary); }
 
-            /* Cantidades en móvil */
+            /* Cantidades en móvil: ocultas hasta seleccionar un producto (modo-seleccion) */
             .cantidad-row {
+                display: none;
                 flex-direction: column;
                 align-items: stretch;
                 gap: 0.4rem;
@@ -1850,8 +1852,9 @@
                 border-radius: 12px;
             }
 
-            /* Cajas / Unidades como cajas grandes tipo calculadora */
+            /* Cajas / Unidades como cajas grandes tipo calculadora (solo al seleccionar producto) */
             body.modo-seleccion .cantidad-row {
+                display: flex;
                 flex-direction: row;
                 flex-wrap: wrap;
                 gap: 0.6rem;

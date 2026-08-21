@@ -1509,10 +1509,10 @@
                 document.body.classList.add('search-open');
             } catch (eRs2) {}
 
-            // En móvil: lista corta tipo sugerencias (menos datos, más fácil de tocar)
+            // En móvil: lista de sugerencias con más resultados y scroll (nombres completos + imagen más grande)
             var isMobileList = false;
             try { isMobileList = window.matchMedia && window.matchMedia('(max-width: 640px)').matches; } catch (eM) {}
-            if (isMobileList && items.length > 12) items = items.slice(0, 12);
+            if (isMobileList && items.length > 30) items = items.slice(0, 30);
 
             let html = '';
             items.forEach((item, idx) => {
