@@ -1283,7 +1283,7 @@
                 vertical-align: middle;
             }
 
-            .card { padding: 0.8rem; border-radius: 18px; margin-bottom: 0.8rem; }
+            .card { padding: 0.8rem; border-radius: 16px; margin-bottom: 0.8rem; }
             .card-header h2 { font-size: 1rem; }
             .btn { font-size: 0.7rem; padding: 0.35rem 0.8rem; min-height: 32px; }
             .btn-sm { font-size: 0.6rem; padding: 0.15rem 0.5rem; min-height: 26px; }
@@ -1949,9 +1949,9 @@ label.btn-drive {
         padding: 0.5rem 0.7rem !important;
     }
 
-    /* Header redondeado; el safe-area-top ya lo aporta el body */
+    /* Mismo radio que las tarjetas (16px) — no 24px (se veía más estrecho) */
     .header {
-        border-radius: 24px !important;
+        border-radius: 16px !important;
     }
 
     /* Cards y resultados más legibles */
@@ -4693,26 +4693,37 @@ html, body {
     max-width: 100vw !important;
   }
 
+  /* Sin padding extra en container/main: el body ya aporta el margen.
+     Si main tiene padding y el header no, las tarjetas salen más estrechas. */
   #mainContent,
   main,
   .app-shell,
   .container {
     width: 100% !important;
     max-width: 100% !important;
-    padding-left: 0.65rem !important;
-    padding-right: 0.65rem !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
     overflow-x: hidden !important;
   }
 
+  /* Header y tarjetas: MISMO ancho y mismo radio */
+  .header,
+  header.header,
   .card,
   section.card {
     width: 100% !important;
     max-width: 100% !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
+    box-sizing: border-box !important;
+    border-radius: 16px !important;
+  }
+  .card,
+  section.card {
     overflow-x: hidden !important;
     overflow-y: visible !important;
-    box-sizing: border-box !important;
   }
   /* Búsqueda debe poder desplegar sugerencias sin recortar */
   #searchSection.card,
@@ -4720,11 +4731,12 @@ html, body {
     overflow: visible !important;
   }
 
-  /* Header compacto */
+  /* Header: no recortar el menú ☰ */
   .app-header,
+  header.header,
   header {
     max-width: 100% !important;
-    overflow: hidden !important;
+    overflow: visible !important;
   }
   .header-actions {
     flex-wrap: nowrap !important;
