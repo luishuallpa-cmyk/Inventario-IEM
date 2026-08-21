@@ -4954,7 +4954,7 @@ html, body {
 
 
 /* ============================================================
-   v4.7.4 — Menú admin funcional (no recortar dropdown)
+   v4.7.5 — Menú admin: sin recorte, cubre bien la pantalla
    ============================================================ */
 /* Header por encima del buscador para que el menú no quede debajo */
 .app-header,
@@ -4975,6 +4975,17 @@ header {
 .header-menu-dropdown:not([hidden]) {
   display: flex !important;
 }
+
+/* Fondo semitransparente al abrir el menú (tapa el contenido de abajo) */
+body:has(.header-menu-dropdown:not([hidden]))::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
+}
+
 @media (max-width: 959px) {
   .app-header,
   header.header,
@@ -4984,13 +4995,19 @@ header {
   }
   .header-menu-dropdown {
     position: fixed !important;
-    /* Debajo del header + safe-area; el buscador queda por debajo (z-index menor) */
-    top: calc(env(safe-area-inset-top, 0px) + 4.1rem) !important;
-    right: 0.5rem !important;
+    /* Debajo del header real; evita que el status bar corte el menú */
+    top: max(4.6rem, calc(env(safe-area-inset-top, 0px) + 3.8rem)) !important;
+    right: 0.4rem !important;
     left: auto !important;
-    width: min(280px, calc(100vw - 1rem)) !important;
-    max-height: min(75vh, 480px) !important;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4) !important;
+    width: min(300px, calc(100vw - 0.8rem)) !important;
+    /* Usa casi toda la altura disponible para que no se corte */
+    max-height: calc(100dvh - max(4.6rem, calc(env(safe-area-inset-top, 0px) + 3.8rem)) - env(safe-area-inset-bottom, 0px) - 0.6rem) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain !important;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.5) !important;
+    border-radius: 16px !important;
+    padding: 0.45rem !important;
   }
 }
 /* Panel admin siempre por encima */
