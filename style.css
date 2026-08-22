@@ -1842,7 +1842,8 @@
             inset: 0;
             background: rgba(0,0,0,0.65);
             backdrop-filter: blur(3px);
-            z-index: 5000; /* por encima del panel admin (3000) y login (2000) */
+            /* Por encima del panel admin (9500) para confirmar sin cerrar el menú */
+            z-index: 10000;
             align-items: center;
             justify-content: center;
             padding: 1rem;
@@ -1857,7 +1858,7 @@
             width: 100%;
             box-shadow: 0 12px 48px rgba(0,0,0,0.55);
             position: relative;
-            z-index: 5001;
+            z-index: 10001;
         }
         .confirm-box p {
             color: var(--text-primary);
@@ -5286,4 +5287,19 @@ body.light-theme .login-field input:-webkit-autofill:focus {
   -webkit-box-shadow: 0 0 0 30px #ffffff inset !important;
   -webkit-text-fill-color: #0f172a !important;
   border: 1.5px solid #2563eb !important;
+}
+
+/* Confirmación siempre por encima del panel admin (z-index 9500) */
+#confirmOverlay.confirm-overlay,
+.confirm-overlay {
+  z-index: 10000 !important;
+}
+#confirmOverlay.confirm-overlay.visible,
+.confirm-overlay.visible {
+  display: flex !important;
+  z-index: 10000 !important;
+  pointer-events: auto !important;
+}
+.confirm-overlay .confirm-box {
+  z-index: 10001 !important;
 }

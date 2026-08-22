@@ -334,8 +334,9 @@
             mostrarLogin();
         }
 
-        // Ping cada 8s (respaldo si Realtime no llega). NO reescribe forzar_cierre.
-        setInterval(async function () {
+        // Comprueba si el admin marcó forzar_cierre y actualiza el ping.
+        // Se llama por intervalo y al volver a primer plano (móvil pausa los timers).
+        async function comprobarSesionActiva() {
             if (!usuarioActual || !idSesionActual) return;
             if (appContainer && appContainer.classList.contains('oculto')) return;
             try {
@@ -355,7 +356,17 @@
                     .eq('id', idSesionActual)
                     .eq('forzar_cierre', false);
             } catch (e) {}
-        }, 8000);
+        }
+
+        setInterval(comprobarSesionActiva, 8000);
+
+        // En móvil el intervalo se pausa en segundo plano: al abrir de nuevo, cerrar al instante
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'visible') comprobarSesionActiva();
+        });
+        window.addEventListener('focus', function () {
+            comprobarSesionActiva();
+        });
 
         function escapeHtmlSes(s) {
             return String(s == null ? '' : s)
