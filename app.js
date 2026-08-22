@@ -246,7 +246,12 @@
         const deviceId = obtenerDeviceId();
 
         // Sesión en nube (admin ve conectados y puede forzar cierre)
+        // Importante: en Supabase la tabla sesiones_activas debe permitir que
+        // cualquier usuario autenticado haga UPDATE de forzar_cierre (RLS abierta
+        // para authenticated, o policy que permita update a todos). Si RLS bloquea
+        // el update de filas ajenas, el admin no podrá cerrar sesiones de otros.
         let idSesionActual = null;
+        let canalSesionActual = null;
 
         async function registrarSesionActiva() {
             if (!usuarioActual) return;
@@ -261,12 +266,43 @@
                     conectado_en: new Date().toISOString(),
                     forzar_cierre: false
                 });
+                suscribirCierreForzado();
             } catch (e) {
                 console.warn('No se pudo registrar sesión (¿falta tabla sesiones_activas?)', e);
             }
         }
 
+        function suscribirCierreForzado() {
+            if (!idSesionActual || !supabaseClient) return;
+            try {
+                if (canalSesionActual) {
+                    try { supabaseClient.removeChannel(canalSesionActual); } catch (e) {}
+                    canalSesionActual = null;
+                }
+                canalSesionActual = supabaseClient
+                    .channel('sesion-' + idSesionActual)
+                    .on('postgres_changes', {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'sesiones_activas',
+                        filter: 'id=eq.' + idSesionActual
+                    }, function (payload) {
+                        var row = payload && payload.new;
+                        if (row && row.forzar_cierre) {
+                            forzarLogoutLocal('El administrador cerró tu sesión.');
+                        }
+                    })
+                    .subscribe();
+            } catch (e) {
+                console.warn('Realtime sesión no disponible', e);
+            }
+        }
+
         async function borrarSesionActiva() {
+            if (canalSesionActual) {
+                try { supabaseClient.removeChannel(canalSesionActual); } catch (e) {}
+                canalSesionActual = null;
+            }
             if (!idSesionActual) return;
             try {
                 await supabaseClient.from('sesiones_activas').delete().eq('id', idSesionActual);
@@ -278,6 +314,10 @@
             showToast(mensaje || 'Sesión cerrada.', 'error');
             try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
             const idBorrar = idSesionActual;
+            if (canalSesionActual) {
+                try { supabaseClient.removeChannel(canalSesionActual); } catch (e) {}
+                canalSesionActual = null;
+            }
             usuarioActual = '';
             rolUsuario = '';
             idSesionActual = null;
@@ -294,7 +334,7 @@
             mostrarLogin();
         }
 
-        // Ping cada 10s. NO reescribe forzar_cierre (bug anterior lo pisaba a false).
+        // Ping cada 8s (respaldo si Realtime no llega). NO reescribe forzar_cierre.
         setInterval(async function () {
             if (!usuarioActual || !idSesionActual) return;
             if (appContainer && appContainer.classList.contains('oculto')) return;
@@ -315,7 +355,7 @@
                     .eq('id', idSesionActual)
                     .eq('forzar_cierre', false);
             } catch (e) {}
-        }, 10000);
+        }, 8000);
 
         function escapeHtmlSes(s) {
             return String(s == null ? '' : s)
@@ -427,11 +467,12 @@
                     const esEsta = (s.id === idSesionActual);
                     const etiqueta = esEsta ? ' (este dispositivo)' : '';
                     const forzada = s.forzar_cierre ? ' · cierre pendiente' : '';
+                    const btnLabel = s.forzar_cierre && !esEsta ? 'Reintentar cierre' : 'Cerrar sesión';
                     return (
                         '<div class="admin-sesion-item">' +
                           '<div><div class="ses-user">' + escapeHtmlSes(s.usuario) + escapeHtmlSes(etiqueta) + '</div>' +
                           '<div class="ses-meta">Hace ' + hace + 's · ' + escapeHtmlSes((s.device_id || '').slice(0, 18)) + escapeHtmlSes(forzada) + '</div></div>' +
-                          '<button type="button" class="btn btn-danger btn-sm btn-forzar-cierre" data-id="' + escapeHtmlSes(s.id) + '" data-self="' + (esEsta ? '1' : '0') + '">Cerrar sesión</button>' +
+                          '<button type="button" class="btn btn-danger btn-sm btn-forzar-cierre" data-id="' + escapeHtmlSes(s.id) + '" data-self="' + (esEsta ? '1' : '0') + '">' + btnLabel + '</button>' +
                         '</div>'
                     );
                 }).join('');
@@ -439,30 +480,44 @@
                     btn.addEventListener('click', async function () {
                         const id = btn.getAttribute('data-id');
                         const esSelf = btn.getAttribute('data-self') === '1';
+                        // Confirmación solo al admin (no pide permiso al otro usuario).
+                        // El otro dispositivo se cierra solo al detectar forzar_cierre.
                         const ok = await confirmarAccion(
                             esSelf
                                 ? '¿Cerrar tu sesión en este dispositivo?'
-                                : '¿Cerrar la sesión de este usuario en ese dispositivo?',
-                            'Cerrar',
+                                : '¿Forzar cierre de esa sesión? Se cerrará en ese dispositivo sin pedirles permiso (en unos segundos).',
+                            'Cerrar sesión',
                             'danger'
                         );
                         if (!ok) return;
                         btn.disabled = true;
-                        const { error } = await supabaseClient
+                        // Marcar forzar_cierre = true. El otro dispositivo lo detecta por Realtime o por ping.
+                        const { data: updated, error } = await supabaseClient
                             .from('sesiones_activas')
                             .update({ forzar_cierre: true })
-                            .eq('id', id);
+                            .eq('id', id)
+                            .select('id');
                         if (error) {
-                            showToast('No se pudo cerrar: ' + (error.message || error), 'error');
+                            var msg = (error.message || String(error));
+                            if (/policy|permission|RLS|row-level|403|42501/i.test(msg)) {
+                                showToast('No se pudo cerrar: falta permiso en Supabase (RLS). Ejecuta el SQL de políticas de sesiones_activas (update abierto a authenticated).', 'error');
+                            } else {
+                                showToast('No se pudo cerrar: ' + msg, 'error');
+                            }
+                            btn.disabled = false;
+                            return;
+                        }
+                        if (!updated || !updated.length) {
+                            // RLS a veces devuelve 0 filas sin error
+                            showToast('No se pudo cerrar: la fila no se actualizó (revisa políticas RLS de sesiones_activas: debe permitir UPDATE a authenticated).', 'error');
                             btn.disabled = false;
                             return;
                         }
                         if (esSelf) {
-                            // Cierre inmediato en este mismo celular
                             forzarLogoutLocal('Sesión cerrada.');
                             return;
                         }
-                        showToast('Sesión marcada. Se cerrará en unos segundos en ese dispositivo.', 'success');
+                        showToast('Sesión forzada. Se cerrará sola en ese dispositivo (Realtime o en menos de ~8 s).', 'success');
                         cargarSesionesActivas();
                     });
                 });
